@@ -1,0 +1,28 @@
+{
+  "users": {
+    "demo@padai.com": {
+      "username": "DemoStudent",
+      "email": "demo@padai.com",
+      "password": "demo123",
+      "points": 150,
+      "streak": 7,
+      "joined": "2025-12-01",
+      "role": "student"
+    },
+    "admin@padai.com": {
+      "username": "Admin",
+      "email": "admin@padai.com",
+      "password": "admin123",
+      "role": "admin"
+    },
+    "shresthajeshmin@gmail.com": {
+      "username": "Jeshmin Shrestha ",
+      "email": "shresthajeshmin@gmail.com",
+      "password": "123456",
+      "points": 110,
+      "streak": 1,
+      "joined": "2025-12-27",
+      "role": "student"
+    }
+  }
+}
