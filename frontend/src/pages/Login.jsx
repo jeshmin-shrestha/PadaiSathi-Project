@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import catIllustration from '../assets/images/Loginimage1.png';
-import logoImage from '../assets/images/logo1.png'; // ← Your logo image
+import logoImage from '../assets/images/logo1.png';
 
 const Login = ({ setIsAuthenticated, setUser }) => {
   const [email, setEmail] = useState('demo@padai.com');

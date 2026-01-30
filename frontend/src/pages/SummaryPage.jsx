@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Upload } from 'lucide-react';
 import Navbar from '../components/Navbar';
-
+import Icon1Image from '../assets/images/icon1.png';
 const SummaryPage = () => {
   const [dragActive, setDragActive] = useState(false);
   const [uploadedFile, setUploadedFile] = useState(null);
@@ -75,8 +75,11 @@ const SummaryPage = () => {
               Transform your documents into interactive learning materials
             </p>
           </div>
-          <div className="w-32 h-32">
-            <div className="text-6xl">🐱‍💻</div>
+          <div className="flex justify-center">
+            <img 
+              src={Icon1Image} 
+              alt="Icon1Image"
+              className="w-32 h-32 object-contain" />
           </div>
         </div>
 
