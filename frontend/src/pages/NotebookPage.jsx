@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Plus, Star } from 'lucide-react';
 import Navbar from '../components/Navbar';
+import Icon2Image from '../assets/images/icon2.png';
+import Icon3Image from '../assets/images/icon3.png';
 
 const NotebooksPage = () => {
   const navigate = useNavigate();
@@ -32,18 +34,11 @@ const NotebooksPage = () => {
       <div className="max-w-6xl mx-auto px-6 py-8">
         {/* Hero Banner */}
         <div className="bg-gray-300 rounded-3xl p-8 mb-8 flex items-center justify-between">
-          <div className="flex items-center space-x-8">
-            {/* Book Stack Icon */}
-            <div className="relative">
-              <div className="w-24 h-28 relative">
-                <div className="absolute bottom-0 left-0 w-20 h-6 bg-red-500 rounded"></div>
-                <div className="absolute bottom-5 left-1 w-20 h-6 bg-yellow-100 rounded"></div>
-                <div className="absolute bottom-10 left-2 w-20 h-6 bg-yellow-500 rounded"></div>
-                <div className="absolute bottom-14 left-3 w-20 h-6 bg-green-500 rounded"></div>
-                <div className="absolute bottom-[72px] left-4 w-20 h-6 bg-blue-500 rounded"></div>
-                <div className="absolute bottom-24 left-5 w-20 h-6 bg-orange-500 rounded"></div>
-              </div>
-            </div>
+          <div className="flex items-center space-x-6">
+            <img 
+              src={Icon2Image} 
+              alt="Icon2Image"
+              className="w-32 h-32 object-contain" />
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
                 Hello Jeshmin!
@@ -84,7 +79,7 @@ const NotebooksPage = () => {
               <h3 className="text-lg font-bold text-gray-900">Favorites</h3>
             </div>
             
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid md:grid-cols-3 gap-4">
               {favoriteNotebooks.map((notebook) => (
                 <NotebookCard 
                   key={notebook.id} 
@@ -105,7 +100,7 @@ const NotebooksPage = () => {
             <h3 className="text-lg font-bold text-gray-900">All</h3>
           </div>
           
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid md:grid-cols-3 gap-4">
             {allNotebooks.map((notebook) => (
               <NotebookCard 
                 key={notebook.id} 
@@ -127,31 +122,32 @@ const NotebooksPage = () => {
 
 const NotebookCard = ({ notebook, onToggleFavorite }) => {
   return (
-    <div className="bg-white rounded-3xl p-6 border-4 border-black flex items-center justify-between">
-      <div className="flex items-center space-x-4">
+    <div className="bg-white rounded-3xl p-6 border-4 border-black">
+      <div className="flex flex-col items-center text-center space-y-4">
         {/* Folder Icon */}
-        <div className="w-16 h-16 bg-yellow-400 rounded-lg flex items-center justify-center text-3xl">
-          📁
-        </div>
+        <img 
+          src={Icon3Image} 
+          alt="Folder Icon"
+          className="w-20 h-20 object-contain" />
         
-        <div>
+        <div className="flex-1">
           <h4 className="text-lg font-bold text-gray-900">{notebook.name}</h4>
           <p className="text-sm text-gray-500">{notebook.updated}</p>
         </div>
-      </div>
 
-      <div className="flex items-center space-x-3">
-        <button className="px-6 py-2 bg-black text-white rounded-lg font-semibold hover:bg-gray-800 transition">
-          Open
-        </button>
-        <button 
-          onClick={() => onToggleFavorite(notebook.id)}
-          className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 rounded-lg transition"
-        >
-          <Star 
-            className={`w-6 h-6 ${notebook.favorite ? 'text-yellow-500 fill-yellow-500' : 'text-gray-400'}`}
-          />
-        </button>
+        <div className="flex items-center space-x-3 w-full justify-center">
+          <button className="px-8 py-2 bg-black text-white rounded-lg font-semibold hover:bg-gray-800 transition">
+            Open
+          </button>
+          <button 
+            onClick={() => onToggleFavorite(notebook.id)}
+            className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 rounded-lg transition"
+          >
+            <Star 
+              className={`w-6 h-6 ${notebook.favorite ? 'text-yellow-500 fill-yellow-500' : 'text-gray-400'}`}
+            />
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Upload, Download } from 'lucide-react';
 import Navbar from '../components/Navbar';
+import Icon1Image from '../assets/images/icon1.png';
+import Icon4Image from '../assets/images/icon4.png';
 
 const VideoPage = () => {
   const [dragActive, setDragActive] = useState(false);
@@ -10,9 +12,9 @@ const VideoPage = () => {
   const [isGenerating, setIsGenerating] = useState(false);
 
   const themes = [
-    { id: 'subway', name: 'Subway Surfer', emoji: '🏃', color: 'from-yellow-300 to-yellow-400' },
-    { id: 'slime', name: 'Slime Videos', emoji: '🟢', color: 'from-pink-300 to-pink-400' },
-    { id: 'minecraft', name: 'Minecraft', emoji: '⛏️', color: 'from-green-300 to-green-400' }
+    { id: 'subway', name: 'Subway Surfer', color: 'from-yellow-300 to-yellow-400' },
+    { id: 'slime', name: 'Slime Videos', color: 'from-pink-300 to-pink-400' },
+    { id: 'minecraft', name: 'Minecraft', color: 'from-green-300 to-green-400' }
   ];
 
   const handleDrag = (e) => {
@@ -85,8 +87,11 @@ const VideoPage = () => {
               Transform your documents into interactive learning materials
             </p>
           </div>
-          <div className="w-32 h-32">
-            <div className="text-6xl">🐱‍💻</div>
+          <div className="flex justify-center">
+            <img 
+              src={Icon1Image} 
+              alt="Icon1Image"
+              className="w-32 h-32 object-contain" />
           </div>
         </div>
 
@@ -161,8 +166,11 @@ const VideoPage = () => {
                       : 'border-gray-300 hover:border-gray-400 bg-white'
                   }`}
                 >
-                  <div className={`w-16 h-16 rounded-lg bg-gradient-to-br ${theme.color} flex items-center justify-center text-3xl shadow-md`}>
-                    {theme.emoji}
+                  <div className={`w-16 h-16 rounded-lg bg-gradient-to-br ${theme.color} flex items-center justify-center shadow-md p-2`}>
+                    <img 
+                      src={Icon4Image} 
+                      alt="Theme Icon1"
+                      className="w-full h-full object-contain" />
                   </div>
                   <span className="text-lg font-semibold text-gray-800">{theme.name}</span>
                   {selectedTheme === theme.id && (
