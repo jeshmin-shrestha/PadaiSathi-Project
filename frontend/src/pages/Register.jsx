@@ -48,7 +48,7 @@ const Register = ({ setIsAuthenticated, setUser }) => {
 
     try {
       // Register new user
-      const registerResponse = await fetch('/api/register', {
+      const registerResponse = await fetch('http://localhost:8000/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -67,7 +67,7 @@ const Register = ({ setIsAuthenticated, setUser }) => {
       }
 
       // Auto-login immediately after registration
-      const loginResponse = await fetch('/api/login', {
+      const loginResponse = await fetch('http://localhost:8000/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

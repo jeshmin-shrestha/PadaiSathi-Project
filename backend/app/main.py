@@ -1,8 +1,7 @@
 """
-PadaiSathi API - ULTRA SIMPLE WORKING VERSION
-No CORS middleware issues
+PadaiSathi API - ULTRA SIMPLE WORKING VERSION WITH REAL DATABASE
 """
-from fastapi import FastAPI, HTTPException, Form, UploadFile, File
+from fastapi import FastAPI, HTTPException, Form, UploadFile, File, Depends
 from pydantic import BaseModel
 import json
 import os
@@ -10,11 +9,19 @@ import shutil
 from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
+from sqlalchemy.orm import Session
+from passlib.context import CryptContext
+from . import models
+from .database import engine, get_db, Base
+
+# Create database tables
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="PadaiSathi API",
     version="1.0"
 )
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000"],
@@ -23,8 +30,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Database file
-DB_FILE = "padaisathi_db.json"
+# SIMPLE PASSWORD HASHING (FIX FOR BCRYPT ISSUE)
+def simple_hash_password(password: str) -> str:
+    # Temporary simple hashing - we'll fix bcrypt later
+    import hashlib
+    return hashlib.sha256(password.encode()).hexdigest()
+
+def simple_verify_password(plain_password: str, hashed_password: str) -> bool:
+    import hashlib
+    return hashlib.sha256(plain_password.encode()).hexdigest() == hashed_password
+
+# OR use passlib with a different scheme (MD5 for now)
+pwd_context = CryptContext(schemes=["md5_crypt"], deprecated="auto")
 
 # Folder for uploaded PDFs
 UPLOAD_DIR = Path("uploads")
@@ -40,39 +57,6 @@ class UserLogin(BaseModel):
     email: str
     password: str
 
-# Helper functions
-def load_db():
-    if os.path.exists(DB_FILE):
-        try:
-            with open(DB_FILE, 'r') as f:
-                return json.load(f)
-        except:
-            return {"users": {}}
-    return {"users": {}}
-
-def save_db(data):
-    with open(DB_FILE, 'w') as f:
-        json.dump(data, f, indent=2)
-
-# Initialize database
-def init_demo_data():
-    db = load_db()
-    if not db.get("users"):
-        db["users"] = {
-            "demo@padai.com": {
-                "username": "DemoStudent",
-                "email": "demo@padai.com",
-                "password": "demo123",
-                "points": 150,
-                "streak": 7,
-                "joined": "2025-12-01",
-                "role": "student"
-            }
-        }
-        save_db(db)
-
-init_demo_data()
-
 # ========== ROUTES ==========
 
 @app.get("/")
@@ -80,86 +64,101 @@ def root():
     return {
         "app": "PadaiSathi",
         "status": "active",
-        "message": "🚀 API is running!",
+        "message": "🚀 API is running with REAL DATABASE!",
+        "database": "SQLite (padaisathi.db)",
         "time": datetime.now().isoformat()
     }
 
 @app.get("/api/health")
-def health():
-    db = load_db()
+def health(db: Session = Depends(get_db)):
+    user_count = db.query(models.User).count()
     return {
         "status": "healthy",
-        "users": len(db.get("users", {})),
+        "database": "connected",
+        "users": user_count,
         "timestamp": datetime.now().isoformat()
     }
 
 @app.post("/api/register")
-def register(user: UserCreate):
-    db = load_db()
-    users = db.get("users", {})
+def register(user: UserCreate, db: Session = Depends(get_db)):
+    # Check if user already exists
+    existing_user = db.query(models.User).filter(
+        (models.User.email == user.email) | (models.User.username == user.username)
+    ).first()
     
-    if user.email in users:
-        raise HTTPException(status_code=400, detail="Email already registered")
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email or username already registered")
     
-    users[user.email] = {
-        "username": user.username,
-        "email": user.email,
-        "password": user.password,
-        "points": 100,
-        "streak": 1,
-        "joined": datetime.now().strftime("%Y-%m-%d"),
-        "role": "student"
-    }
+    # Create new user with simple hashing
+    hashed_password = simple_hash_password(user.password)
+    new_user = models.User(
+        username=user.username,
+        email=user.email,
+        password_hash=hashed_password,
+        role="student",
+        points=100,
+        streak=1,
+        created_at=datetime.utcnow()
+    )
     
-    db["users"] = users
-    save_db(db)
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
     
     return {
         "success": True,
         "message": f"Welcome {user.username}!",
-        "user": {
-            "username": user.username,
-            "email": user.email,
-            "points": 100,
-            "streak": 1,
-            "role": "student"
-        }
+        "user": new_user.to_dict()
     }
 
 @app.post("/api/login")
-def login(user: UserLogin):
-    db = load_db()
-    users = db.get("users", {})
+def login(user: UserLogin, db: Session = Depends(get_db)):
+    # DEMO USER LOGIN (hardcoded for now)
+    if user.email == "demo@padai.com" and user.password == "demo123":
+        # Check if demo user exists, if not create it
+        demo_user = db.query(models.User).filter(models.User.email == "demo@padai.com").first()
+        if not demo_user:
+            demo_user = models.User(
+                username="DemoStudent",
+                email="demo@padai.com",
+                password_hash=simple_hash_password("demo123"),
+                role="student",
+                points=150,
+                streak=7,
+                created_at=datetime.utcnow()
+            )
+            db.add(demo_user)
+            db.commit()
+            db.refresh(demo_user)
+        
+        return {
+            "success": True,
+            "message": f"Welcome back, DemoStudent!",
+            "user": demo_user.to_dict()
+        }
     
-    if user.email not in users:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+    # REAL DATABASE LOGIN
+    db_user = db.query(models.User).filter(models.User.email == user.email).first()
     
-    db_user = users[user.email]
-    
-    if user.password != db_user.get("password", ""):
+    if not db_user or not simple_verify_password(user.password, db_user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     return {
         "success": True,
-        "message": f"Welcome back, {db_user['username']}!",
-        "user": {
-            "username": db_user["username"],
-            "email": user.email,
-            "points": db_user.get("points", 0),
-            "streak": db_user.get("streak", 0),
-            "role": db_user.get("role", "student")
-        }
+        "message": f"Welcome back, {db_user.username}!",
+        "user": db_user.to_dict()
     }
 
 @app.post("/api/upload")
 async def upload_pdf(
     email: str = Form(...),
-    file: UploadFile = File(...)  # Now accepts real file
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
 ):
-    db = load_db()
-    users = db.get("users", {})
+    # Find user in database
+    user = db.query(models.User).filter(models.User.email == email).first()
     
-    if email not in users:
+    if not user:
         raise HTTPException(status_code=401, detail="User not found")
     
     # Validate PDF
@@ -171,10 +170,9 @@ async def upload_pdf(
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
     
-    # Award points
-    users[email]["points"] = users[email].get("points", 0) + 10
-    db["users"] = users
-    save_db(db)
+    # Award points in database
+    user.points += 10
+    db.commit()
     
     return {
         "success": True,
@@ -182,25 +180,16 @@ async def upload_pdf(
         "file_path": file_path,
         "status": "processing",
         "points_earned": 10,
-        "total_points": users[email]["points"]
+        "total_points": user.points
     }
 
 @app.get("/api/users")
-def get_users():
-    db = load_db()
-    users = db.get("users", {})
-    
-    user_list = []
-    for email, data in users.items():
-        user_list.append({
-            "username": data.get("username"),
-            "email": email,
-            "points": data.get("points", 0)
-        })
+def get_users(db: Session = Depends(get_db)):
+    users = db.query(models.User).all()
     
     return {
-        "users": user_list,
-        "total": len(user_list)
+        "users": [user.to_dict() for user in users],
+        "total": len(users)
     }
 
 # Run server
@@ -208,10 +197,11 @@ if __name__ == "__main__":
     import uvicorn
     
     print("=" * 60)
-    print("🎓 PADAIŠATHI API - RUNNING")
+    print("🎓 PADAIŠATHI API - SIMPLE VERSION (No bcrypt issues)")
     print("=" * 60)
     print("🌐 Open: http://localhost:8000")
     print("📚 Docs: http://localhost:8000/docs")
+    print("💾 Database: padaisathi.db (SQLite)")
     print("")
     print("🔐 DEMO CREDENTIALS:")
     print("   Email: demo@padai.com")
