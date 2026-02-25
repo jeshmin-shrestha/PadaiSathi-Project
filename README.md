@@ -2,7 +2,7 @@
 
 <div align="center">
   
-  ![PadaiSathi Logo](frontend/src/assets/images/logo1.png)
+  ![PadaiSathi Logo](frontend/src/assets/images/logo.png)
   
   **Learn Smarter, Not Harder!**
   
@@ -15,12 +15,12 @@
 
 ##  **About PadaiSathi**
 
-PadaiSathi (meaning "Study Companion" in Nepali) is a **modern AI-powered learning platform** that transforms how students interact with their study materials. Upload your notes, and watch as PadaiSathi magically converts them into interactive learning resources!
+PadaiSathi (meaning "Study Companion" in Nepali) is a **modern AI-powered learning platform** that transforms how students interact with their study materials. Upload your notes and watch as PadaiSathi magically converts them into interactive learning resources!
 
 ###  **Why PadaiSathi?**
 -  **Stop passive reading** - Start active learning
--  **AI-powered insights** - Get summaries, quizzes, and flashcards automatically
--  **Multi-format learning** - Text, video, and interactive content
+-  **AI-powered insights** - Get summaries, quizzes and flashcards automatically
+-  **Multi-format learning** - Text, video and interactive content
 -  **Study anywhere** - Clean, responsive design
 
 ##  **Features**
@@ -59,7 +59,7 @@ PadaiSathi (meaning "Study Companion" in Nepali) is a **modern AI-powered learni
 
 ### **Backend**
 -  **Python** + **FastAPI** - High-performance API
--  **Google Gemini AI** - Summaries, quizzes, and content generation
+-  **Google Gemini AI** - Summaries, quizzes and content generation
 -  **PostgreSQL** + **Supabase** - Database
 -  **MoviePy** + **gTTS** - Video generation
 -  **MinIO** - File storage (S3 compatible)
