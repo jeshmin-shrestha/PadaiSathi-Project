@@ -149,7 +149,6 @@ def get_users(db: Session = Depends(get_db)):
 # ═════════════════════════════════════════════════════════════════════════════
 # Upload — now also extracts text and stores Document record
 # ═════════════════════════════════════════════════════════════════════════════
-
 @app.post("/api/upload")
 async def upload_pdf(
     email: str = Form(...),
@@ -163,19 +162,17 @@ async def upload_pdf(
     if not file.filename.lower().endswith('.pdf'):
         raise HTTPException(status_code=400, detail="Only PDF files are allowed")
 
-    # Save file
     file_path = str(UPLOAD_DIR / file.filename)
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    # Extract text
     try:
         extracted_text = extract_text_from_pdf(file_path)
     except Exception as e:
         extracted_text = ""
         print(f"[Upload] Text extraction warning: {e}")
 
-    # Store Document record
+    # Step 1: Save document FIRST and commit
     doc = models.Document(
         user_id=user.id,
         file_name=file.filename,
@@ -185,20 +182,32 @@ async def upload_pdf(
         extracted_text=extracted_text,
     )
     db.add(doc)
+    db.commit()       # ← commit first
+    db.refresh(doc)   # ← now doc.id is available!
+
+    # Step 2: Now create notebook with the real doc.id
+    notebook = models.Notebook(
+        user_id=user.id,
+        document_id=doc.id,  # ← now this has the real ID!
+        title=file.filename.replace('.pdf', ''),
+        created_at=datetime.utcnow()
+    )
+    db.add(notebook)
     user.points = (user.points or 0) + 10
-    db.commit(); db.refresh(doc)
+    db.commit()
+    db.refresh(notebook)
 
     return {
         "success": True,
         "message": f"PDF '{file.filename}' uploaded successfully!",
         "document_id": doc.id,
+        "notebook_id": notebook.id,
         "file_path": file_path,
         "extracted_chars": len(extracted_text or ""),
         "status": "ready_to_summarize",
         "points_earned": 10,
         "total_points": user.points
     }
-
 from .ai.quiz_generator import generate_flashcards_and_quiz
 
 class ContentRequest(BaseModel):
@@ -218,12 +227,28 @@ def generate_flashcards(req: ContentRequest, db: Session = Depends(get_db)):
     if not summary:
         raise HTTPException(status_code=404, detail="Summary not found")
 
-    text = summary.slang_version_text or summary.summary_text
-    result = generate_flashcards_and_quiz(text)
+    text = summary.summary_text  
+    result = generate_flashcards_and_quiz(text, n_flashcards=8, n_quiz=8)
+
+    #  Save each flashcard to database
+    saved_flashcards = []
+    for card in result["flashcards"]:
+        flashcard = models.Flashcard(
+            summary_id=req.summary_id,
+            user_id=user.id,
+            question=card["question"],
+            answer=card["answer"],
+            created_at=datetime.utcnow()
+        )
+        db.add(flashcard)
+        saved_flashcards.append(card)
+
+    user.points = (user.points or 0) + 10
+    db.commit()
 
     return {
         "success": True,
-        "flashcards": result["flashcards"],
+        "flashcards": saved_flashcards,
         "summary_id": req.summary_id
     }
 
@@ -240,12 +265,29 @@ def generate_quiz(req: ContentRequest, db: Session = Depends(get_db)):
     if not summary:
         raise HTTPException(status_code=404, detail="Summary not found")
 
-    text = summary.slang_version_text or summary.summary_text
-    result = generate_flashcards_and_quiz(text)
+    text = summary.summary_text 
+    result = generate_flashcards_and_quiz(text, n_flashcards=8, n_quiz=8)
+
+    #  Save each quiz question to database
+    saved_questions = []
+    for q in result["quiz"]:
+        quiz = models.Quiz(
+            summary_id=req.summary_id,
+            user_id=user.id,
+            question=q["question"],
+            options=q["options"],
+            correct_answer=str(q["correct"]),
+            created_at=datetime.utcnow()
+        )
+        db.add(quiz)
+        saved_questions.append(q)
+
+    user.points = (user.points or 0) + 10
+    db.commit()
 
     return {
         "success": True,
-        "questions": result["quiz"],
+        "questions": saved_questions,
         "summary_id": req.summary_id
     }
 # ═════════════════════════════════════════════════════════════════════════════
@@ -336,6 +378,38 @@ def generate_video_endpoint(
         "poll_url": f"/api/video-status/{req.summary_id}",
     }
 
+@app.get("/api/leaderboard")
+def get_leaderboard(email: str, db: Session = Depends(get_db)):
+    # Get ALL users sorted by points
+    all_users = db.query(models.User).order_by(
+        models.User.points.desc()
+    ).all()
+
+    # Find current user's rank
+    current_user = db.query(models.User).filter(
+        models.User.email == email
+    ).first()
+
+    leaderboard = []
+    user_rank = None
+
+    for i, u in enumerate(all_users):
+        entry = {
+            "rank": i + 1,
+            "username": u.username,
+            "points": u.points,
+            "is_you": u.email == email
+        }
+        leaderboard.append(entry)
+        if u.email == email:
+            user_rank = i + 1
+
+    return {
+        "leaderboard": leaderboard,
+        "your_rank": user_rank,
+        "total_users": len(all_users)
+    }
+from .minio_storage import upload_video_to_minio
 
 def _run_video_pipeline(summary_id: int, genz_text: str, theme: str, user_id: int):
     from .database import SessionLocal
@@ -343,35 +417,40 @@ def _run_video_pipeline(summary_id: int, genz_text: str, theme: str, user_id: in
     try:
         _video_jobs[summary_id]["status"] = "processing"
 
-        # IMPORTANT: Use the actual summary_id in the filename
-        filename   = f"video_{summary_id}_{int(datetime.utcnow().timestamp())}.mp4"
+        filename = f"video_{summary_id}_{int(datetime.utcnow().timestamp())}.mp4"
+        
+        # Generate video locally first
         video_path = generate_video(
             summary_text=genz_text,
             output_filename=filename,
             theme=theme,
         )
 
+        # ── Upload to MinIO ──────────────────────
+        video_url = upload_video_to_minio(video_path, filename)
+        print(f"[MinIO] ✅ Uploaded: {video_url}")
+
+        # Save to Supabase database
         video_record = models.Video(
-            summary_id=summary_id,  # This should be the actual summary_id
+            summary_id=summary_id,
             user_id=user_id,
-            s3_path=video_path,
+            s3_path=video_url,  # stores MinIO URL in Supabase
             background_theme=theme,
             generated_at=datetime.utcnow(),
         )
-        db.add(video_record); db.commit()
+        db.add(video_record)
+        db.commit()
 
-        _video_jobs[summary_id]["status"]    = "done"
-        _video_jobs[summary_id]["video_url"] = f"/videos/{filename}"
-        print(f"[VideoGen] ✅ Done: {filename} for summary_id={summary_id}")
+        _video_jobs[summary_id]["status"] = "done"
+        _video_jobs[summary_id]["video_url"] = video_url
+        print(f"[VideoGen] ✅ Done: {filename}")
 
     except Exception as e:
         _video_jobs[summary_id]["status"] = "error"
-        _video_jobs[summary_id]["error"]  = str(e)
-        print(f"[VideoGen] ❌ Failed for summary_id={summary_id}: {e}")
+        _video_jobs[summary_id]["error"] = str(e)
+        print(f"[VideoGen] ❌ Failed: {e}")
     finally:
         db.close()
-
-
 @app.get("/api/video-status/{summary_id}")
 def video_status(summary_id: int):
     job = _video_jobs.get(summary_id)
@@ -394,8 +473,54 @@ def my_summaries(email: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="User not found")
     summaries = db.query(models.Summary).filter(models.Summary.user_id == user.id).all()
     return {"summaries": [s.to_dict() for s in summaries]}
+@app.get("/api/my-notebooks")
+def my_notebooks(email: str, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+    notebooks = db.query(models.Notebook).filter(
+        models.Notebook.user_id == user.id
+    ).order_by(models.Notebook.created_at.desc()).all()
+    return {"notebooks": [n.to_dict() for n in notebooks]}
+@app.get("/api/notebook/{notebook_id}")
+def get_notebook_detail(notebook_id: int, email: str, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
 
+    notebook = db.query(models.Notebook).filter(
+        models.Notebook.id == notebook_id,
+        models.Notebook.user_id == user.id
+    ).first()
+    if not notebook:
+        raise HTTPException(status_code=404, detail="Notebook not found")
 
+    # Get summary for this document
+    summary = db.query(models.Summary).filter(
+        models.Summary.document_id == notebook.document_id,
+        models.Summary.user_id == user.id
+    ).order_by(models.Summary.generated_at.desc()).first()
+
+    # Get flashcards, quizzes, videos linked to that summary
+    flashcards, quizzes, videos = [], [], []
+    if summary:
+        flashcards = db.query(models.Flashcard).filter(
+            models.Flashcard.summary_id == summary.id
+        ).all()
+        quizzes = db.query(models.Quiz).filter(
+            models.Quiz.summary_id == summary.id
+        ).all()
+        videos = db.query(models.Video).filter(
+            models.Video.summary_id == summary.id
+        ).all()
+
+    return {
+        "notebook": notebook.to_dict(),
+        "summary":    summary.to_dict() if summary else None,
+        "flashcards": [f.to_dict() for f in flashcards],
+        "quizzes":    [q.to_dict() for q in quizzes],
+        "videos":     [v.to_dict() for v in videos],
+    }
 # ── Run ───────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     import uvicorn

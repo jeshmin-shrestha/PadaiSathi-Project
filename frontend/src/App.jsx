@@ -11,11 +11,16 @@ import VideoPage from './pages/VideoPage';
 import QuizPage from './pages/QuizPage';
 import FlashcardsPage from './pages/FlashcardsPage';
 import NotebookPage from './pages/NotebookPage';
+import NotebookDetailPage from './pages/NotebookDetailPage'; // ← ADD THIS
 import './App.css';
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return !!localStorage.getItem('user');
+  });
+  const [user, setUser] = useState(() => {
+    return JSON.parse(localStorage.getItem('user')) || null;
+  });
 
   return (
     <Router>
@@ -34,7 +39,7 @@ function App() {
               <Register setIsAuthenticated={setIsAuthenticated} setUser={setUser} />
           } />
           
-          {/* Protected Routes (Need Login) */}
+          {/* Protected Routes */}
           <Route path="/dashboard" element={
             isAuthenticated ? (
               user?.role === 'admin' ? 
@@ -65,6 +70,11 @@ function App() {
           
           <Route path="/notebook" element={
             isAuthenticated ? <NotebookPage /> : <Navigate to="/login" />
+          } />
+
+          {/* ← ADD THIS new route for notebook detail */}
+          <Route path="/notebook/:id" element={
+            isAuthenticated ? <NotebookDetailPage /> : <Navigate to="/login" />
           } />
           
           {/* 404 Page */}

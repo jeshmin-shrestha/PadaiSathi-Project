@@ -8,17 +8,17 @@ const SummaryPage = () => {
   const [uploadedFile, setUploadedFile] = useState(null);
   const [summary, setSummary] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [username, setUsername] = useState('');
   const [userEmail, setUserEmail] = useState('');
-
   // Get user email on component mount
   useEffect(() => {
-    const email = localStorage.getItem('userEmail');
-    if (email) {
-      setUserEmail(email);
-    } else {
-      // For demo purposes
-      setUserEmail('demo@padai.com');
+    const storedUser = JSON.parse(localStorage.getItem('user'));
+    if (!storedUser) {
+      window.location.href = '/login';
+      return;
     }
+    setUserEmail(storedUser.email);
+    setUsername(storedUser.username); 
   }, []);
 
   const handleDrag = (e) => {
@@ -129,7 +129,7 @@ const SummaryPage = () => {
         <div className="bg-gray-300 rounded-3xl p-8 mb-8 flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Hello {userEmail.split('@')[0]}!
+              Hello {username}!
             </h1>
             <p className="text-gray-700">
               Transform your documents into interactive learning materials

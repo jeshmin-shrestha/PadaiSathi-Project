@@ -27,9 +27,13 @@ const QuizPage = () => {
 
   // ── Load user + summaries on mount ────────────────────────────────────────
   useEffect(() => {
-    const email = localStorage.getItem('userEmail') || 'demo@padai.com';
-    setUserEmail(email);
-    fetchSummaries(email);
+    const storedUser = JSON.parse(localStorage.getItem('user'));
+    if (!storedUser) {
+      window.location.href = '/login'; // redirect if not logged in
+      return;
+    }
+    setUserEmail(storedUser.email);
+    fetchSummaries(storedUser.email);
   }, []);
 
   const fetchSummaries = async (email) => {

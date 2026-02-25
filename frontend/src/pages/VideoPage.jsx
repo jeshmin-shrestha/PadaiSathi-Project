@@ -13,6 +13,7 @@ const VideoPage = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [videoUrl, setVideoUrl] = useState(null);
   const [videoStatus, setVideoStatus] = useState(null);
+  const [username, setUsername] = useState('');
   const [userEmail, setUserEmail] = useState('');
   const [availableSummaries, setAvailableSummaries] = useState([]);
   const [selectedSummaryId, setSelectedSummaryId] = useState(null);
@@ -27,9 +28,14 @@ const VideoPage = () => {
   }, [selectedSummaryId]);
 
   useEffect(() => {
-    const email = localStorage.getItem('userEmail') || 'demo@padai.com';
-    setUserEmail(email);
-    fetchSummaries(email);
+    const storedUser = JSON.parse(localStorage.getItem('user'));
+    if (!storedUser) {
+      window.location.href = '/login';
+      return;
+    }
+    setUserEmail(storedUser.email);
+    setUsername(storedUser.username); // ← add this line
+    fetchSummaries(storedUser.email);
   }, []);
 
   const fetchSummaries = async (email) => {
@@ -151,8 +157,12 @@ const VideoPage = () => {
       console.log('[VideoPage] Status for', summaryId, ':', data.status);
       setVideoStatus(data.status);
 
-      if (data.status === 'done' && data.video_url) {
-        setVideoUrl(`http://localhost:8000${data.video_url}`);
+      // handles both MinIO and local URLs
+      if (data.status === 'done') {
+        const url = data.video_url?.startsWith('http')
+          ? data.video_url
+          : `http://localhost:8000${data.video_url}`;
+        setVideoUrl(url);
         setVideoGenerated(true);
         setIsGenerating(false);
       } else if (data.status === 'error') {
@@ -231,7 +241,9 @@ const VideoPage = () => {
         {/* Hero Banner */}
         <div className="bg-gray-300 rounded-3xl p-8 mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Upload & Generate</h1>
+            
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Hello {username}! 🎬</h1>
+            <p className="text-gray-700 font-medium">Upload & Generate</p>
             <p className="text-gray-700">Transform your summaries into engaging videos</p>
           </div>
           <img src={Icon1Image} alt="icon" className="w-32 h-32 object-contain" />
