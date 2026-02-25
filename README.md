@@ -2,7 +2,7 @@
 
 <div align="center">
   
-  ![PadaiSathi Logo](frontend/src/assets/images/chickenicon.png)
+  ![PadaiSathi Logo](frontend/src/assets/images/logo1.png)
   
   **Learn Smarter, Not Harder!**
   
