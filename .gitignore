@@ -47,3 +47,7 @@ Thumbs.db
 # Frontend video assets
 frontend/src/assets/backgrounds/*.mp4
 frontend/src/assets/videos/
+
+# Video files
+*.mp4
+frontend/src/assets/backgrounds/*.mp4
