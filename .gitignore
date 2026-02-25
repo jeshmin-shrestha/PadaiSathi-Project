@@ -44,3 +44,6 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+# Frontend video assets
+frontend/src/assets/backgrounds/*.mp4
+frontend/src/assets/videos/
