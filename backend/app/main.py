@@ -310,7 +310,7 @@ def summarize_document(req: SummarizeRequest, db: Session = Depends(get_db)):
     if not doc.extracted_text or len(doc.extracted_text.strip()) < 50:
         raise HTTPException(status_code=400, detail="Document has no extractable text. Try re-uploading the PDF.")
 
-    print(f"[Summarize] Running BART on doc_id={doc.id} ({len(doc.extracted_text)} chars)…")
+    print(f"[Summarize] Running jeshmin mistral on doc_id={doc.id} ({len(doc.extracted_text)} chars)…")
 
     try:
         result = summarize(doc.extracted_text, genz_style=req.genz_style)
