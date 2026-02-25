@@ -51,3 +51,7 @@ frontend/src/assets/videos/
 # Video files
 *.mp4
 frontend/src/assets/backgrounds/*.mp4
+
+# Environment variables
+.env
+*.env
