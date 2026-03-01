@@ -521,6 +521,56 @@ def get_notebook_detail(notebook_id: int, email: str, db: Session = Depends(get_
         "quizzes":    [q.to_dict() for q in quizzes],
         "videos":     [v.to_dict() for v in videos],
     }
+# ═══════════════════════════════════════════════════════════════════════════
+# ADD THESE TWO ROUTES to main.py  (paste anywhere after the existing routes)
+# ═══════════════════════════════════════════════════════════════════════════
+
+from pydantic import BaseModel
+
+class UpdateProfileRequest(BaseModel):
+    email: str
+    avatar: str = None          # e.g. "wizard", "robot", etc.
+
+class ChangePasswordRequest(BaseModel):
+    email: str
+    current_password: str
+    new_password: str
+
+
+@app.put("/api/update-profile")
+def update_profile(req: UpdateProfileRequest, db: Session = Depends(get_db)):
+    """Update avatar (and any future profile fields)."""
+    user = db.query(models.User).filter(models.User.email == req.email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if req.avatar is not None:
+        user.avatar = req.avatar          # make sure you add  avatar = Column(String(50), nullable=True)  to the User model
+
+    db.commit()
+    db.refresh(user)
+
+    # Return updated user dict so the frontend can refresh localStorage
+    return {"success": True, "user": user.to_dict()}
+
+
+@app.put("/api/change-password")
+def change_password(req: ChangePasswordRequest, db: Session = Depends(get_db)):
+    """Verify current password then set new one."""
+    user = db.query(models.User).filter(models.User.email == req.email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if not simple_verify_password(req.current_password, user.password_hash):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+
+    if len(req.new_password) < 6:
+        raise HTTPException(status_code=400, detail="New password must be at least 6 characters")
+
+    user.password_hash = simple_hash_password(req.new_password)
+    db.commit()
+
+    return {"success": True, "message": "Password updated successfully"}
 # ── Run ───────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     import uvicorn

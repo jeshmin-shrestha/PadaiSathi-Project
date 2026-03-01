@@ -14,6 +14,7 @@ class User(Base):
     role          = Column(String(20), default="student")
     points        = Column(Integer, default=100)
     streak        = Column(Integer, default=1)
+    avatar = Column(String(50), nullable=True, default="student")
     created_at    = Column(DateTime, default=datetime.utcnow)
 
     documents  = relationship("Document",  back_populates="user")
@@ -31,6 +32,7 @@ class User(Base):
             "role":     self.role,
             "points":   self.points,
             "streak":   self.streak,
+            "avatar": self.avatar or "student",
         }
 
 
