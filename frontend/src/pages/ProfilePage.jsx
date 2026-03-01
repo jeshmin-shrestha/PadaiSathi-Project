@@ -4,18 +4,18 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 
 const AVATARS = [
-  { id: 'avatar1',  img: '/avatars/avatar1.jpeg',  label: 'Avatar 1',  bg: 'from-green-400 to-green-600' },
-  { id: 'avatar2',  img: '/avatars/avatar2.jpeg',  label: 'Avatar 2',  bg: 'from-pink-400 to-pink-600' },
-  { id: 'avatar3',  img: '/avatars/avatar2.jpeg',  label: 'Avatar 3',  bg: 'from-blue-400 to-blue-600' },
-  { id: 'avatar4',  img: '/avatars/avatar2.jpeg',  label: 'Avatar 4',  bg: 'from-purple-400 to-purple-600' },
-  { id: 'avatar5',  img: '/avatars/avatar1.jpeg',  label: 'Avatar 5',  bg: 'from-gray-600 to-gray-800' },
-  { id: 'avatar6',  img: '/avatars/avatar2.jpeg',  label: 'Avatar 6',  bg: 'from-amber-400 to-orange-500' },
-  { id: 'avatar7',  img: '/avatars/avatar1.jpeg',  label: 'Avatar 7',  bg: 'from-cyan-400 to-cyan-600' },
-  { id: 'avatar8',  img: '/avatars/avatar1.jpeg',  label: 'Avatar 8',  bg: 'from-lime-400 to-lime-600' },
-  { id: 'avatar9',  img: '/avatars/avatar2.jpeg',  label: 'Avatar 9',  bg: 'from-red-400 to-orange-500' },
-  { id: 'avatar10', img: '/avatars/avatar2.jpeg', label: 'Avatar 10', bg: 'from-yellow-400 to-yellow-500' },
-  { id: 'avatar11', img: '/avatars/avatar1.jpeg', label: 'Avatar 11', bg: 'from-sky-300 to-indigo-400' },
-  { id: 'avatar12', img: '/avatars/avatar1.jpeg', label: 'Avatar 12', bg: 'from-yellow-500 to-amber-600' },
+  { id: 'avatar1',  img: '/avatars/avatar1.jpeg',  label: 'Student',  bg: 'from-green-400 to-green-600' },
+  { id: 'avatar2',  img: '/avatars/avatar2.jpeg',  label: 'Wizard',  bg: 'from-pink-400 to-pink-600' },
+  { id: 'avatar3',  img: '/avatars/avatar3.jpeg',  label: 'Nerd',  bg: 'from-blue-400 to-blue-600' },
+  { id: 'avatar4',  img: '/avatars/avatar12.jpeg',  label: 'Gamer',  bg: 'from-purple-400 to-purple-600' },
+  { id: 'avatar5',  img: '/avatars/avatar5.jpeg',  label: 'Champion',  bg: 'from-gray-600 to-gray-800' },
+  { id: 'avatar6',  img: '/avatars/avatar4.jpeg',  label: 'Artist',  bg: 'from-amber-400 to-orange-500' },
+  { id: 'avatar7',  img: '/avatars/avatar6.jpeg',  label: 'Ballerina Cappucina',  bg: 'from-cyan-400 to-cyan-600' },
+  { id: 'avatar8',  img: '/avatars/avatar7.jpeg',  label: 'Cappuccino Assassino ',  bg: 'from-lime-400 to-lime-600' },
+  { id: 'avatar9',  img: '/avatars/avatar8.jpeg',  label: 'Tralalero Tralala',  bg: 'from-red-400 to-orange-500' },
+  { id: 'avatar10', img: '/avatars/avatar9.jpeg', label: 'Harry Potter', bg: 'from-yellow-400 to-yellow-500' },
+  { id: 'avatar11', img: '/avatars/avatar10.jpeg', label: 'One Piece', bg: 'from-sky-300 to-indigo-400' },
+  { id: 'avatar12', img: '/avatars/avatar11.jpeg', label: 'Roblux', bg: 'from-yellow-500 to-amber-600' },
 ];
 
 const API = 'http://127.0.0.1:8000';

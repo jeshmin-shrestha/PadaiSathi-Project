@@ -398,6 +398,7 @@ def get_leaderboard(email: str, db: Session = Depends(get_db)):
             "rank": i + 1,
             "username": u.username,
             "points": u.points,
+            "avatar": u.avatar,
             "is_you": u.email == email
         }
         leaderboard.append(entry)
