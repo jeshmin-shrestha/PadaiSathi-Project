@@ -15,16 +15,29 @@ from sqlalchemy.orm import Session
 from . import models
 from .database import engine, get_db, Base
 
+
+# google auth
+from starlette.requests import Request
+from starlette.responses import RedirectResponse, JSONResponse
+from .auth import oauth, create_access_token, GOOGLE_REDIRECT_URI, FRONTEND_URL
+import secrets
+import httpx
+import json
+
+
+
 # ── AI modules ────────────────────────────────────────────────────────────────
 from .ai.pdf_extractor   import extract_text_from_pdf
 from .ai.summarizer      import summarize
 from .ai.video_generator import generate_video
-
 # ── DB ────────────────────────────────────────────────────────────────────────
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="PadaiSathi API", version="2.0")
-
+# Add SessionMiddleware 
+from starlette.middleware.sessions import SessionMiddleware
+import secrets
+app.add_middleware(SessionMiddleware, secret_key=os.getenv("SECRET_KEY", secrets.token_urlsafe(32)))
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000"],
@@ -572,6 +585,195 @@ def change_password(req: ChangePasswordRequest, db: Session = Depends(get_db)):
     db.commit()
 
     return {"success": True, "message": "Password updated successfully"}
+
+
+
+
+# ============================================================================
+# Google OAuth Routes
+# ============================================================================
+
+@app.get("/api/auth/google/login")
+async def google_login(request: Request):
+    """Redirect to Google login"""
+    # Generate a random state for CSRF protection
+    state = secrets.token_urlsafe(32)
+    request.session['oauth_state'] = state
+    
+    redirect_uri = GOOGLE_REDIRECT_URI
+    
+    return await oauth.google.authorize_redirect(request, redirect_uri, state=state)
+
+@app.get("/api/auth/google/callback")
+async def google_callback(request: Request, db: Session = Depends(get_db)):
+    """Handle Google OAuth callback"""
+    try:
+        # Verify state to prevent CSRF
+        state = request.query_params.get('state')
+        if not state or state != request.session.get('oauth_state'):
+            raise HTTPException(status_code=400, detail="Invalid state parameter")
+        
+        # Get token from Google
+        token = await oauth.google.authorize_access_token(request)
+        
+        # Get user info from Google
+        userinfo = token.get('userinfo')
+        if not userinfo:
+            # Fallback: get userinfo from Google's API
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(
+                    'https://www.googleapis.com/oauth2/v3/userinfo',
+                    headers={'Authorization': f'Bearer {token["access_token"]}'}
+                )
+                userinfo = resp.json()
+        
+        # Extract user details
+        google_id = userinfo.get('sub')
+        email = userinfo.get('email')
+        name = userinfo.get('name')
+        picture = userinfo.get('picture')
+        
+        if not email:
+            raise HTTPException(status_code=400, detail="Email not provided by Google")
+        
+        # Check if user exists
+        user = db.query(models.User).filter(models.User.email == email).first()
+        
+        if not user:
+            # Create new user using the name from Google
+            # Use the full name from Google if available, otherwise fall back to email
+            if name and name.strip():
+                # Clean the name: remove extra spaces, etc.
+                clean_name = " ".join(name.split())  # This removes extra spaces
+                username = clean_name
+            else:
+                # Fallback to email prefix if no name provided
+                username = email.split('@')[0]
+            
+            # Make sure username is unique (add number if needed)
+            counter = 1
+            original_username = username
+            while db.query(models.User).filter(models.User.username == username).first():
+                username = f"{original_username}{counter}"
+                counter += 1
+            
+            # Create random password (user will use Google login, so password doesn't matter)
+            random_password = secrets.token_urlsafe(16)
+                    
+            # Create random password (user will use Google login, so password doesn't matter)
+            random_password = secrets.token_urlsafe(16)
+            
+            new_user = models.User(
+                username=username,
+                email=email,
+                password_hash=simple_hash_password(random_password),
+                role="student",
+                points=100,
+                streak=1,
+                avatar="avatar1",  # Default avatar
+                created_at=datetime.utcnow()
+            )
+            db.add(new_user)
+            db.commit()
+            db.refresh(new_user)
+            user = new_user
+            
+            # Give bonus points for Google signup
+            user.points = (user.points or 0) + 50
+            db.commit()
+        
+        # Create JWT token for your app
+        access_token = create_access_token(
+            data={"sub": user.email, "user_id": user.id, "username": user.username}
+        )
+        
+        # Redirect to frontend with token
+        frontend_url = f"{FRONTEND_URL}/auth/callback?token={access_token}&email={user.email}&username={user.username}&avatar={user.avatar}"
+        return RedirectResponse(url=frontend_url)
+        
+    except Exception as e:
+        print(f"Google OAuth error: {str(e)}")
+        return RedirectResponse(url=f"{FRONTEND_URL}/login?error=auth_failed")
+
+@app.post("/api/auth/google/token")
+async def google_token_auth(request: Request, db: Session = Depends(get_db)):
+    """Alternative: Exchange Google token for app token (for frontend Google Sign-In)"""
+    try:
+        data = await request.json()
+        token = data.get('token')
+        
+        if not token:
+            raise HTTPException(status_code=400, detail="Token required")
+        
+        # Verify the token with Google
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(
+                'https://www.googleapis.com/oauth2/v3/userinfo',
+                headers={'Authorization': f'Bearer {token}'}
+            )
+            if resp.status_code != 200:
+                raise HTTPException(status_code=400, detail="Invalid token")
+            
+            userinfo = resp.json()
+        
+        email = userinfo.get('email')
+        name = userinfo.get('name')
+        
+        if not email:
+            raise HTTPException(status_code=400, detail="Email not provided")
+        
+        # Check if user exists
+        user = db.query(models.User).filter(models.User.email == email).first()
+        
+        if not user:
+            # Create new user using the name from Google
+            if name and name.strip():
+                clean_name = " ".join(name.split())
+                username = clean_name
+            else:
+                username = email.split('@')[0]
+            
+            counter = 1
+            original_username = username
+            while db.query(models.User).filter(models.User.username == username).first():
+                username = f"{original_username}{counter}"
+                counter += 1
+                    
+            random_password = secrets.token_urlsafe(16)
+            
+            new_user = models.User(
+                username=username,
+                email=email,
+                password_hash=simple_hash_password(random_password),
+                role="student",
+                points=150,  # Bonus for Google signup
+                streak=1,
+                avatar="avatar1",
+                created_at=datetime.utcnow()
+            )
+            db.add(new_user)
+            db.commit()
+            db.refresh(new_user)
+            user = new_user
+        
+        # Return user data
+        return {
+            "success": True,
+            "user": user.to_dict(),
+            "message": f"Welcome {user.username}!"
+        }
+        
+    except Exception as e:
+        print(f"Google token auth error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/auth/user")
+def get_current_user(email: str, db: Session = Depends(get_db)):
+    """Get current user by email (for token validation)"""
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user.to_dict()
 # ── Run ───────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     import uvicorn

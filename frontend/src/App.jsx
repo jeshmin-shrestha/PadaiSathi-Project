@@ -13,7 +13,7 @@ import FlashcardsPage from './pages/FlashcardsPage';
 import NotebookPage from './pages/NotebookPage';
 import NotebookDetailPage from './pages/NotebookDetailPage'; // ← ADD THIS
 import './App.css';
-
+import AuthCallback from './pages/AuthCallback';
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     return !!localStorage.getItem('user');
@@ -71,7 +71,10 @@ function App() {
           <Route path="/notebook" element={
             isAuthenticated ? <NotebookPage /> : <Navigate to="/login" />
           } />
-
+          <Route 
+            path="/auth/callback" 
+            element={<AuthCallback setIsAuthenticated={setIsAuthenticated} setUser={setUser} />} 
+          />
           {/* ← ADD THIS new route for notebook detail */}
           <Route path="/notebook/:id" element={
             isAuthenticated ? <NotebookDetailPage /> : <Navigate to="/login" />

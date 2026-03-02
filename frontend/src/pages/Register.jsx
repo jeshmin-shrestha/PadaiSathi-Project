@@ -228,8 +228,15 @@ const Register = ({ setIsAuthenticated, setUser }) => {
                 <span className="mr-1 text-blue-600 font-bold text-xs">f</span>
                 <span className="text-gray-700">Facebook</span>
               </button>
-              <button className="flex items-center justify-center py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition text-xs">
-                <span className="mr-1 text-red-600 font-bold text-xs">G</span>
+              <button 
+                onClick={() => window.location.href = 'http://localhost:8000/api/auth/google/login'}
+                className="flex items-center justify-center py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition text-xs"
+              >
+                <span className="mr-1">
+                  <svg className="w-5 h-5" viewBox="0 0 24 24">
+                    {/* Same SVG paths as above */}
+                  </svg>
+                </span>
                 <span className="text-gray-700">Google</span>
               </button>
             </div>
