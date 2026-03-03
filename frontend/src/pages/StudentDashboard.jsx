@@ -42,13 +42,9 @@ const StudentDashboard = () => {
     videos: 0,
   });
 
-  const badges = [
-    { id: 1, name: 'First Steps', icon: '🦉' },
-    { id: 2, name: 'Quiz Master', icon: '🏆' },
-    { id: 3, name: 'Video Watcher', icon: '📚' },
-    { id: 4, name: 'Speed Learner', icon: '⚡' }
-  ];
-
+  const [badges, setBadges] = useState([]);
+  const [earnedCount, setEarnedCount] = useState(0);
+  const [showAllBadges, setShowAllBadges] = useState(false);
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem('user'));
     if (!storedUser) {
@@ -64,6 +60,7 @@ const StudentDashboard = () => {
     }));
     fetchLeaderboard(storedUser.email);
     fetchStats(storedUser.email);
+    fetchBadges(storedUser.email);
   }, []);
 
   const fetchLeaderboard = async (email) => {
@@ -94,6 +91,16 @@ const StudentDashboard = () => {
       console.error('Stats error:', err);
     }
   };
+  const fetchBadges = async (email) => {
+  try {
+    const res = await fetch(`http://localhost:8000/api/my-badges?email=${email}`);
+    const data = await res.json();
+    setBadges(data.badges || []);
+    setEarnedCount(data.earned_count || 0);
+  } catch (err) {
+    console.error('Badges error:', err);
+  }
+};
 
   // Helper to get podium order: [2nd, 1st, 3rd]
   const top3 = leaderboard.slice(0, 3);
@@ -284,22 +291,88 @@ const StudentDashboard = () => {
               )}
             </div>
 
+            {/* Badges Section - Redesigned */}
             {/* Badges */}
             <div className="bg-white rounded-3xl p-8 border-4 border-black">
-              <h3 className="text-xl font-bold text-gray-900 mb-6 text-center">Your Badges</h3>
-              <div className="text-center mb-6">
-                <div className="text-6xl mb-2">🏆</div>
-                <div className="text-sm text-gray-600">Total Points</div>
-                <div className="text-3xl font-bold text-gray-900">{userStats.points}</div>
+
+              {/* Header */}
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center space-x-2">
+                  <span className="text-3xl">🏅</span>
+                  <h3 className="text-xl font-bold text-gray-900">Your Badges</h3>
+                </div>
+                <span className="bg-black text-white text-xs font-bold px-3 py-1 rounded-full">
+                  {earnedCount} / {badges.length}
+                </span>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                {badges.map((badge) => (
-                  <div key={badge.id} className="bg-gray-50 rounded-xl p-4 text-center border-2 border-gray-300">
-                    <div className="text-5xl mb-2">{badge.icon}</div>
-                    <div className="text-xs font-semibold text-gray-700">{badge.name}</div>
-                  </div>
-                ))}
+
+              {/* Progress bar */}
+              <div className="w-full bg-gray-200 rounded-full h-3 mb-6 overflow-hidden">
+                <div
+                  className="bg-gradient-to-r from-yellow-400 to-orange-500 h-full rounded-full transition-all duration-700"
+                  style={{ width: badges.length ? `${(earnedCount / badges.length) * 100}%` : '0%' }}
+                />
               </div>
+
+              {/* Earned badges */}
+              {earnedCount === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-5xl mb-3">🔒</p>
+                  <p className="text-gray-500 font-medium">No badges earned yet!</p>
+                  <p className="text-gray-400 text-sm mt-1">Start learning to unlock your first badge.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  {badges
+                    .filter(b => b.earned)
+                    .map((badge) => (
+                      <div
+                        key={badge.id}
+                        title={`Earned: ${new Date(badge.earned_at).toLocaleDateString()}`}
+                        className="rounded-2xl p-4 border-4 border-black bg-white text-center"
+                      >
+                        <img
+                          src={`/badges/${badge.id}.jpeg`}
+                          alt={badge.name}
+                          className="w-14 h-14 object-contain mx-auto mb-2"
+                        />
+                        <div className="text-xs font-bold text-gray-900 leading-tight">{badge.name}</div>
+                      </div>
+                    ))}
+                </div>
+              )}
+
+              {/* See All toggle */}
+              <button
+                onClick={() => setShowAllBadges(prev => !prev)}
+                className="w-full py-2 rounded-xl border-2 border-black text-sm font-bold text-gray-700 hover:bg-gray-100 transition"
+              >
+                {showAllBadges ? '▲ Hide locked badges' : `▼ See all badges (${badges.length - earnedCount} locked)`}
+              </button>
+
+              {/* Locked badges — only shown when expanded */}
+              {showAllBadges && (
+                <div className="grid grid-cols-2 gap-3 mt-4">
+                  {badges
+                    .filter(b => !b.earned)
+                    .map((badge) => (
+                      <div
+                        key={badge.id}
+                        title={`🔒 ${badge.description}`}
+                        className="rounded-2xl p-4 border-4 border-gray-200 bg-gray-100 text-center opacity-50"
+                      >
+                        <img
+                          src={`/badges/${badge.id}.png`}
+                          alt={badge.name}
+                          className="w-14 h-14 object-contain mx-auto mb-2 grayscale"
+                        />
+                        <div className="text-xs font-bold text-gray-500 leading-tight">{badge.name}</div>
+                        <div className="text-xs text-gray-400 mt-1">🔒 {badge.description}</div>
+                      </div>
+                    ))}
+                </div>
+              )}
+
             </div>
           </div>
         </div>

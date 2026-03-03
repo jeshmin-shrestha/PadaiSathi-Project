@@ -64,7 +64,26 @@ def simple_verify_password(plain: str, hashed: str) -> bool:
 # ── Video job tracker (in-memory) ─────────────────────────────────────────────
 _video_jobs: dict = {}   # { summary_id: {status, video_url, error} }
 
-
+# badges definiations
+BADGE_DEFINITIONS = [
+    { "id": "first_steps",           "name": "First Steps",           "icon": "🐣", "description": "Upload your first document" },
+    { "id": "summary_rookie",        "name": "Summary Rookie",        "icon": "📝", "description": "Generate 3 summaries" },
+    { "id": "summary_sensei",        "name": "Summary Sensei",        "icon": "🧠", "description": "Generate 10 summaries" },
+    { "id": "flashcard_apprentice",  "name": "Flashcard Apprentice",  "icon": "📇", "description": "Generate 25 flashcards" },
+    { "id": "flashcard_god",         "name": "Flashcard God",         "icon": "⚡", "description": "Generate 100 flashcards" },
+    { "id": "quiz_rookie",           "name": "Quiz Rookie",           "icon": "❓", "description": "Complete 10 quiz questions" },
+    { "id": "quiz_champion",         "name": "Quiz Champion",         "icon": "🏆", "description": "Complete 50 quiz questions" },
+    { "id": "video_creator",         "name": "Video Creator",         "icon": "🎬", "description": "Generate 3 videos" },
+    { "id": "notebook_collector",    "name": "Notebook Collector",    "icon": "📓", "description": "Create 5 notebooks" },
+    { "id": "notebook_hoarder",      "name": "Notebook Hoarder",      "icon": "🗂️", "description": "Create 15 notebooks" },
+    { "id": "point_grinder",         "name": "Point Grinder",         "icon": "💰", "description": "Reach 500 points" },
+    { "id": "point_millionaire",     "name": "Point Millionaire",     "icon": "👑", "description": "Reach 2000 points" },
+    { "id": "streak_starter",        "name": "Streak Starter",        "icon": "🔥", "description": "3-day streak" },
+    { "id": "streak_warrior",        "name": "Streak Warrior",        "icon": "⚔️", "description": "30-day streak" },
+    { "id": "streak_veteran",        "name": "Streak Veteran",        "icon": "🛡️", "description": "60-day streak" },
+    { "id": "streak_legend",         "name": "Streak Legend",         "icon": "💎", "description": "90-day streak" },
+    { "id": "overachiever",          "name": "Overachiever",          "icon": "🌟", "description": "Unlock every other badge" },
+]
 # ═════════════════════════════════════════════════════════════════════════════
 # Pydantic models
 # ═════════════════════════════════════════════════════════════════════════════
@@ -209,6 +228,8 @@ async def upload_pdf(
     user.points = (user.points or 0) + 10
     db.commit()
     db.refresh(notebook)
+    _check_and_award_badges(user_id, db)
+
 
     return {
         "success": True,
@@ -259,6 +280,8 @@ def generate_flashcards(req: ContentRequest, db: Session = Depends(get_db)):
     user.points = (user.points or 0) + 10
     db.commit()
 
+    _check_and_award_badges(user.id, db)
+
     return {
         "success": True,
         "flashcards": saved_flashcards,
@@ -297,6 +320,8 @@ def generate_quiz(req: ContentRequest, db: Session = Depends(get_db)):
 
     user.points = (user.points or 0) + 10
     db.commit()
+
+    _check_and_award_badges(user.id, db)
 
     return {
         "success": True,
@@ -340,6 +365,7 @@ def summarize_document(req: SummarizeRequest, db: Session = Depends(get_db)):
     db.add(summary_record)
     user.points = (user.points or 0) + 20
     db.commit(); db.refresh(summary_record)
+    _check_and_award_badges(user.id, db)
 
     return {
         "success": True,
@@ -454,6 +480,8 @@ def _run_video_pipeline(summary_id: int, genz_text: str, theme: str, user_id: in
         )
         db.add(video_record)
         db.commit()
+        _check_and_award_badges(user.id, db)
+
 
         _video_jobs[summary_id]["status"] = "done"
         _video_jobs[summary_id]["video_url"] = video_url
@@ -828,7 +856,114 @@ def my_stats(email: str, db: Session = Depends(get_db)):
         "videos":     videos,
     }
 
+def _check_and_award_badges(user_id: int, db: Session):
+    """Call this after any action to auto-award new badges."""
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        return []
 
+    # Get already earned badge ids
+    earned_ids = {
+        b.badge_id for b in db.query(models.UserBadge).filter(
+            models.UserBadge.user_id == user_id
+        ).all()
+    }
+
+    # Fetch current stats
+    documents  = db.query(models.Document).filter(models.Document.user_id == user_id).count()
+    summaries  = db.query(models.Summary).filter(models.Summary.user_id == user_id).count()
+    flashcards = db.query(models.Flashcard).filter(models.Flashcard.user_id == user_id).count()
+    quizzes    = db.query(models.Quiz).filter(models.Quiz.user_id == user_id).count()
+    videos     = db.query(models.Video).filter(models.Video.user_id == user_id).count()
+    notebooks  = db.query(models.Notebook).filter(models.Notebook.user_id == user_id).count()
+    points     = user.points or 0
+    streak     = user.streak or 0
+
+    # Badge conditions map
+    conditions = {
+        "first_steps":          documents  >= 1,
+        "summary_rookie":       summaries  >= 3,
+        "summary_sensei":       summaries  >= 10,
+        "flashcard_apprentice": flashcards >= 25,
+        "flashcard_god":        flashcards >= 100,
+        "quiz_rookie":          quizzes    >= 10,
+        "quiz_champion":        quizzes    >= 50,
+        "video_creator":        videos     >= 3,
+        "notebook_collector":   notebooks  >= 5,
+        "notebook_hoarder":     notebooks  >= 15,
+        "point_grinder":        points     >= 500,
+        "point_millionaire":    points     >= 2000,
+        "streak_starter":       streak     >= 3,
+        "streak_warrior":       streak     >= 30,
+        "streak_veteran":       streak     >= 60,
+        "streak_legend":        streak     >= 90,
+    }
+
+    newly_earned = []
+    for badge_id, condition_met in conditions.items():
+        if condition_met and badge_id not in earned_ids:
+            db.add(models.UserBadge(
+                user_id=user_id,
+                badge_id=badge_id,
+                earned_at=datetime.utcnow()
+            ))
+            earned_ids.add(badge_id)
+            newly_earned.append(badge_id)
+
+    # Check overachiever — all other badges earned
+    all_other_ids = {b["id"] for b in BADGE_DEFINITIONS if b["id"] != "overachiever"}
+    if all_other_ids.issubset(earned_ids) and "overachiever" not in earned_ids:
+        db.add(models.UserBadge(
+            user_id=user_id,
+            badge_id="overachiever",
+            earned_at=datetime.utcnow()
+        ))
+        newly_earned.append("overachiever")
+
+    if newly_earned:
+        db.commit()
+
+    return newly_earned
+
+
+@app.get("/api/my-badges")
+def my_badges(email: str, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    # Auto-check badges on every fetch
+    _check_and_award_badges(user.id, db)
+
+    earned = {
+        b.badge_id: b.earned_at.isoformat()
+        for b in db.query(models.UserBadge).filter(
+            models.UserBadge.user_id == user.id
+        ).all()
+    }
+
+    # Return ALL badges with earned/locked status
+    result = []
+    for badge in BADGE_DEFINITIONS:
+        result.append({
+            **badge,
+            "earned":    badge["id"] in earned,
+            "earned_at": earned.get(badge["id"]),
+        })
+
+    return {"badges": result, "earned_count": len(earned), "total": len(BADGE_DEFINITIONS)}
+
+
+@app.post("/api/check-badges")
+def check_badges(data: dict, db: Session = Depends(get_db)):
+    """Call after any action to immediately award new badges."""
+    email = data.get("email")
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    newly_earned = _check_and_award_badges(user.id, db)
+    return {"newly_earned": newly_earned}
 
 # ── Run ───────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":

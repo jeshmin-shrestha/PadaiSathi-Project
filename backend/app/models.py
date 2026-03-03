@@ -197,3 +197,20 @@ class Favorite(Base):
             "notebook_id": self.notebook_id,
             "created_at":  self.created_at.isoformat(),
         }
+    
+class UserBadge(Base):
+    __tablename__ = "user_badges"
+
+    id         = Column(Integer, primary_key=True, index=True)
+    user_id    = Column(Integer, ForeignKey("users.id"), nullable=False)
+    badge_id   = Column(String(50), nullable=False)  # e.g. "first_steps"
+    earned_at  = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", backref="badges")
+
+    def to_dict(self):
+        return {
+            "id":        self.id,
+            "badge_id":  self.badge_id,
+            "earned_at": self.earned_at.isoformat(),
+        }
