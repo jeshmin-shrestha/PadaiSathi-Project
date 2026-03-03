@@ -804,6 +804,32 @@ def get_current_user(email: str, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user.to_dict()
+
+
+@app.get("/api/my-stats")
+def my_stats(email: str, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    documents  = db.query(models.Document).filter(models.Document.user_id == user.id).count()
+    summaries  = db.query(models.Summary).filter(models.Summary.user_id == user.id).count()
+    notebooks  = db.query(models.Notebook).filter(models.Notebook.user_id == user.id).count()
+    flashcards = db.query(models.Flashcard).filter(models.Flashcard.user_id == user.id).count()
+    quizzes    = db.query(models.Quiz).filter(models.Quiz.user_id == user.id).count()
+    videos     = db.query(models.Video).filter(models.Video.user_id == user.id).count()
+
+    return {
+        "documents":  documents,
+        "summaries":  summaries,
+        "notebooks":  notebooks,
+        "flashcards": flashcards,
+        "quizzes":    quizzes,
+        "videos":     videos,
+    }
+
+
+
 # ── Run ───────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     import uvicorn

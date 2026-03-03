@@ -34,10 +34,12 @@ const StudentDashboard = () => {
   const [userStats, setUserStats] = useState({
     points: 0,
     streak: 0,
-    videos: 0,
-    quizzes: 0,
-    flashcards: 0,
+    documents: 0,
+    summaries: 0,
     notebooks: 0,
+    flashcards: 0,
+    quizzes: 0,
+    videos: 0,
   });
 
   const badges = [
@@ -77,20 +79,16 @@ const StudentDashboard = () => {
 
   const fetchStats = async (email) => {
     try {
-      const [docsRes, summariesRes, notebooksRes] = await Promise.all([
-        fetch(`http://localhost:8000/api/my-documents?email=${email}`),
-        fetch(`http://localhost:8000/api/my-summaries?email=${email}`),
-        fetch(`http://localhost:8000/api/my-notebooks?email=${email}`),
-      ]);
-      const docs = await docsRes.json();
-      const summaries = await summariesRes.json();
-      const notebooks = await notebooksRes.json();
-
+      const res = await fetch(`http://localhost:8000/api/my-stats?email=${email}`);
+      const data = await res.json();
       setUserStats(prev => ({
         ...prev,
-        videos: docs.documents?.length || 0,
-        quizzes: summaries.summaries?.length || 0,
-        notebooks: notebooks.notebooks?.length || 0,
+        documents:  data.documents  || 0,
+        summaries:  data.summaries  || 0,
+        notebooks:  data.notebooks  || 0,
+        flashcards: data.flashcards || 0,
+        quizzes:    data.quizzes    || 0,
+        videos:     data.videos     || 0,
       }));
     } catch (err) {
       console.error('Stats error:', err);
@@ -163,22 +161,32 @@ const StudentDashboard = () => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-white rounded-2xl p-6 border-4 border-black text-center">
-                  <Video className="w-12 h-12 mx-auto mb-3" />
-                  <div className="text-4xl font-bold text-gray-900 mb-1">{userStats.videos}</div>
+                  <div className="text-4xl mb-2">📄</div>
+                  <div className="text-4xl font-bold text-gray-900 mb-1">{userStats.documents}</div>
                   <div className="text-sm text-gray-600">Documents</div>
                 </div>
                 <div className="bg-white rounded-2xl p-6 border-4 border-black text-center">
-                  <div className="text-5xl mb-2">❓</div>
-                  <div className="text-4xl font-bold text-gray-900 mb-1">{userStats.quizzes}</div>
+                  <div className="text-4xl mb-2">📝</div>
+                  <div className="text-4xl font-bold text-gray-900 mb-1">{userStats.summaries}</div>
                   <div className="text-sm text-gray-600">Summaries</div>
                 </div>
                 <div className="bg-white rounded-2xl p-6 border-4 border-black text-center">
-                  <div className="text-5xl mb-2">📇</div>
+                  <div className="text-4xl mb-2">📇</div>
                   <div className="text-4xl font-bold text-gray-900 mb-1">{userStats.flashcards}</div>
                   <div className="text-sm text-gray-600">Flashcards</div>
                 </div>
                 <div className="bg-white rounded-2xl p-6 border-4 border-black text-center">
-                  <BookOpen className="w-12 h-12 mx-auto mb-3 text-green-700" />
+                  <div className="text-4xl mb-2">❓</div>
+                  <div className="text-4xl font-bold text-gray-900 mb-1">{userStats.quizzes}</div>
+                  <div className="text-sm text-gray-600">Quizzes</div>
+                </div>
+                <div className="bg-white rounded-2xl p-6 border-4 border-black text-center">
+                  <div className="text-4xl mb-2">🎬</div>
+                  <div className="text-4xl font-bold text-gray-900 mb-1">{userStats.videos}</div>
+                  <div className="text-sm text-gray-600">Videos</div>
+                </div>
+                <div className="bg-white rounded-2xl p-6 border-4 border-black text-center">
+                  <BookOpen className="w-10 h-10 mx-auto mb-2 text-green-700" />
                   <div className="text-4xl font-bold text-gray-900 mb-1">{userStats.notebooks}</div>
                   <div className="text-sm text-gray-600">Notebooks</div>
                 </div>
