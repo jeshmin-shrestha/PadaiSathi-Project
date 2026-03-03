@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Star } from 'lucide-react';
+import { Search, Star } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Icon2Image from '../assets/images/icon2.png';
 import Icon3Image from '../assets/images/icon3.png';
@@ -22,51 +22,71 @@ const NotebooksPage = () => {
     }
     setUsername(storedUser.username);
     setUserEmail(storedUser.email);
-    fetchNotebooks(storedUser.email);
+    fetchAll(storedUser.email);
   }, []);
 
-  const fetchNotebooks = async (email) => {
+  const fetchAll = async (email) => {
     setIsLoading(true);
     try {
-      const response = await fetch(`http://localhost:8000/api/my-notebooks?email=${email}`);
-      const data = await response.json();
-      if (data.notebooks) {
-        setNotebooks(data.notebooks);
+      const [notebooksRes, favsRes] = await Promise.all([
+        fetch(`http://localhost:8000/api/my-notebooks?email=${email}`),
+        fetch(`http://localhost:8000/api/my-favorites?email=${email}`),
+      ]);
+      const notebooksData = await notebooksRes.json();
+      const favsData      = await favsRes.json();
+
+      if (notebooksData.notebooks) setNotebooks(notebooksData.notebooks);
+      if (favsData.favorite_notebook_ids) {
+        setFavorites(new Set(favsData.favorite_notebook_ids));
       }
     } catch (error) {
-      console.error('Error fetching notebooks:', error);
+      console.error('Error fetching data:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const toggleFavorite = (id) => {
+  const toggleFavorite = async (id) => {
+    // Optimistic update
     setFavorites(prev => {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
+
+    try {
+      await fetch('http://localhost:8000/api/toggle-favorite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: userEmail, notebook_id: id }),
+      });
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      // Revert optimistic update on failure
+      setFavorites(prev => {
+        const next = new Set(prev);
+        next.has(id) ? next.delete(id) : next.add(id);
+        return next;
+      });
+    }
   };
 
   const filteredNotebooks = notebooks.filter(n =>
     n.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
   const favoriteNotebooks = filteredNotebooks.filter(n => favorites.has(n.id));
 
   return (
     <div className="min-h-screen bg-gray-200">
       <Navbar />
-
       <div className="max-w-6xl mx-auto px-6 py-8">
+
         {/* Hero Banner */}
         <div className="bg-gray-300 rounded-3xl p-8 mb-8 flex items-center justify-between">
           <div className="flex items-center space-x-6">
             <img src={Icon2Image} alt="Icon2Image" className="w-32 h-32 object-contain" />
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                Hello {username}!
-              </h1>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Hello {username}!</h1>
               <p className="text-gray-700">Organize and access all your learning materials</p>
             </div>
           </div>
@@ -158,34 +178,32 @@ const NotebooksPage = () => {
   );
 };
 
-const NotebookCard = ({ notebook, isFavorite, onToggleFavorite, onOpen }) => {
-  return (
-    <div className="bg-white rounded-3xl p-6 border-4 border-black">
-      <div className="flex flex-col items-center text-center space-y-4">
-        <img src={Icon3Image} alt="Folder Icon" className="w-20 h-20 object-contain" />
-        <div className="flex-1">
-          <h4 className="text-lg font-bold text-gray-900">{notebook.title}</h4>
-          <p className="text-sm text-gray-500">
-            {new Date(notebook.created_at).toLocaleDateString()}
-          </p>
-        </div>
-        <div className="flex items-center space-x-3 w-full justify-center">
-          <button
-            onClick={onOpen}
-            className="px-8 py-2 bg-black text-white rounded-lg font-semibold hover:bg-gray-800 transition"
-          >
-            Open
-          </button>
-          <button
-            onClick={() => onToggleFavorite(notebook.id)}
-            className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 rounded-lg transition"
-          >
-            <Star className={`w-6 h-6 ${isFavorite ? 'text-yellow-500 fill-yellow-500' : 'text-gray-400'}`} />
-          </button>
-        </div>
+const NotebookCard = ({ notebook, isFavorite, onToggleFavorite, onOpen }) => (
+  <div className="bg-white rounded-3xl p-6 border-4 border-black">
+    <div className="flex flex-col items-center text-center space-y-4">
+      <img src={Icon3Image} alt="Folder Icon" className="w-20 h-20 object-contain" />
+      <div className="flex-1">
+        <h4 className="text-lg font-bold text-gray-900">{notebook.title}</h4>
+        <p className="text-sm text-gray-500">
+          {new Date(notebook.created_at).toLocaleDateString()}
+        </p>
+      </div>
+      <div className="flex items-center space-x-3 w-full justify-center">
+        <button
+          onClick={onOpen}
+          className="px-8 py-2 bg-black text-white rounded-lg font-semibold hover:bg-gray-800 transition"
+        >
+          Open
+        </button>
+        <button
+          onClick={() => onToggleFavorite(notebook.id)}
+          className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 rounded-lg transition"
+        >
+          <Star className={`w-6 h-6 ${isFavorite ? 'text-yellow-500 fill-yellow-500' : 'text-gray-400'}`} />
+        </button>
       </div>
     </div>
-  );
-};
+  </div>
+);
 
 export default NotebooksPage;

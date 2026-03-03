@@ -766,7 +766,37 @@ async def google_token_auth(request: Request, db: Session = Depends(get_db)):
     except Exception as e:
         print(f"Google token auth error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+@app.get("/api/my-favorites")
+def get_favorites(email: str, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+    favs = db.query(models.Favorite).filter(models.Favorite.user_id == user.id).all()
+    return {"favorite_notebook_ids": [f.notebook_id for f in favs]}
 
+@app.post("/api/toggle-favorite")
+def toggle_favorite(data: dict, db: Session = Depends(get_db)):
+    email       = data.get("email")
+    notebook_id = data.get("notebook_id")
+
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    existing = db.query(models.Favorite).filter(
+        models.Favorite.user_id     == user.id,
+        models.Favorite.notebook_id == notebook_id
+    ).first()
+
+    if existing:
+        db.delete(existing)
+        db.commit()
+        return {"favorited": False}
+    else:
+        fav = models.Favorite(user_id=user.id, notebook_id=notebook_id, created_at=datetime.utcnow())
+        db.add(fav)
+        db.commit()
+        return {"favorited": True}
 @app.get("/api/auth/user")
 def get_current_user(email: str, db: Session = Depends(get_db)):
     """Get current user by email (for token validation)"""

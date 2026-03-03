@@ -179,3 +179,21 @@ class Quiz(Base):
             "correct_answer": self.correct_answer,
             "created_at":     self.created_at.isoformat(),
         }
+class Favorite(Base):
+    __tablename__ = "favorites"
+
+    id          = Column(Integer, primary_key=True, index=True)
+    user_id     = Column(Integer, ForeignKey("users.id"), nullable=False)
+    notebook_id = Column(Integer, ForeignKey("notebooks.id"), nullable=False)
+    created_at  = Column(DateTime, default=datetime.utcnow)
+
+    user     = relationship("User",     backref="favorites")
+    notebook = relationship("Notebook", backref="favorited_by")
+
+    def to_dict(self):
+        return {
+            "id":          self.id,
+            "user_id":     self.user_id,
+            "notebook_id": self.notebook_id,
+            "created_at":  self.created_at.isoformat(),
+        }
