@@ -18,20 +18,27 @@ const AVATARS = [
   { id: 'avatar12', img: '/avatars/avatar11.jpeg', bg: 'from-yellow-500 to-amber-600' },
 ];
 
+const CUSTOM_AVATAR_KEY = 'user_custom_avatar';
+
 const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [userAvatar, setUserAvatar] = useState(null);
+  const [customImg, setCustomImg] = useState(null);
 
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem('user'));
-    if (stored?.avatar) {
-      const found = AVATARS.find(a => a.id === stored.avatar) || AVATARS[0];
-      setUserAvatar(found);
+    const avatarId = stored?.avatar || 'avatar1';
+    if (avatarId === 'custom') {
+      const base64 = localStorage.getItem(CUSTOM_AVATAR_KEY);
+      setCustomImg(base64 || null);
+      setUserAvatar({ id: 'custom', bg: 'from-indigo-400 to-purple-500' });
     } else {
-      setUserAvatar(AVATARS[0]);
+      setCustomImg(null);
+      const found = AVATARS.find(a => a.id === avatarId) || AVATARS[0];
+      setUserAvatar(found);
     }
-  }, [location]); // re-check on every route change so avatar updates instantly after profile save
+  }, [location]);
 
   const isActive = (path) => location.pathname === path;
 
@@ -93,20 +100,19 @@ const Navbar = () => {
             Quiz
           </button>
 
-          {/* Profile button — now shows the real avatar */}
+          {/* Profile button — shows real avatar or custom uploaded photo */}
           <button
             onClick={() => navigate('/profile')}
             className={`w-12 h-12 rounded-full overflow-hidden border-2 transition ml-2 ${
               isActive('/profile') ? 'border-black' : 'border-gray-400 hover:border-gray-700'
             } bg-gradient-to-br ${userAvatar?.bg || 'from-gray-600 to-gray-800'}`}
           >
-            {userAvatar && (
-              <img
-                src={userAvatar.img}
-                alt="Your avatar"
-                className="w-full h-full object-cover"
-              />
-            )}
+            {customImg
+              ? <img src={customImg} alt="Your avatar" className="w-full h-full object-cover" />
+              : userAvatar?.img
+                ? <img src={userAvatar.img} alt="Your avatar" className="w-full h-full object-cover" />
+                : null
+            }
           </button>
         </div>
       </div>
