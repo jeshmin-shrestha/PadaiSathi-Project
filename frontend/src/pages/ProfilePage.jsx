@@ -105,7 +105,7 @@ const ProfilePage = () => {
           {/* Avatar display */}
           <div className="flex justify-center mb-6">
             <div className="relative group">
-              <div className={`w-32 h-32 rounded-full bg-gradient-to-br ${currentAvatar.bg} border-4 border-white shadow-lg overflow-hidden transition-transform group-hover:scale-105`}>
+              <div className={`w-40 h-40 rounded-full bg-gradient-to-br ${currentAvatar.bg} border-4 border-white shadow-lg overflow-hidden transition-transform group-hover:scale-105`}>
                 <img src={currentAvatar.img} alt={currentAvatar.label} className="w-full h-full object-cover" />
               </div>
               <button
@@ -169,7 +169,7 @@ const ProfilePage = () => {
       {/* MODALS */}
       {modal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
-          <div className="bg-white rounded-3xl border-4 border-black w-full max-w-md shadow-2xl">
+          <div className="bg-white rounded-3xl border-4 border-black w-full max-w-xl shadow-2xl">
 
             {/* Avatar Modal */}
             {modal === 'avatar' && (
@@ -179,7 +179,7 @@ const ProfilePage = () => {
                   <button onClick={() => setModal(null)} className="text-gray-400 hover:text-black"><X className="w-6 h-6" /></button>
                 </div>
 
-                <div className="grid grid-cols-4 gap-3 mb-6">
+                <div className="grid grid-cols-3 gap-4 mb-6">
                   {AVATARS.map(av => (
                     <button
                       key={av.id}
@@ -191,13 +191,13 @@ const ProfilePage = () => {
                         transform: selectedAvatar === av.id ? 'scale(1.05)' : 'scale(1)',
                       }}
                     >
-                      <div className={`w-14 h-14 rounded-full bg-gradient-to-br ${av.bg} overflow-hidden mb-1`}>
+                      <div className={`w-24 h-24 rounded-full bg-gradient-to-br ${av.bg} overflow-hidden mb-2 shadow-md`}>
                         <img src={av.img} alt={av.label} className="w-full h-full object-cover" />
                       </div>
-                      <span className="text-xs font-medium text-gray-600">{av.label}</span>
+                      <span className="text-sm font-medium text-gray-700 text-center">{av.label}</span>
                       {selectedAvatar === av.id && (
-                        <div className="absolute -top-1.5 -right-1.5 bg-black rounded-full w-5 h-5 flex items-center justify-center">
-                          <Check className="w-3 h-3 text-white" />
+                        <div className="absolute -top-2 -right-2 bg-black rounded-full w-6 h-6 flex items-center justify-center border-2 border-white">
+                          <Check className="w-3.5 h-3.5 text-white" />
                         </div>
                       )}
                     </button>
@@ -206,7 +206,7 @@ const ProfilePage = () => {
 
                 {/* Preview */}
                 <div className="flex items-center space-x-3 bg-gray-50 rounded-2xl p-3 mb-5 border-2 border-gray-200">
-                  <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${previewAvatar.bg} overflow-hidden flex-shrink-0`}>
+                  <div className={`w-16 h-16 rounded-full bg-gradient-to-br ${previewAvatar.bg} overflow-hidden flex-shrink-0`}>
                     <img src={previewAvatar.img} alt={previewAvatar.label} className="w-full h-full object-cover" />
                   </div>
                   <div>

@@ -1,110 +1,112 @@
-// components/Navbar.jsx - Fixed version
-import React from 'react';
+// components/Navbar.jsx
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import logoImage from '../assets/images/reading-cat.png';
+
+const AVATARS = [
+  { id: 'avatar1',  img: '/avatars/avatar1.jpeg',  bg: 'from-green-400 to-green-600' },
+  { id: 'avatar2',  img: '/avatars/avatar2.jpeg',  bg: 'from-pink-400 to-pink-600' },
+  { id: 'avatar3',  img: '/avatars/avatar3.jpeg',  bg: 'from-blue-400 to-blue-600' },
+  { id: 'avatar4',  img: '/avatars/avatar12.jpeg', bg: 'from-purple-400 to-purple-600' },
+  { id: 'avatar5',  img: '/avatars/avatar5.jpeg',  bg: 'from-gray-600 to-gray-800' },
+  { id: 'avatar6',  img: '/avatars/avatar4.jpeg',  bg: 'from-amber-400 to-orange-500' },
+  { id: 'avatar7',  img: '/avatars/avatar6.jpeg',  bg: 'from-cyan-400 to-cyan-600' },
+  { id: 'avatar8',  img: '/avatars/avatar7.jpeg',  bg: 'from-lime-400 to-lime-600' },
+  { id: 'avatar9',  img: '/avatars/avatar8.jpeg',  bg: 'from-red-400 to-orange-500' },
+  { id: 'avatar10', img: '/avatars/avatar9.jpeg',  bg: 'from-yellow-400 to-yellow-500' },
+  { id: 'avatar11', img: '/avatars/avatar10.jpeg', bg: 'from-sky-300 to-indigo-400' },
+  { id: 'avatar12', img: '/avatars/avatar11.jpeg', bg: 'from-yellow-500 to-amber-600' },
+];
 
 const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  
+  const [userAvatar, setUserAvatar] = useState(null);
+
+  useEffect(() => {
+    const stored = JSON.parse(localStorage.getItem('user'));
+    if (stored?.avatar) {
+      const found = AVATARS.find(a => a.id === stored.avatar) || AVATARS[0];
+      setUserAvatar(found);
+    } else {
+      setUserAvatar(AVATARS[0]);
+    }
+  }, [location]); // re-check on every route change so avatar updates instantly after profile save
+
   const isActive = (path) => location.pathname === path;
-  
+
   return (
     <nav className="bg-gray-200 shadow-sm">
       <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-        {/* Left: Huge Logo like in the HTML */}
+        {/* Left: Logo */}
         <div className="flex items-center space-x-4">
-          {/* LARGE LOGO CONTAINER */}
           <div className="w-24 h-24 flex items-center justify-center overflow-hidden">
-            <img 
-              src={logoImage} 
-              alt="PadaiSathi Logo" 
+            <img
+              src={logoImage}
+              alt="PadaiSathi Logo"
               className="h-full w-auto object-contain hover:opacity-90 transition-opacity cursor-pointer"
               onClick={() => navigate('/dashboard')}
             />
           </div>
-          
-          {/* Brand Text - Cleaner version */}
           <div className="flex items-center">
-            {/* Padai - No background, just text */}
-            <span className="pr-0.5 font-extrabold text-gray-900 text-lg">
-              Padai
-            </span>
-            
-            {/* Sathi - Grey background only */}
-            <span className="px-0 py-0.5 bg-gray-300 rounded-full font-extrabold text-gray-900 text-lg">
-              Sathi
-            </span>
+            <span className="pr-0.5 font-extrabold text-gray-900 text-lg">Padai</span>
+            <span className="px-0 py-0.5 bg-gray-300 rounded-full font-extrabold text-gray-900 text-lg">Sathi</span>
           </div>
         </div>
-        
+
         {/* Right: Navigation Buttons */}
         <div className="flex items-center space-x-4 md:space-x-6">
-          <button 
+          <button
             onClick={() => navigate('/dashboard')}
-            className={`px-5 py-2.5 rounded-lg font-medium transition ${
-              isActive('/dashboard') 
-                ? 'bg-gray-400 text-gray-800 rounded-2xl' 
-                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-300 rounded-2xl'
-            }`}
+            className={`px-5 py-2.5 rounded-2xl font-medium transition ${isActive('/dashboard') ? 'bg-gray-400 text-gray-800' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-300'}`}
           >
             Dashboard
           </button>
-          <button 
+          <button
             onClick={() => navigate('/notebook')}
-            className={`px-5 py-2.5 rounded-lg font-medium transition ${
-              isActive('/notebook') 
-                ? 'bg-gray-400 text-gray-800 rounded-2xl' 
-                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-300rounded-2xl'
-            }`}
+            className={`px-5 py-2.5 rounded-2xl font-medium transition ${isActive('/notebook') ? 'bg-gray-400 text-gray-800' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-300'}`}
           >
             Notebooks
           </button>
-          <button 
+          <button
             onClick={() => navigate('/summary')}
-            className={`px-5 py-2.5 rounded-lg font-medium transition ${
-              isActive('/summary') 
-                ? 'bg-gray-400 text-gray-800 rounded-2xl' 
-                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-300 rounded-2xl'
-            }`}
+            className={`px-5 py-2.5 rounded-2xl font-medium transition ${isActive('/summary') ? 'bg-gray-400 text-gray-800' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-300'}`}
           >
             Summary
           </button>
-          <button 
+          <button
             onClick={() => navigate('/video')}
-            className={`px-5 py-2.5 rounded-lg font-medium transition ${
-              isActive('/video') 
-                ? 'bg-gray-400 text-gray-800 rounded-2xl' 
-                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-300 rounded-2xl'
-            }`}
+            className={`px-5 py-2.5 rounded-2xl font-medium transition ${isActive('/video') ? 'bg-gray-400 text-gray-800' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-300'}`}
           >
             Video
           </button>
-          <button 
+          <button
             onClick={() => navigate('/flashcards')}
-            className={`px-5 py-2.5 rounded-lg font-medium transition ${
-              isActive('/flashcards') 
-                ? 'bg-gray-400 text-gray-800 rounded-2xl' 
-                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-300 rounded-2xl'
-            }`}
+            className={`px-5 py-2.5 rounded-2xl font-medium transition ${isActive('/flashcards') ? 'bg-gray-400 text-gray-800' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-300'}`}
           >
             Flashcard
           </button>
-          <button 
+          <button
             onClick={() => navigate('/quiz')}
-            className={`px-5 py-2.5 rounded-lg font-medium transition ${
-              isActive('/quiz') 
-                ? 'bg-gray-400 text-gray-800 rounded-2xl' 
-                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-300 rounded-2xl'
-            }`}
+            className={`px-5 py-2.5 rounded-2xl font-medium transition ${isActive('/quiz') ? 'bg-gray-400 text-gray-800' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-300'}`}
           >
             Quiz
           </button>
-          <button 
+
+          {/* Profile button — now shows the real avatar */}
+          <button
             onClick={() => navigate('/profile')}
-            className="w-12 h-12 bg-gray-800 rounded-full flex items-center justify-center text-white hover:bg-gray-700 transition ml-2"
+            className={`w-12 h-12 rounded-full overflow-hidden border-2 transition ml-2 ${
+              isActive('/profile') ? 'border-black' : 'border-gray-400 hover:border-gray-700'
+            } bg-gradient-to-br ${userAvatar?.bg || 'from-gray-600 to-gray-800'}`}
           >
-            <span className="text-base">👤</span>
+            {userAvatar && (
+              <img
+                src={userAvatar.img}
+                alt="Your avatar"
+                className="w-full h-full object-cover"
+              />
+            )}
           </button>
         </div>
       </div>
