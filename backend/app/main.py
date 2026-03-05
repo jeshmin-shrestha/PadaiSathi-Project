@@ -228,7 +228,7 @@ async def upload_pdf(
     user.points = (user.points or 0) + 10
     db.commit()
     db.refresh(notebook)
-    _check_and_award_badges(user_id, db)
+    _check_and_award_badges(user.id, db)
 
 
     return {
@@ -480,7 +480,7 @@ def _run_video_pipeline(summary_id: int, genz_text: str, theme: str, user_id: in
         )
         db.add(video_record)
         db.commit()
-        _check_and_award_badges(user.id, db)
+        _check_and_award_badges(user_id, db)
 
 
         _video_jobs[summary_id]["status"] = "done"

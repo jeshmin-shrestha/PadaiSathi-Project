@@ -2,7 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Upload, Download } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Icon1Image from '../assets/images/icon1.png';
-import Icon4Image from '../assets/images/icon4.png';
+import Icon4Image from '../assets/images/subwaysurfericon.png';
+import Icon5Image from '../assets/images/minecrafticon.png';
+import Icon6Image from '../assets/images/slimeicon.png';
 
 const VideoPage = () => {
   const [dragActive, setDragActive] = useState(false);
@@ -62,9 +64,9 @@ const VideoPage = () => {
   };
 
   const themes = [
-    { id: 'subway', name: 'Subway Surfer', color: 'from-yellow-300 to-yellow-400' },
-    { id: 'slime',  name: 'Slime Videos',  color: 'from-pink-300 to-pink-400'   },
-    { id: 'minecraft', name: 'Minecraft',  color: 'from-green-300 to-green-400' }
+    { id: 'subway', name: 'Subway Surfer', color: 'from-yellow-300 to-yellow-400', icon: Icon4Image },
+    { id: 'slime',  name: 'Slime Videos',  color: 'from-pink-300 to-pink-400', icon: Icon6Image   },
+    { id: 'minecraft', name: 'Minecraft',  color: 'from-green-300 to-green-400', icon: Icon5Image }
   ];
 
   const handleDrag = (e) => {
@@ -360,8 +362,8 @@ const VideoPage = () => {
                       : 'border-gray-300 hover:border-gray-400 bg-white'
                   }`}
                 >
-                  <div className={`w-16 h-16 rounded-lg bg-gradient-to-br ${theme.color} flex items-center justify-center shadow-md p-2`}>
-                    <img src={Icon4Image} alt="Theme" className="w-full h-full object-contain" />
+                  <div className={`w-16 h-16 rounded-lg bg-gradient-to-br ${theme.color} flex items-center justify-center shadow-md overflow-hidden`}>
+                    <img src={theme.icon} alt="Theme" className="w-full h-full object-cover" />
                   </div>
                   <span className="text-lg font-semibold text-gray-800">{theme.name}</span>
                   {selectedTheme === theme.id && (
