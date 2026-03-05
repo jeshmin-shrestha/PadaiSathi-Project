@@ -21,7 +21,7 @@ if not hasattr(PIL.Image, 'ANTIALIAS'):
     PIL.Image.ANTIALIAS = PIL.Image.Resampling.LANCZOS
 
 OUTPUT_DIR = Path("generated_videos")
-ASSET_DIR = Path("assets/backgrounds")
+ASSET_DIR = Path("../frontend/src/assets/backgrounds")
 TEMP_DIR = Path("temp_video")
 
 # Caption style - INCREASED FONT SIZE
@@ -85,38 +85,37 @@ def _tts(text: str, out_path: str) -> float:
 
 
 def _background(theme: str, duration: float):
-    """Get background video - keep original dimensions."""
-    possible_paths = [
-        ASSET_DIR / f"{theme}.mp4",
-        ASSET_DIR / "*.mp4",
-        Path("../frontend/src/assets/backgrounds/videoplayback.mp4"),
-    ]
-
-    bg_video = None
-    for path_pattern in possible_paths:
-        try:
-            if isinstance(path_pattern, Path) and path_pattern.exists():
-                print(f"[VideoGen] Using background: {path_pattern}")
-                bg_video = VideoFileClip(str(path_pattern))
-                break
-            else:
-                candidates = list(ASSET_DIR.glob(str(path_pattern)))
-                if candidates:
-                    print(f"[VideoGen] Using background: {candidates[0]}")
-                    bg_video = VideoFileClip(str(candidates[0]))
-                    break
-        except:
-            continue
-
-    if bg_video:
-        # Don't resize - keep original dimensions
-        # Just take first 'duration' seconds
-        return bg_video.subclip(0, min(duration, bg_video.duration))
+    """Get background video by theme name."""
     
-    # Fallback - create a black screen
-    print("[VideoGen] No background found, using black screen")
-    return ColorClip(size=(1920, 1080), color=(0, 0, 0)).set_duration(duration)
+    # Debug: show what files are actually in the folder
+    print(f"[VideoGen] ASSET_DIR = {ASSET_DIR.resolve()}")
+    print(f"[VideoGen] Files in ASSET_DIR: {list(ASSET_DIR.glob('*'))}")
+    print(f"[VideoGen] Looking for theme: '{theme}.mp4'")
 
+    # 1. Try exact theme match first
+    theme_path = ASSET_DIR / f"{theme}.mp4"
+    if theme_path.exists():
+        print(f"[VideoGen] ✅ Found: {theme_path}")
+        bg = VideoFileClip(str(theme_path))
+        return bg.subclip(0, min(duration, bg.duration))
+
+    # 2. Try case-insensitive match (Windows sometimes saves differently)
+    for f in ASSET_DIR.glob("*.mp4"):
+        if f.stem.lower() == theme.lower():
+            print(f"[VideoGen] ✅ Found (case-insensitive): {f}")
+            bg = VideoFileClip(str(f))
+            return bg.subclip(0, min(duration, bg.duration))
+
+    # 3. Fallback to any mp4
+    candidates = list(ASSET_DIR.glob("*.mp4"))
+    if candidates:
+        print(f"[VideoGen] ⚠️ Theme '{theme}.mp4' not found, falling back to: {candidates[0]}")
+        bg = VideoFileClip(str(candidates[0]))
+        return bg.subclip(0, min(duration, bg.duration))
+
+    # 4. Black screen last resort
+    print("[VideoGen] ❌ No background found, using black screen")
+    return ColorClip(size=(1920, 1080), color=(0, 0, 0)).set_duration(duration)
 
 def _captions(timings: list[dict], video_size: tuple) -> list:
     """Create text caption clips centered in the middle with background."""
