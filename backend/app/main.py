@@ -453,35 +453,38 @@ from .minio_storage import upload_video_to_minio
 
 def _run_video_pipeline(summary_id: int, genz_text: str, theme: str, user_id: int):
     from .database import SessionLocal
-    db = SessionLocal()
     try:
         _video_jobs[summary_id]["status"] = "processing"
 
         filename = f"video_{summary_id}_{int(datetime.utcnow().timestamp())}.mp4"
-        
-        # Generate video locally first
+
+        # Generate video (this is the slow part — no DB connection held open)
         video_path = generate_video(
             summary_text=genz_text,
             output_filename=filename,
             theme=theme,
         )
 
-        # ── Upload to MinIO ──────────────────────
+        # Upload to MinIO
         video_url = upload_video_to_minio(video_path, filename)
         print(f"[MinIO] ✅ Uploaded: {video_url}")
 
-        # Save to Supabase database
-        video_record = models.Video(
-            summary_id=summary_id,
-            user_id=user_id,
-            s3_path=video_url,  # stores MinIO URL in Supabase
-            background_theme=theme,
-            generated_at=datetime.utcnow(),
-        )
-        db.add(video_record)
-        db.commit()
-        _check_and_award_badges(user_id, db)
-
+        # ── Open a FRESH DB connection here, after all the slow work is done ──
+        # The old connection would have timed out during Whisper + video render.
+        db = SessionLocal()
+        try:
+            video_record = models.Video(
+                summary_id=summary_id,
+                user_id=user_id,
+                s3_path=video_url,
+                background_theme=theme,
+                generated_at=datetime.utcnow(),
+            )
+            db.add(video_record)
+            db.commit()
+            _check_and_award_badges(user_id, db)
+        finally:
+            db.close()
 
         _video_jobs[summary_id]["status"] = "done"
         _video_jobs[summary_id]["video_url"] = video_url
@@ -491,8 +494,8 @@ def _run_video_pipeline(summary_id: int, genz_text: str, theme: str, user_id: in
         _video_jobs[summary_id]["status"] = "error"
         _video_jobs[summary_id]["error"] = str(e)
         print(f"[VideoGen] ❌ Failed: {e}")
-    finally:
-        db.close()
+
+        
 @app.get("/api/video-status/{summary_id}")
 def video_status(summary_id: int):
     job = _video_jobs.get(summary_id)
