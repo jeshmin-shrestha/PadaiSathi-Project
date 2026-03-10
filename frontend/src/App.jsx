@@ -14,6 +14,7 @@ import NotebookPage from './pages/NotebookPage';
 import NotebookDetailPage from './pages/NotebookDetailPage'; // ← ADD THIS
 import './App.css';
 import AuthCallback from './pages/AuthCallback';
+import FriendsPage from './pages/FriendsPage';
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     return !!localStorage.getItem('user');
@@ -80,6 +81,7 @@ function App() {
             isAuthenticated ? <NotebookDetailPage /> : <Navigate to="/login" />
           } />
           
+          <Route path="/friends" element={isAuthenticated ? <FriendsPage /> : <Navigate to="/login" />} />
           {/* 404 Page */}
           <Route path="*" element={
             <div className="flex items-center justify-center min-h-screen">

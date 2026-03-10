@@ -198,7 +198,30 @@ class Favorite(Base):
             "notebook_id": self.notebook_id,
             "created_at":  self.created_at.isoformat(),
         }
-    
+
+# ── ADD THIS to the bottom of your models.py ──────────────────────────────
+
+class Friendship(Base):
+    __tablename__ = "friendships"
+
+    id         = Column(Integer, primary_key=True, index=True)
+    sender_id  = Column(Integer, ForeignKey("users.id"), nullable=False)
+    receiver_id= Column(Integer, ForeignKey("users.id"), nullable=False)
+    status     = Column(String(20), default="pending")   # pending | accepted | declined
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    sender   = relationship("User", foreign_keys=[sender_id],   backref="sent_requests")
+    receiver = relationship("User", foreign_keys=[receiver_id], backref="received_requests")
+
+    def to_dict(self):
+        return {
+            "id":          self.id,
+            "sender_id":   self.sender_id,
+            "receiver_id": self.receiver_id,
+            "status":      self.status,
+            "created_at":  self.created_at.isoformat(),
+        }
+       
 class UserBadge(Base):
     __tablename__ = "user_badges"
 

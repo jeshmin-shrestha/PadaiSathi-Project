@@ -23,17 +23,19 @@ const CUSTOM_AVATAR_KEY = 'user_custom_avatar';
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
-  const [username, setUsername] = useState('');
-  const [myEmail, setMyEmail] = useState('');
+  const [username, setUsername]       = useState('');
+  const [myEmail, setMyEmail]         = useState('');
   const [leaderboard, setLeaderboard] = useState([]);
-  const [yourRank, setYourRank] = useState(null);
-  const [userAvatar, setUserAvatar] = useState('avatar1');
-  const [customImg, setCustomImg] = useState(null);
-  const [userStats, setUserStats] = useState({
+  const [yourRank, setYourRank]       = useState(null);
+  const [userAvatar, setUserAvatar]   = useState('avatar1');
+  const [customImg, setCustomImg]     = useState(null);
+  const [friendsOnly, setFriendsOnly] = useState(false);   // ← NEW
+  const [leaderLoading, setLeaderLoading] = useState(false);
+  const [userStats, setUserStats]     = useState({
     points: 0, streak: 0, documents: 0, summaries: 0,
     notebooks: 0, flashcards: 0, quizzes: 0, videos: 0,
   });
-  const [badges, setBadges] = useState([]);
+  const [badges, setBadges]           = useState([]);
   const [earnedCount, setEarnedCount] = useState(0);
   const [showAllBadges, setShowAllBadges] = useState(false);
 
@@ -52,23 +54,33 @@ const StudentDashboard = () => {
       points: storedUser.points || 0,
       streak: storedUser.streak || 0,
     }));
-    fetchLeaderboard(storedUser.email);
+    fetchLeaderboard(storedUser.email, false);
     fetchStats(storedUser.email);
     fetchBadges(storedUser.email);
   }, []);
 
-  const fetchLeaderboard = async (email) => {
+  // Re-fetch leaderboard when toggle changes
+  useEffect(() => {
+    if (myEmail) fetchLeaderboard(myEmail, friendsOnly);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [friendsOnly, myEmail]);
+
+  const fetchLeaderboard = async (email, fo) => {
+    setLeaderLoading(true);
     try {
-      const res = await fetch(`http://localhost:8000/api/leaderboard?email=${email}`);
+      const res  = await fetch(
+        `http://localhost:8000/api/leaderboard?email=${email}&friends_only=${fo}`
+      );
       const data = await res.json();
       setLeaderboard(data.leaderboard || []);
       setYourRank(data.your_rank);
     } catch (err) { console.error('Leaderboard error:', err); }
+    setLeaderLoading(false);
   };
 
   const fetchStats = async (email) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/my-stats?email=${email}`);
+      const res  = await fetch(`http://localhost:8000/api/my-stats?email=${email}`);
       const data = await res.json();
       setUserStats(prev => ({
         ...prev,
@@ -84,7 +96,7 @@ const StudentDashboard = () => {
 
   const fetchBadges = async (email) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/my-badges?email=${email}`);
+      const res  = await fetch(`http://localhost:8000/api/my-badges?email=${email}`);
       const data = await res.json();
       setBadges(data.badges || []);
       setEarnedCount(data.earned_count || 0);
@@ -92,9 +104,6 @@ const StudentDashboard = () => {
   };
 
   // ── Avatar resolver ──────────────────────────────────────────────────────
-  // For any leaderboard entry, return { img, bg }.
-  // If the entry is the current user AND they have a custom image, show it.
-  // Otherwise fall back to the preset avatar or avatar1.
   const resolveAvatar = (entry) => {
     const avatarId = entry?.avatar || 'avatar1';
     const isMe = entry?.is_you === true;
@@ -144,7 +153,6 @@ const StudentDashboard = () => {
     );
   };
 
-  // Synthetic entry for "your position" row when outside top 10
   const myEntry = useMemo(() => ({
     avatar: userAvatar,
     is_you: true,
@@ -224,79 +232,126 @@ const StudentDashboard = () => {
 
             {/* Leaderboard */}
             <div className="bg-white rounded-3xl p-8 border-4 border-black">
-              <h3 className="text-xl font-bold text-gray-900 mb-6 text-center">🏆 Leaderboard</h3>
 
-              {/* Podium */}
-              {leaderboard.length > 0 && (
-                <div className="flex items-end justify-center space-x-4 mb-6">
-                  {/* 2nd */}
-                  {podiumOrder[0] && (
-                    <div className="text-center">
-                      <div className="mb-2 flex justify-center">
-                        <PodiumAvatar entry={podiumOrder[0]} />
-                      </div>
-                      <p className="text-xs font-bold text-gray-700 w-24 truncate mx-auto">
-                        {podiumOrder[0].is_you ? 'You' : podiumOrder[0].username}
-                      </p>
-                      <p className="text-xs text-gray-500">{podiumOrder[0].points} pts</p>
-                      <div className="w-24 h-20 bg-gray-300 rounded-t-xl flex items-center justify-center font-bold text-2xl mt-1">2</div>
-                    </div>
-                  )}
-                  {/* 1st */}
-                  {podiumOrder[1] && (
-                    <div className="text-center">
-                      <div className="text-2xl mb-1">👑</div>
-                      <div className="mb-2 flex justify-center">
-                        <PodiumAvatar entry={podiumOrder[1]} size="lg" />
-                      </div>
-                      <p className="text-xs font-bold text-gray-700 w-28 truncate mx-auto">
-                        {podiumOrder[1].is_you ? 'You' : podiumOrder[1].username}
-                      </p>
-                      <p className="text-xs text-gray-500">{podiumOrder[1].points} pts</p>
-                      <div className="w-28 h-32 bg-yellow-400 rounded-t-xl flex items-center justify-center font-bold text-3xl mt-1">1</div>
-                    </div>
-                  )}
-                  {/* 3rd */}
-                  {podiumOrder[2] && (
-                    <div className="text-center">
-                      <div className="mb-2 flex justify-center">
-                        <PodiumAvatar entry={podiumOrder[2]} />
-                      </div>
-                      <p className="text-xs font-bold text-gray-700 w-24 truncate mx-auto">
-                        {podiumOrder[2].is_you ? 'You' : podiumOrder[2].username}
-                      </p>
-                      <p className="text-xs text-gray-500">{podiumOrder[2].points} pts</p>
-                      <div className="w-24 h-16 bg-orange-300 rounded-t-xl flex items-center justify-center font-bold text-2xl mt-1">3</div>
-                    </div>
-                  )}
+              {/* Header + Toggle */}
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-gray-900">🏆 Leaderboard</h3>
+
+                {/* Friends-only toggle */}
+                <div className="flex items-center bg-gray-100 rounded-full p-1 border-2 border-black">
+                  <button
+                    onClick={() => setFriendsOnly(false)}
+                    className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${
+                      !friendsOnly ? 'bg-black text-white' : 'text-gray-600'
+                    }`}
+                  >
+                    🌍 Global
+                  </button>
+                  <button
+                    onClick={() => setFriendsOnly(true)}
+                    className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${
+                      friendsOnly ? 'bg-black text-white' : 'text-gray-600'
+                    }`}
+                  >
+                    👯 Friends
+                  </button>
                 </div>
-              )}
-
-              {/* Full list */}
-              <div className="space-y-3">
-                {leaderboard.slice(0, 10).map((entry) => (
-                  <div key={entry.rank} className={`flex items-center space-x-3 p-3 rounded-xl border-2 ${
-                    entry.is_you ? 'bg-purple-50 border-purple-500' : 'bg-white border-black'
-                  }`}>
-                    <span className="font-bold text-lg w-8">{entry.rank}.</span>
-                    <RowAvatar entry={entry} />
-                    <span className="font-semibold text-gray-900 flex-1 truncate">{entry.username}</span>
-                    <span className="font-bold text-purple-600">{entry.points} pts</span>
-                    {entry.is_you && (
-                      <span className="text-xs bg-purple-500 text-white px-2 py-1 rounded-full">You</span>
-                    )}
-                  </div>
-                ))}
               </div>
 
-              {/* Your position if outside top 10 */}
-              {yourRank > 10 && (
-                <div className="mt-3 p-3 bg-purple-50 border-2 border-purple-500 rounded-xl flex items-center space-x-3">
-                  <span className="font-bold text-lg w-8">{yourRank}.</span>
-                  <RowAvatar entry={myEntry} />
-                  <span className="font-semibold text-gray-900 flex-1">{username}</span>
-                  <span className="text-xs bg-purple-500 text-white px-2 py-1 rounded-full">Your Position</span>
+              {leaderLoading ? (
+                <div className="text-center py-10 text-gray-400 font-semibold animate-pulse">
+                  Loading…
                 </div>
+              ) : (
+                <>
+                  {/* Friends-only empty state */}
+                  {friendsOnly && leaderboard.length <= 1 && (
+                    <div className="text-center py-8 mb-4">
+                      <p className="text-4xl mb-2">👯</p>
+                      <p className="font-bold text-gray-700">No friends yet!</p>
+                      <p className="text-sm text-gray-500 mb-3">Add friends to see the friends leaderboard.</p>
+                      <button
+                        onClick={() => navigate('/friends')}
+                        className="bg-black text-white px-5 py-2 rounded-full text-xs font-bold hover:bg-gray-800 transition"
+                      >
+                        + Find Friends
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Podium */}
+                  {leaderboard.length > 0 && (
+                    <div className="flex items-end justify-center space-x-4 mb-6">
+                      {/* 2nd */}
+                      {podiumOrder[0] && (
+                        <div className="text-center">
+                          <div className="mb-2 flex justify-center">
+                            <PodiumAvatar entry={podiumOrder[0]} />
+                          </div>
+                          <p className="text-xs font-bold text-gray-700 w-24 truncate mx-auto">
+                            {podiumOrder[0].is_you ? 'You' : podiumOrder[0].username}
+                          </p>
+                          <p className="text-xs text-gray-500">{podiumOrder[0].points} pts</p>
+                          <div className="w-24 h-20 bg-gray-300 rounded-t-xl flex items-center justify-center font-bold text-2xl mt-1">2</div>
+                        </div>
+                      )}
+                      {/* 1st */}
+                      {podiumOrder[1] && (
+                        <div className="text-center">
+                          <div className="text-2xl mb-1">👑</div>
+                          <div className="mb-2 flex justify-center">
+                            <PodiumAvatar entry={podiumOrder[1]} size="lg" />
+                          </div>
+                          <p className="text-xs font-bold text-gray-700 w-28 truncate mx-auto">
+                            {podiumOrder[1].is_you ? 'You' : podiumOrder[1].username}
+                          </p>
+                          <p className="text-xs text-gray-500">{podiumOrder[1].points} pts</p>
+                          <div className="w-28 h-32 bg-yellow-400 rounded-t-xl flex items-center justify-center font-bold text-3xl mt-1">1</div>
+                        </div>
+                      )}
+                      {/* 3rd */}
+                      {podiumOrder[2] && (
+                        <div className="text-center">
+                          <div className="mb-2 flex justify-center">
+                            <PodiumAvatar entry={podiumOrder[2]} />
+                          </div>
+                          <p className="text-xs font-bold text-gray-700 w-24 truncate mx-auto">
+                            {podiumOrder[2].is_you ? 'You' : podiumOrder[2].username}
+                          </p>
+                          <p className="text-xs text-gray-500">{podiumOrder[2].points} pts</p>
+                          <div className="w-24 h-16 bg-orange-300 rounded-t-xl flex items-center justify-center font-bold text-2xl mt-1">3</div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Full list */}
+                  <div className="space-y-3">
+                    {leaderboard.slice(0, 10).map((entry) => (
+                      <div key={entry.rank} className={`flex items-center space-x-3 p-3 rounded-xl border-2 ${
+                        entry.is_you ? 'bg-purple-50 border-purple-500' : 'bg-white border-black'
+                      }`}>
+                        <span className="font-bold text-lg w-8">{entry.rank}.</span>
+                        <RowAvatar entry={entry} />
+                        <span className="font-semibold text-gray-900 flex-1 truncate">{entry.username}</span>
+                        <span className="font-bold text-purple-600">{entry.points} pts</span>
+                        {entry.is_you && (
+                          <span className="text-xs bg-purple-500 text-white px-2 py-1 rounded-full">You</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Your position if outside top 10 */}
+                  {yourRank > 10 && (
+                    <div className="mt-3 p-3 bg-purple-50 border-2 border-purple-500 rounded-xl flex items-center space-x-3">
+                      <span className="font-bold text-lg w-8">{yourRank}.</span>
+                      <RowAvatar entry={myEntry} />
+                      <span className="font-semibold text-gray-900 flex-1">{username}</span>
+                      <span className="text-xs bg-purple-500 text-white px-2 py-1 rounded-full">Your Position</span>
+                    </div>
+                  )}
+                </>
               )}
             </div>
 

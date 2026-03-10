@@ -417,38 +417,7 @@ def generate_video_endpoint(
         "poll_url": f"/api/video-status/{req.summary_id}",
     }
 
-@app.get("/api/leaderboard")
-def get_leaderboard(email: str, db: Session = Depends(get_db)):
-    # Get ALL users sorted by points
-    all_users = db.query(models.User).order_by(
-        models.User.points.desc()
-    ).all()
 
-    # Find current user's rank
-    current_user = db.query(models.User).filter(
-        models.User.email == email
-    ).first()
-
-    leaderboard = []
-    user_rank = None
-
-    for i, u in enumerate(all_users):
-        entry = {
-            "rank": i + 1,
-            "username": u.username,
-            "points": u.points,
-            "avatar": u.avatar,
-            "is_you": u.email == email
-        }
-        leaderboard.append(entry)
-        if u.email == email:
-            user_rank = i + 1
-
-    return {
-        "leaderboard": leaderboard,
-        "your_rank": user_rank,
-        "total_users": len(all_users)
-    }
 from .minio_storage import upload_video_to_minio
 
 def _run_video_pipeline(summary_id: int, genz_text: str, theme: str, user_id: int):
@@ -967,7 +936,282 @@ def check_badges(data: dict, db: Session = Depends(get_db)):
 
     newly_earned = _check_and_award_badges(user.id, db)
     return {"newly_earned": newly_earned}
+# ═════════════════════════════════════════════════════════════════════════════
+# FRIENDS SYSTEM  — paste anywhere in main.py after existing routes
+# ═════════════════════════════════════════════════════════════════════════════
 
+from sqlalchemy import or_, and_
+
+class FriendRequestBody(BaseModel):
+    sender_email:   str
+    receiver_email: str
+
+class FriendRespondBody(BaseModel):
+    friendship_id: int
+    email: str          # the receiver's email (for auth check)
+    action: str         # "accept" | "decline"
+
+
+# ── Send a friend request ─────────────────────────────────────────────────
+@app.post("/api/friend-request")
+def send_friend_request(req: FriendRequestBody, db: Session = Depends(get_db)):
+    sender   = db.query(models.User).filter(models.User.email == req.sender_email).first()
+    receiver = db.query(models.User).filter(models.User.email == req.receiver_email).first()
+
+    if not sender:
+        raise HTTPException(status_code=401, detail="Sender not found")
+    if not receiver:
+        raise HTTPException(status_code=404, detail="No user found with that email")
+    if sender.id == receiver.id:
+        raise HTTPException(status_code=400, detail="You can't add yourself!")
+
+    # Already a friendship in either direction?
+    existing = db.query(models.Friendship).filter(
+        or_(
+            and_(models.Friendship.sender_id   == sender.id,
+                 models.Friendship.receiver_id == receiver.id),
+            and_(models.Friendship.sender_id   == receiver.id,
+                 models.Friendship.receiver_id == sender.id),
+        )
+    ).first()
+
+    if existing:
+        if existing.status == "accepted":
+            raise HTTPException(status_code=400, detail="Already friends!")
+        if existing.status == "pending":
+            raise HTTPException(status_code=400, detail="Friend request already sent!")
+        # declined → allow re-send
+        existing.status = "pending"
+        existing.sender_id   = sender.id
+        existing.receiver_id = receiver.id
+        db.commit()
+        return {"success": True, "message": f"Friend request re-sent to {receiver.username}!"}
+
+    friendship = models.Friendship(
+        sender_id=sender.id,
+        receiver_id=receiver.id,
+        status="pending",
+        created_at=datetime.utcnow(),
+    )
+    db.add(friendship)
+    db.commit()
+    db.refresh(friendship)
+    return {"success": True, "message": f"Friend request sent to {receiver.username}!"}
+
+
+# ── Accept / Decline a request ────────────────────────────────────────────
+@app.post("/api/friend-respond")
+def respond_to_friend_request(req: FriendRespondBody, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == req.email).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    friendship = db.query(models.Friendship).filter(
+        models.Friendship.id == req.friendship_id,
+        models.Friendship.receiver_id == user.id,   # only receiver can respond
+        models.Friendship.status == "pending",
+    ).first()
+
+    if not friendship:
+        raise HTTPException(status_code=404, detail="Friend request not found")
+
+    if req.action not in ("accept", "decline"):
+        raise HTTPException(status_code=400, detail="action must be 'accept' or 'decline'")
+
+    friendship.status = "accepted" if req.action == "accept" else "declined"
+    db.commit()
+
+    msg = "You are now friends! 🎉" if req.action == "accept" else "Request declined."
+    return {"success": True, "message": msg, "status": friendship.status}
+
+
+# ── Remove a friend ───────────────────────────────────────────────────────
+@app.delete("/api/remove-friend")
+def remove_friend(email: str, friend_email: str, db: Session = Depends(get_db)):
+    user   = db.query(models.User).filter(models.User.email == email).first()
+    friend = db.query(models.User).filter(models.User.email == friend_email).first()
+    if not user or not friend:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    friendship = db.query(models.Friendship).filter(
+        or_(
+            and_(models.Friendship.sender_id   == user.id,
+                 models.Friendship.receiver_id == friend.id),
+            and_(models.Friendship.sender_id   == friend.id,
+                 models.Friendship.receiver_id == user.id),
+        ),
+        models.Friendship.status == "accepted"
+    ).first()
+
+    if not friendship:
+        raise HTTPException(status_code=404, detail="Friendship not found")
+
+    db.delete(friendship)
+    db.commit()
+    return {"success": True, "message": "Friend removed."}
+
+
+# ── List friends ──────────────────────────────────────────────────────────
+@app.get("/api/my-friends")
+def my_friends(email: str, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    friendships = db.query(models.Friendship).filter(
+        or_(
+            models.Friendship.sender_id   == user.id,
+            models.Friendship.receiver_id == user.id,
+        ),
+        models.Friendship.status == "accepted"
+    ).all()
+
+    friends = []
+    for f in friendships:
+        friend_user = f.receiver if f.sender_id == user.id else f.sender
+        friends.append({
+            "friendship_id": f.id,
+            "id":       friend_user.id,
+            "username": friend_user.username,
+            "email":    friend_user.email,
+            "points":   friend_user.points,
+            "streak":   friend_user.streak,
+            "avatar":   friend_user.avatar or "avatar1",
+        })
+
+    return {"friends": friends, "count": len(friends)}
+
+
+# ── Pending requests (incoming) ───────────────────────────────────────────
+@app.get("/api/friend-requests")
+def pending_requests(email: str, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    incoming = db.query(models.Friendship).filter(
+        models.Friendship.receiver_id == user.id,
+        models.Friendship.status == "pending",
+    ).all()
+
+    return {
+        "requests": [
+            {
+                "friendship_id": f.id,
+                "from_username": f.sender.username,
+                "from_email":    f.sender.email,
+                "from_avatar":   f.sender.avatar or "avatar1",
+                "sent_at":       f.created_at.isoformat(),
+            }
+            for f in incoming
+        ],
+        "count": len(incoming),
+    }
+
+
+# ── Search users by username / email ─────────────────────────────────────
+@app.get("/api/search-users")
+def search_users(q: str, email: str, db: Session = Depends(get_db)):
+    """Search users to send friend requests to."""
+    me = db.query(models.User).filter(models.User.email == email).first()
+    if not me:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    if len(q) < 2:
+        return {"users": []}
+
+    results = db.query(models.User).filter(
+        or_(
+            models.User.username.ilike(f"%{q}%"),
+            models.User.email.ilike(f"%{q}%"),
+        ),
+        models.User.id != me.id,        # exclude self
+    ).limit(10).all()
+
+    # For each result, figure out relationship status
+    def get_status(other_user):
+        f = db.query(models.Friendship).filter(
+            or_(
+                and_(models.Friendship.sender_id   == me.id,
+                     models.Friendship.receiver_id == other_user.id),
+                and_(models.Friendship.sender_id   == other_user.id,
+                     models.Friendship.receiver_id == me.id),
+            )
+        ).first()
+        if not f:
+            return "none"
+        return f.status   # pending | accepted | declined
+
+    return {
+        "users": [
+            {
+                "id":       u.id,
+                "username": u.username,
+                "email":    u.email,
+                "avatar":   u.avatar or "avatar1",
+                "points":   u.points,
+                "status":   get_status(u),
+            }
+            for u in results
+        ]
+    }
+
+
+# ── UPDATED leaderboard — supports ?friends_only=true ────────────────────
+# REPLACE your existing /api/leaderboard route with this:
+
+@app.get("/api/leaderboard")
+def get_leaderboard(email: str, friends_only: bool = False, db: Session = Depends(get_db)):
+    current_user = db.query(models.User).filter(models.User.email == email).first()
+    if not current_user:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    if friends_only:
+        # Get IDs of accepted friends
+        friendships = db.query(models.Friendship).filter(
+            or_(
+                models.Friendship.sender_id   == current_user.id,
+                models.Friendship.receiver_id == current_user.id,
+            ),
+            models.Friendship.status == "accepted"
+        ).all()
+
+        friend_ids = set()
+        for f in friendships:
+            friend_ids.add(f.receiver_id if f.sender_id == current_user.id else f.sender_id)
+
+        # Always include self
+        friend_ids.add(current_user.id)
+
+        all_users = db.query(models.User).filter(
+            models.User.id.in_(friend_ids)
+        ).order_by(models.User.points.desc()).all()
+    else:
+        all_users = db.query(models.User).order_by(models.User.points.desc()).all()
+
+    leaderboard = []
+    user_rank   = None
+
+    for i, u in enumerate(all_users):
+        entry = {
+            "rank":     i + 1,
+            "username": u.username,
+            "email":    u.email,
+            "points":   u.points,
+            "avatar":   u.avatar or "avatar1",
+            "streak":   u.streak or 0,
+            "is_you":   u.email == email,
+        }
+        leaderboard.append(entry)
+        if u.email == email:
+            user_rank = i + 1
+
+    return {
+        "leaderboard":  leaderboard,
+        "your_rank":    user_rank,
+        "total_users":  len(all_users),
+        "friends_only": friends_only,
+    }
 # ── Run ───────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     import uvicorn
