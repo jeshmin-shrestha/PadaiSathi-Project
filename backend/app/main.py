@@ -1058,6 +1058,9 @@ def my_friends(email: str, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
 
+    if user.role == "admin":
+        return {"friends": [], "count": 0}
+
     friendships = db.query(models.Friendship).filter(
         or_(
             models.Friendship.sender_id   == user.id,
@@ -1069,6 +1072,8 @@ def my_friends(email: str, db: Session = Depends(get_db)):
     friends = []
     for f in friendships:
         friend_user = f.receiver if f.sender_id == user.id else f.sender
+        if friend_user.role == "admin":    # skip accidental admin friendships
+            continue
         friends.append({
             "friendship_id": f.id,
             "id":       friend_user.id,
@@ -1081,7 +1086,6 @@ def my_friends(email: str, db: Session = Depends(get_db)):
 
     return {"friends": friends, "count": len(friends)}
 
-
 # ── Pending requests (incoming) ───────────────────────────────────────────
 @app.get("/api/friend-requests")
 def pending_requests(email: str, db: Session = Depends(get_db)):
@@ -1089,10 +1093,17 @@ def pending_requests(email: str, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
 
+    # Admins have no social features at all
+    if user.role == "admin":
+        return {"requests": [], "count": 0}
+
     incoming = db.query(models.Friendship).filter(
         models.Friendship.receiver_id == user.id,
         models.Friendship.status == "pending",
     ).all()
+
+    # Filter out any requests that came from an admin (edge case)
+    filtered = [f for f in incoming if f.sender.role != "admin"]
 
     return {
         "requests": [
@@ -1103,16 +1114,14 @@ def pending_requests(email: str, db: Session = Depends(get_db)):
                 "from_avatar":   f.sender.avatar or "avatar1",
                 "sent_at":       f.created_at.isoformat(),
             }
-            for f in incoming
+            for f in filtered
         ],
-        "count": len(incoming),
+        "count": len(filtered),
     }
-
 
 # ── Search users by username / email ─────────────────────────────────────
 @app.get("/api/search-users")
 def search_users(q: str, email: str, db: Session = Depends(get_db)):
-    """Search users to send friend requests to."""
     me = db.query(models.User).filter(models.User.email == email).first()
     if not me:
         raise HTTPException(status_code=401, detail="User not found")
@@ -1125,10 +1134,10 @@ def search_users(q: str, email: str, db: Session = Depends(get_db)):
             models.User.username.ilike(f"%{q}%"),
             models.User.email.ilike(f"%{q}%"),
         ),
-        models.User.id != me.id,        # exclude self
+        models.User.id   != me.id,
+        models.User.role != "admin",       # ← exclude admins from search
     ).limit(10).all()
 
-    # For each result, figure out relationship status
     def get_status(other_user):
         f = db.query(models.Friendship).filter(
             or_(
@@ -1140,7 +1149,7 @@ def search_users(q: str, email: str, db: Session = Depends(get_db)):
         ).first()
         if not f:
             return "none"
-        return f.status   # pending | accepted | declined
+        return f.status
 
     return {
         "users": [
@@ -1156,10 +1165,6 @@ def search_users(q: str, email: str, db: Session = Depends(get_db)):
         ]
     }
 
-
-# ── UPDATED leaderboard — supports ?friends_only=true ────────────────────
-# REPLACE your existing /api/leaderboard route with this:
-
 @app.get("/api/leaderboard")
 def get_leaderboard(email: str, friends_only: bool = False, db: Session = Depends(get_db)):
     current_user = db.query(models.User).filter(models.User.email == email).first()
@@ -1167,7 +1172,6 @@ def get_leaderboard(email: str, friends_only: bool = False, db: Session = Depend
         raise HTTPException(status_code=401, detail="User not found")
 
     if friends_only:
-        # Get IDs of accepted friends
         friendships = db.query(models.Friendship).filter(
             or_(
                 models.Friendship.sender_id   == current_user.id,
@@ -1175,23 +1179,22 @@ def get_leaderboard(email: str, friends_only: bool = False, db: Session = Depend
             ),
             models.Friendship.status == "accepted"
         ).all()
-
         friend_ids = set()
         for f in friendships:
             friend_ids.add(f.receiver_id if f.sender_id == current_user.id else f.sender_id)
-
-        # Always include self
         friend_ids.add(current_user.id)
 
         all_users = db.query(models.User).filter(
-            models.User.id.in_(friend_ids)
+            models.User.id.in_(friend_ids),
+            models.User.role != "admin",       # ← exclude admins
         ).order_by(models.User.points.desc()).all()
     else:
-        all_users = db.query(models.User).order_by(models.User.points.desc()).all()
+        all_users = db.query(models.User).filter(
+            models.User.role != "admin"         # ← exclude admins
+        ).order_by(models.User.points.desc()).all()
 
     leaderboard = []
     user_rank   = None
-
     for i, u in enumerate(all_users):
         entry = {
             "rank":     i + 1,
@@ -1212,6 +1215,151 @@ def get_leaderboard(email: str, friends_only: bool = False, db: Session = Depend
         "total_users":  len(all_users),
         "friends_only": friends_only,
     }
+@app.get("/api/admin/stats")
+def admin_stats(db: Session = Depends(get_db)):
+    """Rich analytics for the admin dashboard."""
+    students = db.query(models.User).filter(models.User.role != "admin").all()
+
+    total_points = sum(u.points or 0 for u in students)
+    n = len(students) or 1
+    avg_points   = round(total_points / n, 1)
+    avg_streak   = round(sum(u.streak or 0 for u in students) / n, 1)
+
+    # Top 10 students by points
+    top_users = sorted(students, key=lambda u: u.points or 0, reverse=True)[:10]
+
+    # Points distribution buckets
+    buckets = {"0-100": 0, "101-300": 0, "301-600": 0, "601-1000": 0, "1000+": 0}
+    for u in students:
+        p = u.points or 0
+        if   p <= 100:  buckets["0-100"]    += 1
+        elif p <= 300:  buckets["101-300"]  += 1
+        elif p <= 600:  buckets["301-600"]  += 1
+        elif p <= 1000: buckets["601-1000"] += 1
+        else:           buckets["1000+"]    += 1
+
+    # Content totals
+    docs       = db.query(models.Document).count()
+    summaries  = db.query(models.Summary).count()
+    flashcards = db.query(models.Flashcard).count()
+    quizzes    = db.query(models.Quiz).count()
+    videos     = db.query(models.Video).count()
+    notebooks  = db.query(models.Notebook).count()
+
+    return {
+        "student_count": len(students),
+        "total_points":  total_points,
+        "avg_points":    avg_points,
+        "avg_streak":    avg_streak,
+        "top_users": [
+            {"name": u.username, "points": u.points or 0, "streak": u.streak or 0, "avatar": u.avatar}
+            for u in top_users
+        ],
+        "points_dist": [{"range": k, "count": v} for k, v in buckets.items()],
+        "content": {
+            "documents":  docs,
+            "summaries":  summaries,
+            "flashcards": flashcards,
+            "quizzes":    quizzes,
+            "videos":     videos,
+            "notebooks":  notebooks,
+        },
+        "avg_per_user": {
+            "documents":  round(docs  / n, 1),
+            "summaries":  round(summaries  / n, 1),
+            "flashcards": round(flashcards / n, 1),
+            "quizzes":    round(quizzes    / n, 1),
+        },
+    }
+@app.get("/api/admin/weekly-activity")
+def admin_weekly_activity(db: Session = Depends(get_db)):
+    """
+    Returns daily activity counts for the past 7 days.
+    Counts: documents uploaded, summaries generated, flashcards, quizzes, videos per day.
+    """
+    from datetime import timedelta
+
+    today = datetime.utcnow().date()
+    days  = [today - timedelta(days=i) for i in range(6, -1, -1)]  # Mon→Sun order
+
+    def count_by_day(model, date_col):
+        """Count rows per day for the past 7 days."""
+        counts = {}
+        for day in days:
+            start = datetime(day.year, day.month, day.day, 0, 0, 0)
+            end   = datetime(day.year, day.month, day.day, 23, 59, 59)
+            n = db.query(model).filter(
+                date_col >= start,
+                date_col <= end,
+            ).count()
+            counts[day.isoformat()] = n
+        return counts
+
+    doc_counts       = count_by_day(models.Document,  models.Document.upload_date)
+    summary_counts   = count_by_day(models.Summary,   models.Summary.generated_at)
+    flashcard_counts = count_by_day(models.Flashcard, models.Flashcard.created_at)
+    quiz_counts      = count_by_day(models.Quiz,      models.Quiz.created_at)
+    video_counts     = count_by_day(models.Video,     models.Video.generated_at)
+
+    # Also count unique active students per day (students who uploaded/summarized)
+    active_students_by_day = {}
+    for day in days:
+        start = datetime(day.year, day.month, day.day, 0, 0, 0)
+        end   = datetime(day.year, day.month, day.day, 23, 59, 59)
+        # A student is "active" if they did anything that day
+        doc_users = set(
+            r.user_id for r in db.query(models.Document).filter(
+                models.Document.upload_date >= start,
+                models.Document.upload_date <= end,
+            ).all()
+        )
+        sum_users = set(
+            r.user_id for r in db.query(models.Summary).filter(
+                models.Summary.generated_at >= start,
+                models.Summary.generated_at <= end,
+            ).all()
+        )
+        active_students_by_day[day.isoformat()] = len(doc_users | sum_users)
+
+    # Build the combined day-by-day array for the chart
+    result = []
+    day_labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    for i, day in enumerate(days):
+        iso = day.isoformat()
+        # Use actual weekday name
+        label = day.strftime("%a")  # Mon, Tue, etc.
+        result.append({
+            "day":            label,
+            "date":           iso,
+            "documents":      doc_counts[iso],
+            "summaries":      summary_counts[iso],
+            "flashcards":     flashcard_counts[iso],
+            "quizzes":        quiz_counts[iso],
+            "videos":         video_counts[iso],
+            "active_students": active_students_by_day[iso],
+            "total_actions":  (
+                doc_counts[iso] +
+                summary_counts[iso] +
+                flashcard_counts[iso] +
+                quiz_counts[iso] +
+                video_counts[iso]
+            ),
+        })
+
+    # Weekly totals
+    totals = {
+        "documents":       sum(doc_counts.values()),
+        "summaries":       sum(summary_counts.values()),
+        "flashcards":      sum(flashcard_counts.values()),
+        "quizzes":         sum(quiz_counts.values()),
+        "videos":          sum(video_counts.values()),
+        "total_actions":   sum(d["total_actions"] for d in result),
+        "peak_day":        max(result, key=lambda d: d["total_actions"])["day"] if result else "—",
+        "avg_daily_active": round(sum(active_students_by_day.values()) / 7, 1),
+    }
+
+    return {"days": result, "totals": totals}
+
 # ── Run ───────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     import uvicorn
