@@ -15,6 +15,7 @@ import NotebookDetailPage from './pages/NotebookDetailPage'; // ← ADD THIS
 import './App.css';
 import AuthCallback from './pages/AuthCallback';
 import FriendsPage from './pages/FriendsPage';
+
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     return !!localStorage.getItem('user');
@@ -72,6 +73,7 @@ function App() {
           <Route path="/notebook" element={
             isAuthenticated ? <NotebookPage /> : <Navigate to="/login" />
           } />
+
           <Route 
             path="/auth/callback" 
             element={<AuthCallback setIsAuthenticated={setIsAuthenticated} setUser={setUser} />} 

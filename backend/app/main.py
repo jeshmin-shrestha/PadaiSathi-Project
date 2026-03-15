@@ -1360,6 +1360,126 @@ def admin_weekly_activity(db: Session = Depends(get_db)):
 
     return {"days": result, "totals": totals}
 
+@app.get("/api/my-activity-summary")
+def my_activity_summary(email: str, week_offset: int = 0, db: Session = Depends(get_db)):
+    """Activity summary — week_offset: 0 = current 30 days, -1 = previous 30 days, etc."""
+    from datetime import timedelta
+    from sqlalchemy import func
+
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    today = datetime.utcnow().date()
+
+    # week_offset=-1 means "30 days before today's window", -2 means "60 days before", etc.
+    offset_days = abs(week_offset) * 30  # week_offset is always 0 or negative from frontend
+    ref_date   = today - timedelta(days=offset_days)
+    start_date = ref_date - timedelta(days=29)
+
+    start_dt = datetime(start_date.year, start_date.month, start_date.day, 0, 0, 0)
+    end_dt   = datetime(ref_date.year,  ref_date.month,  ref_date.day,  23, 59, 59)
+
+    # Bulk-fetch activity grouped by date
+    doc_rows = db.query(
+        func.date(models.Document.upload_date).label('date'),
+        func.count().label('count')
+    ).filter(
+        models.Document.user_id == user.id,
+        models.Document.upload_date >= start_dt,
+        models.Document.upload_date <= end_dt
+    ).group_by(func.date(models.Document.upload_date)).all()
+
+    sum_rows = db.query(
+        func.date(models.Summary.generated_at).label('date'),
+        func.count().label('count')
+    ).filter(
+        models.Summary.user_id == user.id,
+        models.Summary.generated_at >= start_dt,
+        models.Summary.generated_at <= end_dt
+    ).group_by(func.date(models.Summary.generated_at)).all()
+
+    fc_rows = db.query(
+        func.date(models.Flashcard.created_at).label('date'),
+        func.count().label('count')
+    ).filter(
+        models.Flashcard.user_id == user.id,
+        models.Flashcard.created_at >= start_dt,
+        models.Flashcard.created_at <= end_dt
+    ).group_by(func.date(models.Flashcard.created_at)).all()
+
+    quiz_rows = db.query(
+        func.date(models.Quiz.created_at).label('date'),
+        func.count().label('count')
+    ).filter(
+        models.Quiz.user_id == user.id,
+        models.Quiz.created_at >= start_dt,
+        models.Quiz.created_at <= end_dt
+    ).group_by(func.date(models.Quiz.created_at)).all()
+
+    vid_rows = db.query(
+        func.date(models.Video.generated_at).label('date'),
+        func.count().label('count')
+    ).filter(
+        models.Video.user_id == user.id,
+        models.Video.generated_at >= start_dt,
+        models.Video.generated_at <= end_dt
+    ).group_by(func.date(models.Video.generated_at)).all()
+
+    # Merge all into one map
+    activity_map = {}
+    for rows in [doc_rows, sum_rows, fc_rows, quiz_rows, vid_rows]:
+        for r in rows:
+            key = str(r.date)
+            activity_map[key] = activity_map.get(key, 0) + r.count
+
+    # Build 30-day array
+    daily_activity = []
+    for i in range(30):
+        day = start_date + timedelta(days=i)
+        daily_activity.append({
+            "day":     day.strftime("%a"),
+            "date":    day.isoformat(),
+            "actions": activity_map.get(day.isoformat(), 0)
+        })
+
+    # Stats for the last 7 days of the window
+    last7       = daily_activity[-7:]
+    week_total  = sum(d["actions"] for d in last7)
+    active_days = sum(1 for d in last7 if d["actions"] > 0)
+
+    # Stats for the full 30-day window
+    month_total        = sum(d["actions"] for d in daily_activity)
+    month_active_days  = sum(1 for d in daily_activity if d["actions"] > 0)
+
+    is_current = (week_offset == 0)
+
+    recommendations = []
+    if is_current:
+        if month_total == 0:
+            recommendations.append({"icon": "📚", "title": "Start your learning journey!", "body": "Upload a document to get started."})
+        elif active_days >= 5:
+            recommendations.append({"icon": "🔥", "title": "You're on fire!", "body": f"Active {active_days}/7 days this week. Keep it up!"})
+        elif month_active_days < 5:
+            recommendations.append({"icon": "💪", "title": "Stay consistent!", "body": "Try to study more regularly this month."})
+
+    return {
+        "week_summary": {
+            "total_actions": week_total,
+            "active_days":   active_days,
+        },
+        "month_summary": {
+            "total_actions": month_total,
+            "active_days":   month_active_days,
+        },
+        "daily_activity":  daily_activity,
+        "recommendations": recommendations,
+        "date_range": {
+            "start": start_date.isoformat(),
+            "end":   ref_date.isoformat(),
+        },
+        "is_current": is_current,
+    }
 # ── Run ───────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     import uvicorn

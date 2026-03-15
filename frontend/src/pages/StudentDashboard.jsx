@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BookOpen } from 'lucide-react';
 import Navbar from '../components/Navbar';
@@ -23,25 +23,111 @@ const CUSTOM_AVATAR_KEY = 'user_custom_avatar';
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
-  const [username, setUsername]       = useState('');
-  const [myEmail, setMyEmail]         = useState('');
-  const [leaderboard, setLeaderboard] = useState([]);
-  const [yourRank, setYourRank]       = useState(null);
-  const [userAvatar, setUserAvatar]   = useState('avatar1');
-  const [customImg, setCustomImg]     = useState(null);
-  const [friendsOnly, setFriendsOnly] = useState(false);   // ← NEW
-  const [leaderLoading, setLeaderLoading] = useState(false);
-  const [userStats, setUserStats]     = useState({
+  
+  // User data
+  const [username, setUsername] = useState('');
+  const [myEmail, setMyEmail] = useState('');
+  const [userAvatar, setUserAvatar] = useState('avatar1');
+  const [customImg, setCustomImg] = useState(null);
+  
+  // Stats
+  const [userStats, setUserStats] = useState({
     points: 0, streak: 0, documents: 0, summaries: 0,
     notebooks: 0, flashcards: 0, quizzes: 0, videos: 0,
   });
-  const [badges, setBadges]           = useState([]);
+  
+  // Leaderboard
+  const [leaderboard, setLeaderboard] = useState([]);
+  const [yourRank, setYourRank] = useState(null);
+  const [friendsOnly, setFriendsOnly] = useState(false);
+  const [leaderLoading, setLeaderLoading] = useState(true);
+  
+  // Badges
+  const [badges, setBadges] = useState([]);
   const [earnedCount, setEarnedCount] = useState(0);
   const [showAllBadges, setShowAllBadges] = useState(false);
+  
+  // Weekly Report
+  const [weeklyReport, setWeeklyReport] = useState(null);
+  const [monthOffset, setMonthOffset] = useState(0);
+  const [reportLoading, setReportLoading] = useState(true);
+  
+  // Loading states
+  const [initialLoad, setInitialLoad] = useState(true);
 
+  // ✅ Memoized fetch functions
+  const fetchLeaderboard = useCallback(async (email, fo) => {
+    if (!email) return;
+    setLeaderLoading(true);
+    try {
+      const res = await fetch(
+        `http://localhost:8000/api/leaderboard?email=${email}&friends_only=${fo}`
+      );
+      const data = await res.json();
+      setLeaderboard(data.leaderboard || []);
+      setYourRank(data.your_rank);
+    } catch (err) {
+      console.error('Leaderboard error:', err);
+    } finally {
+      setLeaderLoading(false);
+    }
+  }, []);
+
+  const fetchStats = useCallback(async (email) => {
+    if (!email) return;
+    try {
+      const res = await fetch(`http://localhost:8000/api/my-stats?email=${email}`);
+      const data = await res.json();
+      setUserStats(prev => ({
+        ...prev,
+        documents: data.documents || 0,
+        summaries: data.summaries || 0,
+        notebooks: data.notebooks || 0,
+        flashcards: data.flashcards || 0,
+        quizzes: data.quizzes || 0,
+        videos: data.videos || 0,
+      }));
+    } catch (err) {
+      console.error('Stats error:', err);
+    }
+  }, []);
+
+  const fetchBadges = useCallback(async (email) => {
+    if (!email) return;
+    try {
+      const res = await fetch(`http://localhost:8000/api/my-badges?email=${email}`);
+      const data = await res.json();
+      setBadges(data.badges || []);
+      setEarnedCount(data.earned_count || 0);
+    } catch (err) {
+      console.error('Badges error:', err);
+    }
+  }, []);
+
+  const fetchWeeklyReport = useCallback(async (email, offset = 0) => {
+    if (!email) return;
+    setReportLoading(true);
+    try {
+      const res = await fetch(
+        `http://localhost:8000/api/my-activity-summary?email=${email}&week_offset=${offset}`
+      );
+      const data = await res.json();
+      setWeeklyReport(data);
+    } catch (err) {
+      console.error('Activity summary error:', err);
+    } finally {
+      setReportLoading(false);
+    }
+  }, []);
+
+ 
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem('user'));
-    if (!storedUser) { window.location.href = '/login'; return; }
+    if (!storedUser) {
+      window.location.href = '/login';
+      return;
+    }
+
     setUsername(storedUser.username);
     setMyEmail(storedUser.email);
     setUserAvatar(storedUser.avatar || 'avatar1');
@@ -54,57 +140,32 @@ const StudentDashboard = () => {
       points: storedUser.points || 0,
       streak: storedUser.streak || 0,
     }));
-    fetchLeaderboard(storedUser.email, false);
-    fetchStats(storedUser.email);
-    fetchBadges(storedUser.email);
-  }, []);
 
-  // Re-fetch leaderboard when toggle changes
+    // Fetch all data in parallel
+    Promise.all([
+      fetchLeaderboard(storedUser.email, false),
+      fetchStats(storedUser.email),
+      fetchBadges(storedUser.email),
+      fetchWeeklyReport(storedUser.email),
+    ]).finally(() => {
+      setInitialLoad(false);
+    });
+  }, []); // ← Empty deps = run ONCE
+
+  // ✅ Re-fetch leaderboard when friendsOnly changes
   useEffect(() => {
-    if (myEmail) fetchLeaderboard(myEmail, friendsOnly);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [friendsOnly, myEmail]);
+    if (!myEmail || initialLoad) return;
+    fetchLeaderboard(myEmail, friendsOnly);
+  }, [friendsOnly, myEmail, fetchLeaderboard, initialLoad]);
 
-  const fetchLeaderboard = async (email, fo) => {
-    setLeaderLoading(true);
-    try {
-      const res  = await fetch(
-        `http://localhost:8000/api/leaderboard?email=${email}&friends_only=${fo}`
-      );
-      const data = await res.json();
-      setLeaderboard(data.leaderboard || []);
-      setYourRank(data.your_rank);
-    } catch (err) { console.error('Leaderboard error:', err); }
-    setLeaderLoading(false);
-  };
+  // ✅ Re-fetch weekly report when monthOffset changes
+  useEffect(() => {
+    if (!myEmail || initialLoad) return;
+    fetchWeeklyReport(myEmail, monthOffset);
+  }, [monthOffset, myEmail, fetchWeeklyReport, initialLoad]);
 
-  const fetchStats = async (email) => {
-    try {
-      const res  = await fetch(`http://localhost:8000/api/my-stats?email=${email}`);
-      const data = await res.json();
-      setUserStats(prev => ({
-        ...prev,
-        documents:  data.documents  || 0,
-        summaries:  data.summaries  || 0,
-        notebooks:  data.notebooks  || 0,
-        flashcards: data.flashcards || 0,
-        quizzes:    data.quizzes    || 0,
-        videos:     data.videos     || 0,
-      }));
-    } catch (err) { console.error('Stats error:', err); }
-  };
-
-  const fetchBadges = async (email) => {
-    try {
-      const res  = await fetch(`http://localhost:8000/api/my-badges?email=${email}`);
-      const data = await res.json();
-      setBadges(data.badges || []);
-      setEarnedCount(data.earned_count || 0);
-    } catch (err) { console.error('Badges error:', err); }
-  };
-
-  // ── Avatar resolver ──────────────────────────────────────────────────────
-  const resolveAvatar = (entry) => {
+  // Avatar resolver
+  const resolveAvatar = useCallback((entry) => {
     const avatarId = entry?.avatar || 'avatar1';
     const isMe = entry?.is_you === true;
 
@@ -117,13 +178,11 @@ const StudentDashboard = () => {
 
     const preset = AVATARS.find(a => a.id === avatarId) || AVATARS[0];
     return { img: preset.img, bg: preset.bg };
-  };
+  }, [customImg]);
 
-  // Podium order: [2nd, 1st, 3rd]
   const top3 = leaderboard.slice(0, 3);
   const podiumOrder = [top3[1], top3[0], top3[2]];
 
-  // ── Avatar components ────────────────────────────────────────────────────
   const PodiumAvatar = ({ entry, size = 'md' }) => {
     if (!entry) return null;
     const { img, bg } = resolveAvatar(entry);
@@ -131,10 +190,11 @@ const StudentDashboard = () => {
     const borderColor = entry.is_you ? 'border-purple-500' : 'border-white';
     return (
       <div className={`${sizeClass} rounded-full bg-gradient-to-br ${bg} overflow-hidden border-4 ${borderColor} shadow-lg flex-shrink-0`}>
-        {img
-          ? <img src={img} alt="avatar" className="w-full h-full object-cover" />
-          : <div className="w-full h-full flex items-center justify-center text-white text-2xl">👤</div>
-        }
+        {img ? (
+          <img src={img} alt="avatar" className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-white text-2xl">👤</div>
+        )}
       </div>
     );
   };
@@ -145,10 +205,11 @@ const StudentDashboard = () => {
     const borderColor = entry.is_you ? 'border-purple-500' : 'border-gray-300';
     return (
       <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${bg} overflow-hidden flex-shrink-0 border-2 ${borderColor}`}>
-        {img
-          ? <img src={img} alt="avatar" className="w-full h-full object-cover" />
-          : <div className="w-full h-full flex items-center justify-center text-white text-sm">👤</div>
-        }
+        {img ? (
+          <img src={img} alt="avatar" className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-white text-sm">👤</div>
+        )}
       </div>
     );
   };
@@ -158,6 +219,7 @@ const StudentDashboard = () => {
     is_you: true,
   }), [userAvatar]);
 
+  
   return (
     <div className="min-h-screen bg-gray-200">
       <Navbar />
@@ -192,6 +254,8 @@ const StudentDashboard = () => {
 
           {/* Left Column */}
           <div className="space-y-6">
+
+            {/* Streak — full width again */}
             <div className="bg-white rounded-3xl p-8 border-4 border-black text-center">
               <div className="text-6xl mb-4">🔥</div>
               <p className="text-xl mb-2">
@@ -199,6 +263,7 @@ const StudentDashboard = () => {
               </p>
             </div>
 
+            {/* Quick Statistics — unchanged */}
             <div>
               <div className="flex items-center space-x-2 mb-4">
                 <span className="text-3xl">📊</span>
@@ -225,6 +290,160 @@ const StudentDashboard = () => {
                 </div>
               </div>
             </div>
+
+            {/* Monthly activity heatmap */}
+            {/* GitHub-style activity heatmap */}
+            {weeklyReport?.daily_activity && (
+              <div className="bg-white rounded-3xl p-6 border-4 border-black">
+
+                {/* Header with navigation */}
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-3xl">🗓️</span>
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900 leading-tight">
+                        Activity Heatmap
+                      </h3>
+                      {weeklyReport.date_range && (
+                        <p className="text-xs text-gray-400">
+                          {new Date(weeklyReport.date_range.start + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          {' – '}
+                          {new Date(weeklyReport.date_range.end + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Prev / Next arrows */}
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setMonthOffset(prev => prev - 1)}
+                      className="w-8 h-8 rounded-full border-2 border-black flex items-center justify-center text-sm font-bold hover:bg-gray-100 transition"
+                      title="Previous 30 days"
+                    >
+                      ‹
+                    </button>
+                    <button
+                      onClick={() => setMonthOffset(prev => Math.min(prev + 1, 0))}
+                      disabled={monthOffset === 0}
+                      className={`w-8 h-8 rounded-full border-2 border-black flex items-center justify-center text-sm font-bold transition ${
+                        monthOffset === 0
+                          ? 'opacity-30 cursor-not-allowed'
+                          : 'hover:bg-gray-100'
+                      }`}
+                      title="Next 30 days"
+                    >
+                      ›
+                    </button>
+                    {monthOffset < 0 && (
+                      <button
+                        onClick={() => setMonthOffset(0)}
+                        className="text-xs font-bold text-purple-600 hover:underline ml-1"
+                      >
+                        Today
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {reportLoading ? (
+                  <div className="text-center py-8 text-gray-400 text-sm animate-pulse">Loading…</div>
+                ) : (() => {
+                  const data = weeklyReport.daily_activity;
+                  const max = Math.max(...data.map(d => d.actions), 1);
+
+                  const getColor = (actions) => {
+                    if (actions === 0) return '#e5e7eb';
+                    const intensity = actions / max;
+                    if (intensity <= 0.25) return '#c4b5fd';
+                    if (intensity <= 0.5)  return '#a78bfa';
+                    if (intensity <= 0.75) return '#7c3aed';
+                    return '#4c1d95';
+                  };
+
+                  const firstDayOfWeek = new Date(data[0].date + 'T00:00:00').getDay();
+                  const padded = [...Array(firstDayOfWeek).fill(null), ...data];
+                  const weeks = [];
+                  for (let i = 0; i < padded.length; i += 7) weeks.push(padded.slice(i, i + 7));
+
+                  return (
+                    <div>
+                      <div className="flex gap-1 mb-1">
+                        {['S','M','T','W','T','F','S'].map((d, i) => (
+                          <div key={i} className="w-7 text-center text-xs text-gray-400">{d}</div>
+                        ))}
+                      </div>
+                      <div className="space-y-1">
+                        {weeks.map((week, wi) => (
+                          <div key={wi} className="flex gap-1">
+                            {week.map((day, di) => (
+                              <div
+                                key={di}
+                                title={day ? `${day.date}: ${day.actions} action${day.actions !== 1 ? 's' : ''}` : ''}
+                                className="w-7 h-7 rounded transition-colors hover:ring-2 hover:ring-purple-400"
+                                style={{ background: day ? getColor(day.actions) : 'transparent' }}
+                              />
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex items-center gap-1 mt-3 justify-end">
+                        <span className="text-xs text-gray-400 mr-1">Less</span>
+                        {['#e5e7eb','#c4b5fd','#a78bfa','#7c3aed','#4c1d95'].map(c => (
+                          <div key={c} className="w-4 h-4 rounded-sm" style={{ background: c }} />
+                        ))}
+                        <span className="text-xs text-gray-400 ml-1">More</span>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+               
+                {/* Period summary */}
+                {!reportLoading && (
+                  <div className="bg-purple-50 rounded-xl p-4 border-2 border-purple-200 mt-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-gray-600">
+                          {weeklyReport.is_current ? 'This Month' : 'This Period'}
+                        </p>
+                        <p className="text-2xl font-bold text-purple-600">
+                          {weeklyReport.month_summary?.total_actions ?? weeklyReport.week_summary.total_actions} actions
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {weeklyReport.month_summary?.active_days ?? weeklyReport.week_summary.active_days}/30 days active
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-gray-500">This week</p>
+                        <p className="text-lg font-bold text-purple-400">
+                          {weeklyReport.week_summary.total_actions} actions
+                        </p>
+                        <div className="text-2xl mt-1">
+                          {weeklyReport.week_summary.active_days >= 5 ? '🔥' : weeklyReport.week_summary.active_days >= 3 ? '⚡' : '📖'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Recommendations — current period only */}
+                {!reportLoading && weeklyReport.is_current && weeklyReport.recommendations?.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    {weeklyReport.recommendations.map((rec, i) => (
+                      <div key={i} className="flex gap-2 items-start bg-gray-50 rounded-lg p-3">
+                        <span className="text-lg flex-shrink-0">{rec.icon}</span>
+                        <div>
+                          <p className="text-sm font-bold text-gray-800">{rec.title}</p>
+                          <p className="text-xs text-gray-600">{rec.body}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
           </div>
 
           {/* Right Column */}
