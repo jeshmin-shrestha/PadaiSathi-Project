@@ -607,7 +607,7 @@ const StudentDashboard = () => {
                       title={`Earned: ${new Date(badge.earned_at).toLocaleDateString()}`}
                       className="rounded-2xl p-4 border-4 border-black bg-white text-center"
                     >
-                      <img src={`/badges/${badge.id}.jpeg`} alt={badge.name} className="w-14 h-14 object-contain mx-auto mb-2" />
+                      <img src={`/badges/${badge.id}.png`} alt={badge.name} className="w-20 h-20 object-contain mx-auto mb-2" />
                       <div className="text-xs font-bold text-gray-900 leading-tight">{badge.name}</div>
                     </div>
                   ))}

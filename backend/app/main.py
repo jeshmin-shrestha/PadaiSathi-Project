@@ -66,23 +66,23 @@ _video_jobs: dict = {}   # { summary_id: {status, video_url, error} }
 
 # badges definiations
 BADGE_DEFINITIONS = [
-    { "id": "first_steps",           "name": "First Steps",           "icon": "🐣", "description": "Upload your first document" },
-    { "id": "summary_rookie",        "name": "Summary Rookie",        "icon": "📝", "description": "Generate 3 summaries" },
-    { "id": "summary_sensei",        "name": "Summary Sensei",        "icon": "🧠", "description": "Generate 10 summaries" },
-    { "id": "flashcard_apprentice",  "name": "Flashcard Apprentice",  "icon": "📇", "description": "Generate 25 flashcards" },
-    { "id": "flashcard_god",         "name": "Flashcard God",         "icon": "⚡", "description": "Generate 100 flashcards" },
-    { "id": "quiz_rookie",           "name": "Quiz Rookie",           "icon": "❓", "description": "Complete 10 quiz questions" },
-    { "id": "quiz_champion",         "name": "Quiz Champion",         "icon": "🏆", "description": "Complete 50 quiz questions" },
-    { "id": "video_creator",         "name": "Video Creator",         "icon": "🎬", "description": "Generate 3 videos" },
-    { "id": "notebook_collector",    "name": "Notebook Collector",    "icon": "📓", "description": "Create 5 notebooks" },
-    { "id": "notebook_hoarder",      "name": "Notebook Hoarder",      "icon": "🗂️", "description": "Create 15 notebooks" },
-    { "id": "point_grinder",         "name": "Point Grinder",         "icon": "💰", "description": "Reach 500 points" },
-    { "id": "point_millionaire",     "name": "Point Millionaire",     "icon": "👑", "description": "Reach 2000 points" },
-    { "id": "streak_starter",        "name": "Streak Starter",        "icon": "🔥", "description": "3-day streak" },
-    { "id": "streak_warrior",        "name": "Streak Warrior",        "icon": "⚔️", "description": "30-day streak" },
-    { "id": "streak_veteran",        "name": "Streak Veteran",        "icon": "🛡️", "description": "60-day streak" },
-    { "id": "streak_legend",         "name": "Streak Legend",         "icon": "💎", "description": "90-day streak" },
-    { "id": "overachiever",          "name": "Overachiever",          "icon": "🌟", "description": "Unlock every other badge" },
+    { "id": "trailblazer",        "name": "Trailblazer",        "icon": "🐣", "description": "Upload your first document" },
+    { "id": "summary_scout",      "name": "Summary Scout",      "icon": "📝", "description": "Generate 3 summaries" },
+    { "id": "summary_sensei",     "name": "Summary Sensei",     "icon": "🧠", "description": "Generate 10 summaries" },
+    { "id": "card_sharp",         "name": "Card Sharp",         "icon": "📇", "description": "Generate 25 flashcards" },
+    { "id": "deck_destroyer",     "name": "Deck Destroyer",     "icon": "⚡", "description": "Generate 100 flashcards" },
+    { "id": "quiz_challenger",    "name": "Quiz Challenger",    "icon": "❓", "description": "Complete 10 quiz questions" },
+    { "id": "trivia_titan",       "name": "Trivia Titan",       "icon": "🏆", "description": "Complete 50 quiz questions" },
+    { "id": "video_visionary",    "name": "Video Visionary",    "icon": "🎬", "description": "Generate 3 videos" },
+    { "id": "knowledge_keeper",   "name": "Knowledge Keeper",   "icon": "📓", "description": "Create 5 notebooks" },
+    { "id": "the_archivist",      "name": "The Archivist",      "icon": "🗂️", "description": "Create 15 notebooks" },
+    { "id": "point_hunter",       "name": "Point Hunter",       "icon": "💰", "description": "Reach 500 points" },
+    { "id": "point_tycoon",       "name": "Point Tycoon",       "icon": "👑", "description": "Reach 2000 points" },
+    { "id": "streak_igniter",     "name": "Streak Igniter",     "icon": "🔥", "description": "3-day streak" },
+    { "id": "unbreakable",        "name": "Unbreakable",        "icon": "⚔️", "description": "30-day streak" },
+    { "id": "iron_will",          "name": "Iron Will",          "icon": "🛡️", "description": "60-day streak" },
+    { "id": "eternal_flame",      "name": "Eternal Flame",      "icon": "💎", "description": "90-day streak" },
+    { "id": "the_completionist",  "name": "The Completionist",  "icon": "🌟", "description": "Unlock every other badge" },
 ]
 # ═════════════════════════════════════════════════════════════════════════════
 # Pydantic models
@@ -853,23 +853,23 @@ def _check_and_award_badges(user_id: int, db: Session):
 
     # Badge conditions map
     conditions = {
-        "first_steps":          documents  >= 1,
-        "summary_rookie":       summaries  >= 3,
-        "summary_sensei":       summaries  >= 10,
-        "flashcard_apprentice": flashcards >= 25,
-        "flashcard_god":        flashcards >= 100,
-        "quiz_rookie":          quizzes    >= 10,
-        "quiz_champion":        quizzes    >= 50,
-        "video_creator":        videos     >= 3,
-        "notebook_collector":   notebooks  >= 5,
-        "notebook_hoarder":     notebooks  >= 15,
-        "point_grinder":        points     >= 500,
-        "point_millionaire":    points     >= 2000,
-        "streak_starter":       streak     >= 3,
-        "streak_warrior":       streak     >= 30,
-        "streak_veteran":       streak     >= 60,
-        "streak_legend":        streak     >= 90,
-    }
+    "trailblazer":      documents  >= 1,
+    "summary_scout":    summaries  >= 3,
+    "summary_sensei":   summaries  >= 10,
+    "card_sharp":       flashcards >= 25,
+    "deck_destroyer":   flashcards >= 100,
+    "quiz_challenger":  quizzes    >= 10,
+    "trivia_titan":     quizzes    >= 50,
+    "video_visionary":  videos     >= 3,
+    "knowledge_keeper": notebooks  >= 5,
+    "the_archivist":    notebooks  >= 15,
+    "point_hunter":     points     >= 500,
+    "point_tycoon":     points     >= 2000,
+    "streak_igniter":   streak     >= 3,
+    "unbreakable":      streak     >= 30,
+    "iron_will":        streak     >= 60,
+    "eternal_flame":    streak     >= 90,
+}
 
     newly_earned = []
     for badge_id, condition_met in conditions.items():

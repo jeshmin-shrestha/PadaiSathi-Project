@@ -17,10 +17,21 @@ const QuizPage = () => {
   const [userEmail, setUserEmail] = useState('');
   const [error, setError] = useState('');
   const [quizStarted, setQuizStarted] = useState(false);
-
+  
   // ── Ref so callbacks always read the latest ID (fixes stale closure bug) ──
   const selectedSummaryIdRef = useRef(null);
 
+  useEffect(() => {
+    const saved = localStorage.getItem('padai_quiz');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      setQuestions(parsed.questions);
+      setQuizStarted(true);
+      setSelectedSummaryId(parsed.summaryId);
+      selectedSummaryIdRef.current = parsed.summaryId;
+    }
+  }, []);
+  
   useEffect(() => {
     selectedSummaryIdRef.current = selectedSummaryId;
   }, [selectedSummaryId]);
@@ -84,6 +95,7 @@ const QuizPage = () => {
       if (data.success && data.questions?.length > 0) {
         setQuestions(data.questions);
         setQuizStarted(true);
+        localStorage.setItem('padai_quiz', JSON.stringify({ questions: data.questions, summaryId: idToUse }));
       } else {
         setError('Could not generate quiz questions. Try again.');
       }

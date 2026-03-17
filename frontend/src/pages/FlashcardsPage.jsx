@@ -13,7 +13,15 @@ const FlashcardPage = () => {
   const [userEmail, setUserEmail] = useState('');
   const [error, setError] = useState('');
   const selectedSummaryIdRef = useRef(null);
-
+  useEffect(() => {
+    const saved = localStorage.getItem('padai_flashcards');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      setFlashcards(parsed.flashcards);
+      setSelectedSummaryId(parsed.summaryId);
+      selectedSummaryIdRef.current = parsed.summaryId;
+    }
+  }, []);
   useEffect(() => {
     selectedSummaryIdRef.current = selectedSummaryId;
   }, [selectedSummaryId]);
@@ -69,6 +77,7 @@ const FlashcardPage = () => {
       const data = await res.json();
       if (data.success && data.flashcards?.length > 0) {
         setFlashcards(data.flashcards);
+        localStorage.setItem('padai_flashcards', JSON.stringify({ flashcards: data.flashcards, summaryId: idToUse }));
       } else {
         setError('Could not generate flashcards. Try again.');
       }

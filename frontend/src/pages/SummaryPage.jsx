@@ -10,6 +10,10 @@ const SummaryPage = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [username, setUsername] = useState('');
   const [userEmail, setUserEmail] = useState('');
+  useEffect(() => {
+    const saved = localStorage.getItem('padai_summary');
+    if (saved) setSummary(saved);
+  }, []);
   // Get user email on component mount
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem('user'));
@@ -108,6 +112,7 @@ const SummaryPage = () => {
       if (summaryData.success) {
         // Use the AI-generated summary
         setSummary(summaryData.genz_summary); // or summaryData.formal_summary
+        localStorage.setItem('padai_summary', summaryData.genz_summary);
       } else {
         throw new Error(summaryData.detail || 'Summary generation failed');
       }
