@@ -55,3 +55,8 @@ frontend/src/assets/backgrounds/*.mp4
 # Environment variables
 .env
 *.env
+# AI/ML models - too large, download on demand
+backend/app/ai/model/
+backend/app/ai/model/*
+!backend/app/ai/model/*.py   # optional: keep python files if any
+!backend/app/ai/model/*.json # keep configs if needed
