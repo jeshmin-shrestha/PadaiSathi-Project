@@ -1,6 +1,32 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen } from 'lucide-react';
+import {
+  BookOpen,
+  Flame,
+  BarChart3,
+  FileText,
+  FileCheck,
+  Layers,
+  HelpCircle,
+  Video,
+  Award,
+  Trophy,
+  Users,
+  Globe,
+  Crown,
+  ChevronLeft,
+  ChevronRight,
+  Calendar,
+  Lock,
+  Medal,
+  Star,
+  Zap,
+  TrendingUp,
+  Sparkles,
+  Target,
+  Activity,
+  UserPlus,
+} from 'lucide-react';
 import Navbar from '../components/Navbar';
 import ChickenImage from '../assets/images/chickenicon.png';
 
@@ -55,7 +81,7 @@ const StudentDashboard = () => {
   // Loading states
   const [initialLoad, setInitialLoad] = useState(true);
 
-  // ✅ Memoized fetch functions
+  // Fetch functions (unchanged)
   const fetchLeaderboard = useCallback(async (email, fo) => {
     if (!email) return;
     setLeaderLoading(true);
@@ -97,6 +123,7 @@ const StudentDashboard = () => {
     try {
       const res = await fetch(`http://localhost:8000/api/my-badges?email=${email}`);
       const data = await res.json();
+      console.log('Badges API response:', data);
       setBadges(data.badges || []);
       setEarnedCount(data.earned_count || 0);
     } catch (err) {
@@ -120,7 +147,6 @@ const StudentDashboard = () => {
     }
   }, []);
 
- 
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem('user'));
     if (!storedUser) {
@@ -141,7 +167,6 @@ const StudentDashboard = () => {
       streak: storedUser.streak || 0,
     }));
 
-    // Fetch all data in parallel
     Promise.all([
       fetchLeaderboard(storedUser.email, false),
       fetchStats(storedUser.email),
@@ -150,21 +175,18 @@ const StudentDashboard = () => {
     ]).finally(() => {
       setInitialLoad(false);
     });
-  }, []); // ← Empty deps = run ONCE
+  }, []);
 
-  // ✅ Re-fetch leaderboard when friendsOnly changes
   useEffect(() => {
     if (!myEmail || initialLoad) return;
     fetchLeaderboard(myEmail, friendsOnly);
   }, [friendsOnly, myEmail, fetchLeaderboard, initialLoad]);
 
-  // ✅ Re-fetch weekly report when monthOffset changes
   useEffect(() => {
     if (!myEmail || initialLoad) return;
     fetchWeeklyReport(myEmail, monthOffset);
   }, [monthOffset, myEmail, fetchWeeklyReport, initialLoad]);
 
-  // Avatar resolver
   const resolveAvatar = useCallback((entry) => {
     const avatarId = entry?.avatar || 'avatar1';
     const isMe = entry?.is_you === true;
@@ -187,7 +209,7 @@ const StudentDashboard = () => {
     if (!entry) return null;
     const { img, bg } = resolveAvatar(entry);
     const sizeClass = size === 'lg' ? 'w-24 h-24' : 'w-20 h-20';
-    const borderColor = entry.is_you ? 'border-purple-500' : 'border-white';
+    const borderColor = entry.is_you ? 'border-[#6a88be]' : 'border-white';
     return (
       <div className={`${sizeClass} rounded-full bg-gradient-to-br ${bg} overflow-hidden border-4 ${borderColor} shadow-lg flex-shrink-0`}>
         {img ? (
@@ -202,7 +224,7 @@ const StudentDashboard = () => {
   const RowAvatar = ({ entry }) => {
     if (!entry) return null;
     const { img, bg } = resolveAvatar(entry);
-    const borderColor = entry.is_you ? 'border-purple-500' : 'border-gray-300';
+    const borderColor = entry.is_you ? 'border-[#6a88be]' : 'border-gray-300';
     return (
       <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${bg} overflow-hidden flex-shrink-0 border-2 ${borderColor}`}>
         {img ? (
@@ -219,72 +241,101 @@ const StudentDashboard = () => {
     is_you: true,
   }), [userAvatar]);
 
-  
+  // Helper to generate shades of #6a88be based on intensity
+  const getHeatmapColor = (actions, max) => {
+    if (actions === 0) return '#e5e7eb'; // gray for no activity
+    const intensity = actions / max;
+    // Use opacity or lightness variations of #6a88be
+    if (intensity <= 0.2) return '#d4e0f5'; // very light
+    if (intensity <= 0.4) return '#b2c7e8'; // light
+    if (intensity <= 0.6) return '#8fa6d4'; // medium-light
+    if (intensity <= 0.8) return '#6a88be'; // base
+    return '#3a5a8c'; // dark
+  };
+
   return (
-    <div className="min-h-screen bg-gray-200">
+    <div className="min-h-screen bg-gray-100">
       <Navbar />
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      {/* Main container – reduced width and padding for better balance */}
+      <div className="max-w-7xl mx-auto px-6 py-6 lg:px-8">
 
-        {/* Welcome Section */}
-        <div className="bg-gray-300 rounded-3xl p-8 mb-8">
-          <div className="flex items-center justify-between">
-            <img src={ChickenImage} alt="Chicken" className="w-48 h-48 object-contain" />
-            <div className="flex-1 ml-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Hello {username}!</h1>
-              <p className="text-gray-700 mb-6">Ready to continue your learning journey?</p>
-              <div className="bg-white rounded-2xl p-4 max-w-md">
-                <h3 className="font-semibold text-gray-900 mb-3">Keep learning to earn more points! 🎯</h3>
-                <div className="flex items-center space-x-4">
-                  <div className="flex-1 bg-gray-200 rounded-full h-3 overflow-hidden">
-                    <div
-                      className="bg-gradient-to-r from-orange-400 to-pink-500 h-full rounded-full transition-all"
-                      style={{ width: `${Math.min((userStats.points / 500) * 100, 100)}%` }}
-                    />
-                  </div>
-                  <span className="text-sm font-bold text-gray-700">{userStats.points} pts</span>
+        {/* Welcome Section – with chicken sticking out bottom-left and bouncing */}
+        <div className="relative bg-gray-300 rounded-3xl shadow-lg p-8 mb-10 overflow-visible">
+          {/* Chicken image – absolutely positioned, partially outside, with bounce animation */}
+          <img
+            src={ChickenImage}
+            alt="Chicken mascot"
+            className="absolute -bottom-8 -left-2 w-60 h-60 sm:w-58 sm:h-58 lg:w-56 lg:h-56 object-contain -translate-x-[10%] translate-y-[0%] animate-bounce"
+            style={{ animationDuration: '2s' }}
+          />
+
+          {/* Text + progress bar – padded to avoid overlap */}
+          <div className="md:pl-48 text-center md:text-left">
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
+              Hello {username}!
+            </h1>
+            <p className="text-gray-700 text-lg mb-6">
+              Ready to continue your learning journey?
+            </p>
+
+            {/* Progress bar */}
+            <div className="max-w-md mx-auto md:mx-0 bg-gray-200 rounded-2xl p-5 border border-gray-300 shadow-sm">
+              <h3 className="font-semibold text-gray-800 mb-4 flex items-center justify-center md:justify-start">
+                <Target className="w-5 h-5 mr-2 text-[#6a88be]" />
+                Keep learning to earn more points!
+              </h3>
+
+              <div className="flex items-center space-x-4">
+                <div className="flex-1 bg-gray-300 rounded-full h-3.5 overflow-hidden shadow-inner">
+                  <div
+                    className="bg-gradient-to-r from-[#6a88be] to-[#9fc383] h-full rounded-full transition-all duration-700"
+                    style={{ width: `${Math.min((userStats.points / 500) * 100, 100)}%` }}
+                  />
                 </div>
+                <span className="text-base font-bold text-gray-800 whitespace-nowrap">
+                  {userStats.points} pts
+                </span>
               </div>
             </div>
           </div>
         </div>
-
         {/* Stats Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
 
           {/* Left Column */}
           <div className="space-y-6">
 
-            {/* Streak — full width again */}
-            <div className="bg-white rounded-3xl p-8 border-4 border-black text-center">
-              <div className="text-6xl mb-4">🔥</div>
-              <p className="text-xl mb-2">
-                You're on a <span className="text-5xl font-bold mx-2">{userStats.streak}</span> day streak!
+            {/* Streak */}
+            <div className="bg-white rounded-3xl shadow-lg p-8 text-center">
+              <Flame className="w-16 h-16 mx-auto mb-4 text-orange-500" strokeWidth={1.5} />
+              <p className="text-xl text-gray-700">
+                You're on a <span className="text-6xl font-bold text-[#6a88be] mx-2">{userStats.streak}</span> day streak!
               </p>
             </div>
 
-            {/* Quick Statistics — unchanged */}
+            {/* Quick Statistics */}
             <div>
               <div className="flex items-center space-x-2 mb-4">
-                <span className="text-3xl">📊</span>
+                <BarChart3 className="w-6 h-6 text-gray-700" />
                 <h3 className="text-xl font-bold text-gray-900">Quick Statistics</h3>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 {[
-                  { icon: '📄', count: userStats.documents,  label: 'Documents' },
-                  { icon: '📝', count: userStats.summaries,  label: 'Summaries' },
-                  { icon: '📇', count: userStats.flashcards, label: 'Flashcards' },
-                  { icon: '❓', count: userStats.quizzes,    label: 'Quizzes' },
-                  { icon: '🎬', count: userStats.videos,     label: 'Videos' },
-                ].map(({ icon, count, label }) => (
-                  <div key={label} className="bg-white rounded-2xl p-6 border-4 border-black text-center">
-                    <div className="text-4xl mb-2">{icon}</div>
+                  { icon: FileText,   count: userStats.documents,  label: 'Documents' },
+                  { icon: FileCheck,  count: userStats.summaries,  label: 'Summaries' },
+                  { icon: Layers,     count: userStats.flashcards, label: 'Flashcards' },
+                  { icon: HelpCircle, count: userStats.quizzes,    label: 'Quizzes' },
+                  { icon: Video,      count: userStats.videos,     label: 'Videos' },
+                ].map(({ icon: Icon, count, label }) => (
+                  <div key={label} className="bg-white rounded-2xl shadow-lg p-6 text-center">
+                    <Icon className="w-10 h-10 mx-auto mb-2 text-[#6a88be]" strokeWidth={1.5} />
                     <div className="text-4xl font-bold text-gray-900 mb-1">{count}</div>
                     <div className="text-sm text-gray-600">{label}</div>
                   </div>
                 ))}
-                <div className="bg-white rounded-2xl p-6 border-4 border-black text-center">
-                  <BookOpen className="w-10 h-10 mx-auto mb-2 text-green-700" />
+                <div className="bg-white rounded-2xl shadow-lg p-6 text-center">
+                  <BookOpen className="w-10 h-10 mx-auto mb-2 text-[#9fc383]" strokeWidth={1.5} />
                   <div className="text-4xl font-bold text-gray-900 mb-1">{userStats.notebooks}</div>
                   <div className="text-sm text-gray-600">Notebooks</div>
                 </div>
@@ -292,20 +343,19 @@ const StudentDashboard = () => {
             </div>
 
             {/* Monthly activity heatmap */}
-            {/* GitHub-style activity heatmap */}
             {weeklyReport?.daily_activity && (
-              <div className="bg-white rounded-3xl p-6 border-4 border-black">
+              <div className="bg-white rounded-3xl shadow-lg p-6">
 
-                {/* Header with navigation */}
+                {/* Header */}
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
-                    <span className="text-3xl">🗓️</span>
+                    <Calendar className="w-6 h-6 text-gray-700" />
                     <div>
                       <h3 className="text-lg font-bold text-gray-900 leading-tight">
                         Activity Heatmap
                       </h3>
                       {weeklyReport.date_range && (
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs text-gray-500">
                           {new Date(weeklyReport.date_range.start + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                           {' – '}
                           {new Date(weeklyReport.date_range.end + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -314,31 +364,29 @@ const StudentDashboard = () => {
                     </div>
                   </div>
 
-                  {/* Prev / Next arrows */}
+                  {/* Navigation */}
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => setMonthOffset(prev => prev - 1)}
-                      className="w-8 h-8 rounded-full border-2 border-black flex items-center justify-center text-sm font-bold hover:bg-gray-100 transition"
+                      className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition"
                       title="Previous 30 days"
                     >
-                      ‹
+                      <ChevronLeft className="w-5 h-5" />
                     </button>
                     <button
                       onClick={() => setMonthOffset(prev => Math.min(prev + 1, 0))}
                       disabled={monthOffset === 0}
-                      className={`w-8 h-8 rounded-full border-2 border-black flex items-center justify-center text-sm font-bold transition ${
-                        monthOffset === 0
-                          ? 'opacity-30 cursor-not-allowed'
-                          : 'hover:bg-gray-100'
+                      className={`w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center transition ${
+                        monthOffset === 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-gray-300'
                       }`}
                       title="Next 30 days"
                     >
-                      ›
+                      <ChevronRight className="w-5 h-5" />
                     </button>
                     {monthOffset < 0 && (
                       <button
                         onClick={() => setMonthOffset(0)}
-                        className="text-xs font-bold text-purple-600 hover:underline ml-1"
+                        className="text-xs font-semibold text-[#6a88be] hover:underline ml-1"
                       >
                         Today
                       </button>
@@ -352,15 +400,6 @@ const StudentDashboard = () => {
                   const data = weeklyReport.daily_activity;
                   const max = Math.max(...data.map(d => d.actions), 1);
 
-                  const getColor = (actions) => {
-                    if (actions === 0) return '#e5e7eb';
-                    const intensity = actions / max;
-                    if (intensity <= 0.25) return '#c4b5fd';
-                    if (intensity <= 0.5)  return '#a78bfa';
-                    if (intensity <= 0.75) return '#7c3aed';
-                    return '#4c1d95';
-                  };
-
                   const firstDayOfWeek = new Date(data[0].date + 'T00:00:00').getDay();
                   const padded = [...Array(firstDayOfWeek).fill(null), ...data];
                   const weeks = [];
@@ -370,7 +409,7 @@ const StudentDashboard = () => {
                     <div>
                       <div className="flex gap-1 mb-1">
                         {['S','M','T','W','T','F','S'].map((d, i) => (
-                          <div key={i} className="w-7 text-center text-xs text-gray-400">{d}</div>
+                          <div key={i} className="w-7 text-center text-xs text-gray-500">{d}</div>
                         ))}
                       </div>
                       <div className="space-y-1">
@@ -380,34 +419,33 @@ const StudentDashboard = () => {
                               <div
                                 key={di}
                                 title={day ? `${day.date}: ${day.actions} action${day.actions !== 1 ? 's' : ''}` : ''}
-                                className="w-7 h-7 rounded transition-colors hover:ring-2 hover:ring-purple-400"
-                                style={{ background: day ? getColor(day.actions) : 'transparent' }}
+                                className="w-7 h-7 rounded transition-colors hover:ring-2 hover:ring-[#6a88be]"
+                                style={{ background: day ? getHeatmapColor(day.actions, max) : 'transparent' }}
                               />
                             ))}
                           </div>
                         ))}
                       </div>
                       <div className="flex items-center gap-1 mt-3 justify-end">
-                        <span className="text-xs text-gray-400 mr-1">Less</span>
-                        {['#e5e7eb','#c4b5fd','#a78bfa','#7c3aed','#4c1d95'].map(c => (
+                        <span className="text-xs text-gray-500 mr-1">Less</span>
+                        {['#e5e7eb', '#d4e0f5', '#b2c7e8', '#8fa6d4', '#6a88be', '#3a5a8c'].map(c => (
                           <div key={c} className="w-4 h-4 rounded-sm" style={{ background: c }} />
                         ))}
-                        <span className="text-xs text-gray-400 ml-1">More</span>
+                        <span className="text-xs text-gray-500 ml-1">More</span>
                       </div>
                     </div>
                   );
                 })()}
 
-               
-                {/* Period summary */}
+                {/* Period summary – now with light blue-grey background */}
                 {!reportLoading && (
-                  <div className="bg-purple-50 rounded-xl p-4 border-2 border-purple-200 mt-4">
+                  <div className="bg-[#f0f4f8] rounded-xl p-4 border border-[#c9d9f0] mt-4">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm text-gray-600">
                           {weeklyReport.is_current ? 'This Month' : 'This Period'}
                         </p>
-                        <p className="text-2xl font-bold text-purple-600">
+                        <p className="text-2xl font-bold text-[#6a88be]">
                           {weeklyReport.month_summary?.total_actions ?? weeklyReport.week_summary.total_actions} actions
                         </p>
                         <p className="text-xs text-gray-500 mt-1">
@@ -416,23 +454,31 @@ const StudentDashboard = () => {
                       </div>
                       <div className="text-right">
                         <p className="text-xs text-gray-500">This week</p>
-                        <p className="text-lg font-bold text-purple-400">
+                        <p className="text-lg font-bold text-[#a5b2ab]">
                           {weeklyReport.week_summary.total_actions} actions
                         </p>
-                        <div className="text-2xl mt-1">
-                          {weeklyReport.week_summary.active_days >= 5 ? '🔥' : weeklyReport.week_summary.active_days >= 3 ? '⚡' : '📖'}
+                        <div className="mt-1">
+                          {weeklyReport.week_summary.active_days >= 5 ? (
+                            <Flame className="w-6 h-6 text-orange-500" />
+                          ) : weeklyReport.week_summary.active_days >= 3 ? (
+                            <Zap className="w-6 h-6 text-yellow-500" />
+                          ) : (
+                            <BookOpen className="w-6 h-6 text-[#9fc383]" />
+                          )}
                         </div>
                       </div>
                     </div>
                   </div>
                 )}
 
-                {/* Recommendations — current period only */}
+                {/* Recommendations – now with light blue-grey background */}
                 {!reportLoading && weeklyReport.is_current && weeklyReport.recommendations?.length > 0 && (
                   <div className="mt-4 space-y-2">
                     {weeklyReport.recommendations.map((rec, i) => (
-                      <div key={i} className="flex gap-2 items-start bg-gray-50 rounded-lg p-3">
-                        <span className="text-lg flex-shrink-0">{rec.icon}</span>
+                      <div key={i} className="flex gap-2 items-start bg-[#f0f4f8] rounded-lg p-3">
+                        {rec.icon === '📚' && <BookOpen className="w-5 h-5 text-[#6a88be] flex-shrink-0" />}
+                        {rec.icon === '🔥' && <Flame className="w-5 h-5 text-orange-500 flex-shrink-0" />}
+                        {rec.icon === '💪' && <Zap className="w-5 h-5 text-yellow-500 flex-shrink-0" />}
                         <div>
                           <p className="text-sm font-bold text-gray-800">{rec.title}</p>
                           <p className="text-xs text-gray-600">{rec.body}</p>
@@ -443,36 +489,38 @@ const StudentDashboard = () => {
                 )}
               </div>
             )}
-
           </div>
 
           {/* Right Column */}
           <div className="lg:col-span-2 space-y-6">
 
             {/* Leaderboard */}
-            <div className="bg-white rounded-3xl p-8 border-4 border-black">
+            <div className="bg-white rounded-3xl shadow-lg p-8">
 
-              {/* Header + Toggle */}
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-gray-900">🏆 Leaderboard</h3>
+                <h3 className="text-xl font-bold text-gray-900 flex items-center">
+                  <Trophy className="w-6 h-6 mr-2 text-yellow-500" />
+                  Leaderboard
+                </h3>
 
-                {/* Friends-only toggle */}
-                <div className="flex items-center bg-gray-100 rounded-full p-1 border-2 border-black">
+                <div className="flex items-center bg-gray-100 rounded-full p-1">
                   <button
                     onClick={() => setFriendsOnly(false)}
-                    className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${
-                      !friendsOnly ? 'bg-black text-white' : 'text-gray-600'
+                    className={`px-4 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1 transition ${
+                      !friendsOnly ? 'bg-[#6a88be] text-white' : 'text-gray-600'
                     }`}
                   >
-                    🌍 Global
+                    <Globe className="w-4 h-4" />
+                    Global
                   </button>
                   <button
                     onClick={() => setFriendsOnly(true)}
-                    className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${
-                      friendsOnly ? 'bg-black text-white' : 'text-gray-600'
+                    className={`px-4 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1 transition ${
+                      friendsOnly ? 'bg-[#6a88be] text-white' : 'text-gray-600'
                     }`}
                   >
-                    👯 Friends
+                    <Users className="w-4 h-4" />
+                    Friends
                   </button>
                 </div>
               </div>
@@ -483,15 +531,14 @@ const StudentDashboard = () => {
                 </div>
               ) : (
                 <>
-                  {/* Friends-only empty state */}
                   {friendsOnly && leaderboard.length <= 1 && (
                     <div className="text-center py-8 mb-4">
-                      <p className="text-4xl mb-2">👯</p>
+                      <UserPlus className="w-16 h-16 mx-auto text-gray-400 mb-3" />
                       <p className="font-bold text-gray-700">No friends yet!</p>
                       <p className="text-sm text-gray-500 mb-3">Add friends to see the friends leaderboard.</p>
                       <button
                         onClick={() => navigate('/friends')}
-                        className="bg-black text-white px-5 py-2 rounded-full text-xs font-bold hover:bg-gray-800 transition"
+                        className="bg-[#6a88be] text-white px-5 py-2 rounded-full text-xs font-bold hover:bg-[#5578a5] transition"
                       >
                         + Find Friends
                       </button>
@@ -501,7 +548,6 @@ const StudentDashboard = () => {
                   {/* Podium */}
                   {leaderboard.length > 0 && (
                     <div className="flex items-end justify-center space-x-4 mb-6">
-                      {/* 2nd */}
                       {podiumOrder[0] && (
                         <div className="text-center">
                           <div className="mb-2 flex justify-center">
@@ -511,13 +557,12 @@ const StudentDashboard = () => {
                             {podiumOrder[0].is_you ? 'You' : podiumOrder[0].username}
                           </p>
                           <p className="text-xs text-gray-500">{podiumOrder[0].points} pts</p>
-                          <div className="w-24 h-20 bg-gray-300 rounded-t-xl flex items-center justify-center font-bold text-2xl mt-1">2</div>
+                          <div className="w-24 h-20 bg-gray-300 rounded-t-xl flex items-center justify-center font-bold text-2xl mt-1 text-gray-700">2</div>
                         </div>
                       )}
-                      {/* 1st */}
                       {podiumOrder[1] && (
                         <div className="text-center">
-                          <div className="text-2xl mb-1">👑</div>
+                          <Crown className="w-8 h-8 mx-auto text-yellow-500 mb-1" />
                           <div className="mb-2 flex justify-center">
                             <PodiumAvatar entry={podiumOrder[1]} size="lg" />
                           </div>
@@ -525,10 +570,9 @@ const StudentDashboard = () => {
                             {podiumOrder[1].is_you ? 'You' : podiumOrder[1].username}
                           </p>
                           <p className="text-xs text-gray-500">{podiumOrder[1].points} pts</p>
-                          <div className="w-28 h-32 bg-yellow-400 rounded-t-xl flex items-center justify-center font-bold text-3xl mt-1">1</div>
+                          <div className="w-28 h-32 bg-yellow-400 rounded-t-xl flex items-center justify-center font-bold text-3xl mt-1 text-gray-800">1</div>
                         </div>
                       )}
-                      {/* 3rd */}
                       {podiumOrder[2] && (
                         <div className="text-center">
                           <div className="mb-2 flex justify-center">
@@ -538,7 +582,7 @@ const StudentDashboard = () => {
                             {podiumOrder[2].is_you ? 'You' : podiumOrder[2].username}
                           </p>
                           <p className="text-xs text-gray-500">{podiumOrder[2].points} pts</p>
-                          <div className="w-24 h-16 bg-orange-300 rounded-t-xl flex items-center justify-center font-bold text-2xl mt-1">3</div>
+                          <div className="w-24 h-16 bg-orange-300 rounded-t-xl flex items-center justify-center font-bold text-2xl mt-1 text-gray-700">3</div>
                         </div>
                       )}
                     </div>
@@ -547,15 +591,15 @@ const StudentDashboard = () => {
                   {/* Full list */}
                   <div className="space-y-3">
                     {leaderboard.slice(0, 10).map((entry) => (
-                      <div key={entry.rank} className={`flex items-center space-x-3 p-3 rounded-xl border-2 ${
-                        entry.is_you ? 'bg-purple-50 border-purple-500' : 'bg-white border-black'
+                      <div key={entry.rank} className={`flex items-center space-x-3 p-3 rounded-xl ${
+                        entry.is_you ? 'bg-[#f0f4f8] border border-[#c9d9f0]' : 'bg-white border border-gray-200'
                       }`}>
-                        <span className="font-bold text-lg w-8">{entry.rank}.</span>
+                        <span className="font-bold text-lg w-8 text-gray-600">{entry.rank}.</span>
                         <RowAvatar entry={entry} />
                         <span className="font-semibold text-gray-900 flex-1 truncate">{entry.username}</span>
-                        <span className="font-bold text-purple-600">{entry.points} pts</span>
+                        <span className="font-bold text-[#6a88be]">{entry.points} pts</span>
                         {entry.is_you && (
-                          <span className="text-xs bg-purple-500 text-white px-2 py-1 rounded-full">You</span>
+                          <span className="text-xs bg-[#6a88be] text-white px-2 py-1 rounded-full">You</span>
                         )}
                       </div>
                     ))}
@@ -563,11 +607,11 @@ const StudentDashboard = () => {
 
                   {/* Your position if outside top 10 */}
                   {yourRank > 10 && (
-                    <div className="mt-3 p-3 bg-purple-50 border-2 border-purple-500 rounded-xl flex items-center space-x-3">
-                      <span className="font-bold text-lg w-8">{yourRank}.</span>
+                    <div className="mt-3 p-3 bg-[#f0f4f8] border border-[#c9d9f0] rounded-xl flex items-center space-x-3">
+                      <span className="font-bold text-lg w-8 text-gray-600">{yourRank}.</span>
                       <RowAvatar entry={myEntry} />
                       <span className="font-semibold text-gray-900 flex-1">{username}</span>
-                      <span className="text-xs bg-purple-500 text-white px-2 py-1 rounded-full">Your Position</span>
+                      <span className="text-xs bg-[#6a88be] text-white px-2 py-1 rounded-full">Your Position</span>
                     </div>
                   )}
                 </>
@@ -575,27 +619,27 @@ const StudentDashboard = () => {
             </div>
 
             {/* Badges */}
-            <div className="bg-white rounded-3xl p-8 border-4 border-black">
+            <div className="bg-white rounded-3xl shadow-lg p-8">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center space-x-2">
-                  <span className="text-3xl">🏅</span>
+                  <Award className="w-6 h-6 text-yellow-600" />
                   <h3 className="text-xl font-bold text-gray-900">Your Badges</h3>
                 </div>
-                <span className="bg-black text-white text-xs font-bold px-3 py-1 rounded-full">
+                <span className="bg-[#6a88be] text-white text-xs font-bold px-3 py-1 rounded-full">
                   {earnedCount} / {badges.length}
                 </span>
               </div>
 
               <div className="w-full bg-gray-200 rounded-full h-3 mb-6 overflow-hidden">
                 <div
-                  className="bg-gradient-to-r from-yellow-400 to-orange-500 h-full rounded-full transition-all duration-700"
+                  className="bg-gradient-to-r from-[#6a88be] to-[#9fc383] h-full rounded-full transition-all duration-700"
                   style={{ width: badges.length ? `${(earnedCount / badges.length) * 100}%` : '0%' }}
                 />
               </div>
 
               {earnedCount === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-5xl mb-3">🔒</p>
+                  <Lock className="w-16 h-16 mx-auto text-gray-400 mb-3" />
                   <p className="text-gray-500 font-medium">No badges earned yet!</p>
                   <p className="text-gray-400 text-sm mt-1">Start learning to unlock your first badge.</p>
                 </div>
@@ -605,7 +649,7 @@ const StudentDashboard = () => {
                     <div
                       key={badge.id}
                       title={`Earned: ${new Date(badge.earned_at).toLocaleDateString()}`}
-                      className="rounded-2xl p-4 border-4 border-black bg-white text-center"
+                      className="rounded-2xl p-4 border border-gray-200 bg-white text-center shadow-sm"
                     >
                       <img src={`/badges/${badge.id}.png`} alt={badge.name} className="w-20 h-20 object-contain mx-auto mb-2" />
                       <div className="text-xs font-bold text-gray-900 leading-tight">{badge.name}</div>
@@ -616,7 +660,7 @@ const StudentDashboard = () => {
 
               <button
                 onClick={() => setShowAllBadges(prev => !prev)}
-                className="w-full py-2 rounded-xl border-2 border-black text-sm font-bold text-gray-700 hover:bg-gray-100 transition"
+                className="w-full py-2 rounded-xl border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition"
               >
                 {showAllBadges ? '▲ Hide locked badges' : `▼ See all badges (${badges.length - earnedCount} locked)`}
               </button>
@@ -626,24 +670,25 @@ const StudentDashboard = () => {
                   {badges.filter(b => !b.earned).map((badge) => (
                     <div
                       key={badge.id}
-                      title={`🔒 ${badge.description}`}
-                      className="rounded-2xl p-4 border-4 border-gray-200 bg-gray-100 text-center opacity-50"
+                      title={badge.description}
+                      className="rounded-2xl p-4 border border-gray-200 bg-gray-50 text-center opacity-60"
                     >
                       <img src={`/badges/${badge.id}.png`} alt={badge.name} className="w-14 h-14 object-contain mx-auto mb-2 grayscale" />
                       <div className="text-xs font-bold text-gray-500 leading-tight">{badge.name}</div>
-                      <div className="text-xs text-gray-400 mt-1">🔒 {badge.description}</div>
+                      <div className="text-xs text-gray-400 mt-1 flex items-center justify-center gap-1">
+                        <Lock className="w-3 h-3" /> {badge.description}
+                      </div>
                     </div>
                   ))}
                 </div>
               )}
             </div>
-
           </div>
         </div>
       </div>
 
-      <footer className="text-center py-6 text-gray-600 text-sm mt-8">
-        © PadaiSathi All rights reserved.
+      <footer className="text-center py-6 text-gray-500 text-sm mt-8 border-t border-gray-200">
+        © PadaiSathi. All rights reserved.
       </footer>
     </div>
   );

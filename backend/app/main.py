@@ -84,6 +84,27 @@ BADGE_DEFINITIONS = [
     { "id": "eternal_flame",      "name": "Eternal Flame",      "icon": "💎", "description": "90-day streak" },
     { "id": "the_completionist",  "name": "The Completionist",  "icon": "🌟", "description": "Unlock every other badge" },
 ]
+# ── Streak helper ────────────────────────────────────────────────────
+from datetime import date, timedelta
+
+def update_streak(user_id: int, db: Session):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        return
+
+    today = date.today()   # UTC date (you can also use datetime.utcnow().date())
+
+    if user.last_activity_date is None:
+        user.streak = 1
+    elif user.last_activity_date == today:
+        return   # already active today
+    elif user.last_activity_date == today - timedelta(days=1):
+        user.streak += 1
+    else:
+        user.streak = 1
+
+    user.last_activity_date = today
+    db.commit()
 # ═════════════════════════════════════════════════════════════════════════════
 # Pydantic models
 # ═════════════════════════════════════════════════════════════════════════════
@@ -227,6 +248,7 @@ async def upload_pdf(
     db.add(notebook)
     user.points = (user.points or 0) + 10
     db.commit()
+    update_streak(user.id, db)
     db.refresh(notebook)
     _check_and_award_badges(user.id, db)
 
@@ -240,7 +262,8 @@ async def upload_pdf(
         "extracted_chars": len(extracted_text or ""),
         "status": "ready_to_summarize",
         "points_earned": 10,
-        "total_points": user.points
+        "total_points": user.points,
+        "streak": user.streak
     }
 from .ai.quiz_generator import generate_flashcards_and_quiz
 
@@ -261,7 +284,12 @@ def generate_flashcards(req: ContentRequest, db: Session = Depends(get_db)):
     if not summary:
         raise HTTPException(status_code=404, detail="Summary not found")
 
-    text = summary.summary_text  
+    # ✅ FIX: use original PDF text, not the summary
+    doc = db.query(models.Document).filter(
+        models.Document.id == summary.document_id
+    ).first()
+    text = doc.extracted_text if doc and doc.extracted_text else summary.summary_text
+
     result = generate_flashcards_and_quiz(text, n_flashcards=8, n_quiz=8)
 
     #  Save each flashcard to database
@@ -279,13 +307,15 @@ def generate_flashcards(req: ContentRequest, db: Session = Depends(get_db)):
 
     user.points = (user.points or 0) + 10
     db.commit()
+    update_streak(user.id, db)
 
     _check_and_award_badges(user.id, db)
 
     return {
         "success": True,
         "flashcards": saved_flashcards,
-        "summary_id": req.summary_id
+        "summary_id": req.summary_id,
+        "streak": user.streak
     }
 
 @app.post("/api/generate-quiz")
@@ -301,7 +331,11 @@ def generate_quiz(req: ContentRequest, db: Session = Depends(get_db)):
     if not summary:
         raise HTTPException(status_code=404, detail="Summary not found")
 
-    text = summary.summary_text 
+    # REPLACE with:
+    doc = db.query(models.Document).filter(
+        models.Document.id == summary.document_id
+    ).first()
+    text = doc.extracted_text if doc and doc.extracted_text else summary.summary_text 
     result = generate_flashcards_and_quiz(text, n_flashcards=8, n_quiz=8)
 
     #  Save each quiz question to database
@@ -320,13 +354,14 @@ def generate_quiz(req: ContentRequest, db: Session = Depends(get_db)):
 
     user.points = (user.points or 0) + 10
     db.commit()
-
+    update_streak(user.id, db) 
     _check_and_award_badges(user.id, db)
 
     return {
         "success": True,
         "questions": saved_questions,
-        "summary_id": req.summary_id
+        "summary_id": req.summary_id,
+        "streak": user.streak
     }
 # ═════════════════════════════════════════════════════════════════════════════
 # AI Summarization  (Sprint 3)
@@ -365,6 +400,7 @@ def summarize_document(req: SummarizeRequest, db: Session = Depends(get_db)):
     db.add(summary_record)
     user.points = (user.points or 0) + 20
     db.commit(); db.refresh(summary_record)
+    update_streak(user.id, db) 
     _check_and_award_badges(user.id, db)
 
     return {
@@ -375,6 +411,7 @@ def summarize_document(req: SummarizeRequest, db: Session = Depends(get_db)):
         "word_count":     result["word_count"],
         "points_earned":  20,
         "total_points":   user.points,
+        "streak": user.streak
     }
 
 
@@ -451,6 +488,7 @@ def _run_video_pipeline(summary_id: int, genz_text: str, theme: str, user_id: in
             )
             db.add(video_record)
             db.commit()
+            update_streak(user_id, db)
             _check_and_award_badges(user_id, db)
         finally:
             db.close()
@@ -1480,6 +1518,7 @@ def my_activity_summary(email: str, week_offset: int = 0, db: Session = Depends(
         },
         "is_current": is_current,
     }
+
 # ── Run ───────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     import uvicorn

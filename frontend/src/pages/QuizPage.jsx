@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Check } from 'lucide-react';
 import Navbar from '../components/Navbar';
+import ChickenImage from '../assets/images/chickenicon.png';
 
 const QuizPage = () => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -137,7 +138,7 @@ const QuizPage = () => {
     <div className="min-h-screen bg-gray-200">
       <Navbar />
 
-      <div className="max-w-4xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-6 py-6 lg:px-8">
 
         {/* ── Summary selector ────────────────────────────────────────────── */}
         <div className="bg-white rounded-3xl p-6 border-4 border-black mb-6">
@@ -254,9 +255,9 @@ const QuizPage = () => {
                 ))}
               </div>
 
-              <div className="absolute -bottom-6 -left-6">
-                <div className="w-20 h-20 bg-yellow-400 rounded-full border-4 border-black flex items-center justify-center">
-                  <span className="text-3xl">🐱</span>
+              <div className="absolute -bottom-16 -left-10">
+                <div className="w-30 h-30 bg-yellow-400 rounded-full border-4 border-black flex items-center justify-center">
+                  <span className="text-3xl"><img src={ChickenImage} alt="Chicken" className="w-24 h-24 object-contain" /></span>
                 </div>
               </div>
             </div>

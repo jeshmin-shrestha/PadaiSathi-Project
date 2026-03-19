@@ -293,12 +293,12 @@ const VideoPage = () => {
     <div className="min-h-screen bg-gray-200">
       <Navbar />
 
-      <div className="max-w-6xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-6 py-6 lg:px-8">
 
         {/* Hero */}
         <div className="bg-gray-300 rounded-3xl p-8 mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Hello {username}! 🎬</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Hello {username}! </h1>
             <p className="text-gray-700 font-medium">Upload & Generate</p>
             <p className="text-gray-700">Transform your summaries into engaging videos</p>
           </div>

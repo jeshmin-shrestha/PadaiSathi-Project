@@ -126,7 +126,7 @@ const FlashcardPage = () => {
         .nav-dot:hover { transform: scale(1.4); }
       `}</style>
 
-      <div className="max-w-3xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-6 py-6 lg:px-8">
 
         {/* Summary selector */}
         <div className="bg-white rounded-3xl p-6 border-4 border-black mb-6">

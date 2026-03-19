@@ -3,7 +3,7 @@ from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey, JSON
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from .database import Base
-
+from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey, JSON, Date
 
 class User(Base):
     __tablename__ = "users"
@@ -24,7 +24,7 @@ class User(Base):
     notebooks  = relationship("Notebook",  back_populates="user")
     flashcards = relationship("Flashcard", back_populates="user")
     quizzes    = relationship("Quiz",      back_populates="user")
-
+    last_activity_date = Column(Date, nullable=True) 
     def to_dict(self):
         return {
             "id":       self.id,
