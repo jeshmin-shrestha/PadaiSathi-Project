@@ -151,86 +151,75 @@ def _generate_distractors(correct: str, pool: List[str], num: int = 3) -> List[s
     return [d.capitalize() for d in distractors[:num]]
 
 
-# ─── Main pipeline ────────────────────────────────────────────────────────────
+# ─── Flashcards-only pipeline ─────────────────────────────────────────────────
 
-def generate_flashcards_and_quiz(text: str, n_flashcards: int = 8, n_quiz: int = 8) -> dict:
-    """
-    Uses your fine-tuned Flan-T5 to generate flashcards and MCQs.
-    Falls back to keyword extraction only if the model output can't be parsed.
-    """
-    print("[QuizGen] Starting Flan-T5 pipeline...")
-
-    # Chunk the text — smaller chunks = more focused model output
+def generate_only_flashcards(text: str, n: int = 8) -> list:
+    """Runs ONLY flashcard generation — no wasted MCQ calls."""
+    print("[QuizGen] Flashcard-only pipeline starting...")
     chunks = _chunk_text(text, chunk_size=400)
     if not chunks:
         chunks = [text[:400]]
-    print(f"[QuizGen] {len(chunks)} chunks")
-
-    # Global keyword pool for fallback distractors
-    all_keywords = _extract_keywords(text, top_n=30)
 
     flashcards = []
-    quiz       = []
-
-    for i, chunk in enumerate(chunks):
-        if len(flashcards) >= n_flashcards and len(quiz) >= n_quiz:
-            break
-
-        print(f"[QuizGen] Chunk {i+1}/{len(chunks)}...")
-
-        # ── Flashcard ──────────────────────────────────────────────────────
-        if len(flashcards) < n_flashcards:
-            try:
-                raw_fc = _generate(f"[FLASHCARD] {chunk}")
-                print(f"[QuizGen] Flashcard raw: {raw_fc[:80]}")
-                fc = _parse_flashcard(raw_fc, chunk)
-                flashcards.append(fc)
-            except Exception as e:
-                print(f"[QuizGen] Flashcard error on chunk {i}: {e}")
-                # Fallback: simple sentence-based card
-                sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', chunk) if len(s.strip()) > 40]
-                if sentences:
-                    kws = _extract_keywords(chunk, top_n=3)
-                    topic = kws[0].capitalize() if kws else "this"
-                    flashcards.append({
-                        "question": f"What does the text say about '{topic}'?",
-                        "answer":   sentences[0]
-                    })
-
-        # ── MCQ ────────────────────────────────────────────────────────────
-        if len(quiz) < n_quiz:
-            try:
-                raw_mcq = _generate(f"[QUIZ_MCQ] {chunk}")
-                print(f"[QuizGen] MCQ raw: {raw_mcq[:80]}")
-                q = _parse_mcq(raw_mcq, chunk, all_keywords)
-                quiz.append(q)
-            except Exception as e:
-                print(f"[QuizGen] MCQ error on chunk {i}: {e}")
-                quiz.append(_keyword_mcq_fallback(chunk, all_keywords))
-
-    # Pad to requested count by recycling chunks if needed
     chunk_cycle = chunks * 4
-    extra_idx   = 0
-    while len(flashcards) < n_flashcards and extra_idx < len(chunk_cycle):
-        chunk = chunk_cycle[extra_idx]
-        extra_idx += 1
-        try:
-            raw_fc = _generate(f"[FLASHCARD] {chunk}")
-            flashcards.append(_parse_flashcard(raw_fc, chunk))
-        except Exception:
-            pass
 
-    while len(quiz) < n_quiz and extra_idx < len(chunk_cycle):
-        chunk = chunk_cycle[extra_idx]
-        extra_idx += 1
+    for i, chunk in enumerate(chunk_cycle):
+        if len(flashcards) >= n:
+            break
+        print(f"[QuizGen] FC chunk {i+1}...")
         try:
-            raw_mcq = _generate(f"[QUIZ_MCQ] {chunk}")
-            quiz.append(_parse_mcq(raw_mcq, chunk, all_keywords))
-        except Exception:
+            raw = _generate(f"[FLASHCARD] {chunk}")
+            print(f"[QuizGen] raw: {raw[:80]}")
+            flashcards.append(_parse_flashcard(raw, chunk))
+        except Exception as e:
+            print(f"[QuizGen] FC error: {e}")
+            sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', chunk) if len(s.strip()) > 40]
+            if sentences:
+                kws = _extract_keywords(chunk, top_n=3)
+                topic = kws[0].capitalize() if kws else "this"
+                flashcards.append({
+                    "question": f"What does the text say about '{topic}'?",
+                    "answer":   sentences[0]
+                })
+
+    print(f"[QuizGen] Done: {len(flashcards)} flashcards")
+    return flashcards[:n]
+
+
+# ─── Quiz-only pipeline ────────────────────────────────────────────────────────
+
+def generate_only_quiz(text: str, n: int = 8) -> list:
+    """Runs ONLY MCQ generation — no wasted flashcard calls."""
+    print("[QuizGen] Quiz-only pipeline starting...")
+    chunks = _chunk_text(text, chunk_size=400)
+    if not chunks:
+        chunks = [text[:400]]
+
+    all_keywords = _extract_keywords(text, top_n=30)
+    quiz = []
+    chunk_cycle = chunks * 4
+
+    for i, chunk in enumerate(chunk_cycle):
+        if len(quiz) >= n:
+            break
+        print(f"[QuizGen] MCQ chunk {i+1}...")
+        try:
+            raw = _generate(f"[QUIZ_MCQ] {chunk}")
+            print(f"[QuizGen] raw: {raw[:80]}")
+            quiz.append(_parse_mcq(raw, chunk, all_keywords))
+        except Exception as e:
+            print(f"[QuizGen] MCQ error: {e}")
             quiz.append(_keyword_mcq_fallback(chunk, all_keywords))
 
-    print(f"[QuizGen] Done: {len(flashcards)} flashcards, {len(quiz)} quiz Qs")
+    print(f"[QuizGen] Done: {len(quiz)} quiz questions")
+    return quiz[:n]
+
+
+# ─── Combined (kept for backward compatibility) ───────────────────────────────
+
+def generate_flashcards_and_quiz(text: str, n_flashcards: int = 8, n_quiz: int = 8) -> dict:
+    """Kept so nothing breaks if called elsewhere. Prefer the split functions."""
     return {
-        "flashcards": flashcards[:n_flashcards],
-        "quiz":       quiz[:n_quiz],
+        "flashcards": generate_only_flashcards(text, n_flashcards),
+        "quiz":       generate_only_quiz(text, n_quiz),
     }

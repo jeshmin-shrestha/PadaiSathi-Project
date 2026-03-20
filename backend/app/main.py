@@ -159,24 +159,54 @@ def health(db: Session = Depends(get_db)):
         "timestamp": datetime.now().isoformat()
     }
 
+# Add this import at the top of main.py with the other imports
+import re
+
+# ── Replace your existing /api/register route with this ──────────────────────
+
 @app.post("/api/register")
 def register(user: UserCreate, db: Session = Depends(get_db)):
+    import re
+
+    # ── Full name validation ──────────────────────────────────────────────────
+    name = user.username.strip()
+    if len(name) < 2:
+        raise HTTPException(status_code=400, detail="Full name must be at least 2 characters")
+    if len(name) > 50:
+        raise HTTPException(status_code=400, detail="Full name must be 50 characters or less")
+    if not re.match(r'^[a-zA-Z\s]+$', name):
+        raise HTTPException(status_code=400, detail="Full name can only contain letters and spaces")
+
+    # ── Email validation ──────────────────────────────────────────────────────
+    email = user.email.strip().lower()
+    if not re.match(r'^[^\s@]+@[^\s@]+\.[^\s@]+$', email):
+        raise HTTPException(status_code=400, detail="Please enter a valid email address")
+
+    # ── Password validation ───────────────────────────────────────────────────
+    if len(user.password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    if not re.search(r'[A-Z]', user.password):
+        raise HTTPException(status_code=400, detail="Password must contain at least one uppercase letter")
+    if not re.search(r'\d', user.password):
+        raise HTTPException(status_code=400, detail="Password must contain at least one number")
+    if not re.search(r'[^a-zA-Z0-9]', user.password):
+        raise HTTPException(status_code=400, detail="Password must contain at least one special character (!@#$%^&*)")
+    # ── Check duplicate ───────────────────────────────────────────────────────
     existing = db.query(models.User).filter(
-        (models.User.email == user.email) | (models.User.username == user.username)
+        (models.User.email == email) | (models.User.username == name)
     ).first()
     if existing:
         raise HTTPException(status_code=400, detail="Email or username already registered")
 
     new_user = models.User(
-        username=user.username,
-        email=user.email,
+        username=name,
+        email=email,
         password_hash=simple_hash_password(user.password),
         role="student", points=100, streak=1,
         created_at=datetime.utcnow()
     )
     db.add(new_user); db.commit(); db.refresh(new_user)
-    return {"success": True, "message": f"Welcome {user.username}!", "user": new_user.to_dict()}
-
+    return {"success": True, "message": f"Welcome {name}!", "user": new_user.to_dict()}
 @app.post("/api/login")
 def login(user: UserLogin, db: Session = Depends(get_db)):
     if user.email == "demo@padai.com" and user.password == "demo123":
@@ -272,8 +302,7 @@ async def upload_pdf(
         "streak": user.streak,
         "newly_earned_badges": new_badges,
     }
-from .ai.quiz_generator import generate_flashcards_and_quiz
-
+from .ai.quiz_generator import generate_only_flashcards, generate_only_quiz
 class ContentRequest(BaseModel):
     summary_id: int
     user_email: str
@@ -297,11 +326,11 @@ def generate_flashcards(req: ContentRequest, db: Session = Depends(get_db)):
     ).first()
     text = doc.extracted_text if doc and doc.extracted_text else summary.summary_text
 
-    result = generate_flashcards_and_quiz(text, n_flashcards=8, n_quiz=8)
+    flashcards_list = generate_only_flashcards(text, n=8)
 
     #  Save each flashcard to database
     saved_flashcards = []
-    for card in result["flashcards"]:
+    for card in flashcards_list:
         flashcard = models.Flashcard(
             summary_id=req.summary_id,
             user_id=user.id,
@@ -344,11 +373,11 @@ def generate_quiz(req: ContentRequest, db: Session = Depends(get_db)):
         models.Document.id == summary.document_id
     ).first()
     text = doc.extracted_text if doc and doc.extracted_text else summary.summary_text 
-    result = generate_flashcards_and_quiz(text, n_flashcards=8, n_quiz=8)
+    quiz_list = generate_only_quiz(text, n=8)
 
     #  Save each quiz question to database
     saved_questions = []
-    for q in result["quiz"]:
+    for q in quiz_list:
         quiz = models.Quiz(
             summary_id=req.summary_id,
             user_id=user.id,
@@ -626,8 +655,13 @@ def change_password(req: ChangePasswordRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Current password is incorrect")
 
     if len(req.new_password) < 6:
-        raise HTTPException(status_code=400, detail="New password must be at least 6 characters")
-
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    if not re.search(r'[A-Z]', req.new_password):
+        raise HTTPException(status_code=400, detail="Password must contain at least one uppercase letter")
+    if not re.search(r'\d', req.new_password):
+        raise HTTPException(status_code=400, detail="Password must contain at least one number")
+    if not re.search(r'[^a-zA-Z0-9]', req.new_password):
+        raise HTTPException(status_code=400, detail="Password must contain at least one special character (!@#$%^&*)")
     user.password_hash = simple_hash_password(req.new_password)
     db.commit()
 

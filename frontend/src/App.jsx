@@ -15,7 +15,8 @@ import NotebookDetailPage from './pages/NotebookDetailPage'; // ← ADD THIS
 import './App.css';
 import AuthCallback from './pages/AuthCallback';
 import FriendsPage from './pages/FriendsPage';
-
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     return !!localStorage.getItem('user');
@@ -84,6 +85,8 @@ function App() {
           } />
           
           <Route path="/friends" element={isAuthenticated ? <FriendsPage /> : <Navigate to="/login" />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           {/* 404 Page */}
           <Route path="*" element={
             <div className="flex items-center justify-center min-h-screen">

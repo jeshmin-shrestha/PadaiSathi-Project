@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import catIllustration from '../assets/images/Loginimage5.png';
 import logoImage from '../assets/images/logo1.png';
-
+import { useNavigate, Link } from 'react-router-dom';
 const Login = ({ setIsAuthenticated, setUser }) => {
   const [email, setEmail] = useState('demo@padai.com');
   const [password, setPassword] = useState('demo123');
@@ -402,7 +401,7 @@ const Login = ({ setIsAuthenticated, setUser }) => {
                 />
                 Stay signed in
               </label>
-              <a href="#" className="forgot-link">Forgot password?</a>
+              <Link to="/forgot-password" className="forgot-link">Forgot password?</Link>
             </div>
 
             <button type="submit" className="submit-btn" disabled={loading}>

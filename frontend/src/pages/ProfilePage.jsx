@@ -74,12 +74,16 @@ const ProfilePage = () => {
   const previewLabel = resolveAvatarLabel(selectedAvatar);
 
   const handleLogout = () => {
-    if (window.confirm('Are you sure you want to log out?')) {
-      ['padai_flashcards', 'padai_quiz', 'padai_summaries', 'padai_video_job', 'padai_video'].forEach(k => localStorage.removeItem(k));
-      localStorage.removeItem('user');
-      window.location.href = '/login';
-    }
+    setModal('logout');
   };
+
+  const confirmLogout = () => {
+    ['padai_flashcards', 'padai_quiz', 'padai_summaries', 'padai_video_job', 'padai_video'].forEach(k => localStorage.removeItem(k));
+    localStorage.removeItem('user');
+    window.location.href = '/login';
+  };
+
+  
 
   // Handle file selection for custom upload
   const handleFileChange = (e) => {
@@ -129,6 +133,9 @@ const ProfilePage = () => {
     setPwError('');
     if (!pwForm.current || !pwForm.newPw || !pwForm.confirm) { setPwError('All fields are required.'); return; }
     if (pwForm.newPw.length < 6) { setPwError('New password must be at least 6 characters.'); return; }
+    if (!/(?=.*[A-Z])/.test(pwForm.newPw)) { setPwError('Password must contain at least one uppercase letter.'); return; }
+    if (!/(?=.*\d)/.test(pwForm.newPw)) { setPwError('Password must contain at least one number.'); return; }
+    if (!/[^a-zA-Z0-9]/.test(pwForm.newPw)) { setPwError('Password must contain at least one special character (!@#$%^&* etc.)'); return; }
     if (pwForm.newPw !== pwForm.confirm) { setPwError('Passwords do not match.'); return; }
     setPwLoading(true);
     try {
@@ -352,9 +359,65 @@ const ProfilePage = () => {
                   </div>
                 ) : (
                   <>
+                    {/* Current Password */}
                     {[
-                      { key: 'current', label: 'Current Password',    placeholder: 'Enter current password' },
-                      { key: 'newPw',   label: 'New Password',         placeholder: 'At least 6 characters' },
+                      { key: 'current', label: 'Current Password', placeholder: 'Enter current password' },
+                    ].map(({ key, label, placeholder }) => (
+                      <div key={key} className="mb-4">
+                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">{label}</label>
+                        <div className="relative">
+                          <input
+                            type={showPw[key] ? 'text' : 'password'}
+                            value={pwForm[key]}
+                            onChange={e => setPwForm(p => ({ ...p, [key]: e.target.value }))}
+                            placeholder={placeholder}
+                            className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 pr-11 text-base focus:border-black focus:outline-none transition"
+                          />
+                          <button type="button" onClick={() => setShowPw(s => ({ ...s, [key]: !s[key] }))} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700">
+                            {showPw[key] ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* New Password — with requirements checklist */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">New Password</label>
+                      <div className="relative">
+                        <input
+                          type={showPw.newPw ? 'text' : 'password'}
+                          value={pwForm.newPw}
+                          onChange={e => setPwForm(p => ({ ...p, newPw: e.target.value }))}
+                          placeholder="Min 6 chars, uppercase, number, symbol"
+                          className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 pr-11 text-base focus:border-black focus:outline-none transition"
+                        />
+                        <button type="button" onClick={() => setShowPw(s => ({ ...s, newPw: !s.newPw }))} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700">
+                          {showPw.newPw ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        </button>
+                      </div>
+                      {/* Requirements checklist */}
+                      <div className="mt-2 p-3 bg-gray-50 rounded-xl border border-gray-200">
+                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Password must have:</p>
+                        {[
+                          { rule: /.{6,}/,        label: 'At least 6 characters' },
+                          { rule: /[A-Z]/,        label: 'One uppercase letter (A-Z)' },
+                          { rule: /\d/,           label: 'One number (0-9)' },
+                          { rule: /[^a-zA-Z0-9]/,label: 'One special character (!@#$%^&*)' },
+                        ].map(({ rule, label }) => (
+                          <div key={label} className="flex items-center gap-2 mb-1">
+                            <span style={{ color: rule.test(pwForm.newPw) ? '#22c55e' : '#d1d5db', transition: 'color 0.2s', fontSize: '13px' }}>
+                              {rule.test(pwForm.newPw) ? '✓' : '○'}
+                            </span>
+                            <span style={{ color: rule.test(pwForm.newPw) ? '#374151' : '#9ca3af', transition: 'color 0.2s', fontSize: '12px' }}>
+                              {label}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Confirm Password */}
+                    {[
                       { key: 'confirm', label: 'Confirm New Password', placeholder: 'Repeat new password' },
                     ].map(({ key, label, placeholder }) => (
                       <div key={key} className="mb-4">
@@ -388,7 +451,41 @@ const ProfilePage = () => {
                 )}
               </div>
             )}
+            {/* Logout Modal */}
+            {modal === 'logout' && (
+              <div className="p-7">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900">Log Out</h2>
+                  <button onClick={() => setModal(null)} className="text-gray-400 hover:text-black">
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
 
+                <div className="flex justify-center mb-6">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center border-2 border-gray-200">
+                    <LogOut className="w-8 h-8 text-gray-500" />
+                  </div>
+                </div>
+
+                <p className="text-center text-gray-700 font-semibold text-lg mb-1">Are you sure?</p>
+                <p className="text-center text-gray-400 text-sm mb-8">You'll need to log back in to access your account.</p>
+
+                <div className="flex space-x-3">
+                  <button
+                    onClick={() => setModal(null)}
+                    className="flex-1 py-3 rounded-xl border-2 border-gray-300 font-bold text-gray-600 hover:border-gray-400 transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmLogout}
+                    className="flex-1 py-3 rounded-xl bg-black text-white font-bold hover:bg-gray-800 transition"
+                  >
+                    Log Out
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
