@@ -157,7 +157,11 @@ const VideoPage = () => {
       });
       const sumData = await sumRes.json();
       if (!sumData.success) throw new Error('Summary failed');
-
+      const allNewBadges = [
+        ...(uploadData.newly_earned_badges || []),
+        ...(sumData.newly_earned_badges    || []),
+      ];
+      if (allNewBadges.length > 0) setNewBadges(allNewBadges);
       const newId = sumData.summary_id;
       setSelectedSummaryId(newId);
       selectedSummaryIdRef.current = newId;

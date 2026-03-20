@@ -92,16 +92,19 @@ def update_streak(user_id: int, db: Session):
     if not user:
         return
 
-    today = date.today()   # UTC date (you can also use datetime.utcnow().date())
+    today = datetime.utcnow().date()
 
     if user.last_activity_date is None:
-        user.streak = 1
+        # Don't reset — preserve existing streak, just set the date
+        if user.streak is None or user.streak < 1:
+            user.streak = 1
+        # If streak already exists (e.g. from registration), keep it
     elif user.last_activity_date == today:
-        return   # already active today
+        return  # already active today, no change
     elif user.last_activity_date == today - timedelta(days=1):
-        user.streak += 1
+        user.streak += 1  # consecutive day
     else:
-        user.streak = 1
+        user.streak = 1   # streak broken
 
     user.last_activity_date = today
     db.commit()
@@ -191,6 +194,8 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
     db_user = db.query(models.User).filter(models.User.email == user.email).first()
     if not db_user or not simple_verify_password(user.password, db_user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")
+    decay_streak_if_inactive(db_user.id, db)  # ← ADD THIS
+    db.refresh(db_user)                    
     return {"success": True, "message": f"Welcome back, {db_user.username}!", "user": db_user.to_dict()}
 
 @app.get("/api/users")
@@ -250,9 +255,10 @@ async def upload_pdf(
     db.commit()
     update_streak(user.id, db)
     db.refresh(notebook)
-    _check_and_award_badges(user.id, db)
+    
 
 
+    new_badges = _check_and_award_badges(user.id, db)
     return {
         "success": True,
         "message": f"PDF '{file.filename}' uploaded successfully!",
@@ -263,7 +269,8 @@ async def upload_pdf(
         "status": "ready_to_summarize",
         "points_earned": 10,
         "total_points": user.points,
-        "streak": user.streak
+        "streak": user.streak,
+        "newly_earned_badges": new_badges,
     }
 from .ai.quiz_generator import generate_flashcards_and_quiz
 
@@ -309,13 +316,14 @@ def generate_flashcards(req: ContentRequest, db: Session = Depends(get_db)):
     db.commit()
     update_streak(user.id, db)
 
-    _check_and_award_badges(user.id, db)
-
+   
+    new_badges = _check_and_award_badges(user.id, db)
     return {
         "success": True,
         "flashcards": saved_flashcards,
         "summary_id": req.summary_id,
-        "streak": user.streak
+        "streak": user.streak,
+        "newly_earned_badges": new_badges,
     }
 
 @app.post("/api/generate-quiz")
@@ -355,13 +363,14 @@ def generate_quiz(req: ContentRequest, db: Session = Depends(get_db)):
     user.points = (user.points or 0) + 10
     db.commit()
     update_streak(user.id, db) 
-    _check_and_award_badges(user.id, db)
-
+    
+    new_badges = _check_and_award_badges(user.id, db)
     return {
         "success": True,
         "questions": saved_questions,
         "summary_id": req.summary_id,
-        "streak": user.streak
+        "streak": user.streak,
+        "newly_earned_badges": new_badges, 
     }
 # ═════════════════════════════════════════════════════════════════════════════
 # AI Summarization  (Sprint 3)
@@ -401,8 +410,7 @@ def summarize_document(req: SummarizeRequest, db: Session = Depends(get_db)):
     user.points = (user.points or 0) + 20
     db.commit(); db.refresh(summary_record)
     update_streak(user.id, db) 
-    _check_and_award_badges(user.id, db)
-
+    new_badges = _check_and_award_badges(user.id, db)
     return {
         "success": True,
         "summary_id":     summary_record.id,
@@ -411,7 +419,8 @@ def summarize_document(req: SummarizeRequest, db: Session = Depends(get_db)):
         "word_count":     result["word_count"],
         "points_earned":  20,
         "total_points":   user.points,
-        "streak": user.streak
+        "streak":         user.streak,
+        "newly_earned_badges": new_badges,
     }
 
 
@@ -724,7 +733,8 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
         access_token = create_access_token(
             data={"sub": user.email, "user_id": user.id, "username": user.username}
         )
-        
+        decay_streak_if_inactive(user.id, db)
+        db.refresh(user)
         # Redirect to frontend with token
         frontend_url = f"{FRONTEND_URL}/auth/callback?token={access_token}&email={user.email}&username={user.username}&avatar={user.avatar}"
         return RedirectResponse(url=frontend_url)
@@ -1519,6 +1529,27 @@ def my_activity_summary(email: str, week_offset: int = 0, db: Session = Depends(
         "is_current": is_current,
     }
 
+def decay_streak_if_inactive(user_id: int, db: Session):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        return
+    today = datetime.utcnow().date()
+    if user.last_activity_date and user.last_activity_date < today - timedelta(days=1):
+        user.streak = 0
+        db.commit()
+
+@app.get("/api/debug/streak/{email}")
+def debug_streak(email: str, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {
+        "email": user.email,
+        "streak": user.streak,
+        "last_activity_date": str(user.last_activity_date),
+        "today_utc": str(datetime.utcnow().date()),
+        "is_active_today": user.last_activity_date == datetime.utcnow().date(),
+    }
 # ── Run ───────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     import uvicorn

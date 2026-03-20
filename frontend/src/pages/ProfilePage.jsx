@@ -75,6 +75,7 @@ const ProfilePage = () => {
 
   const handleLogout = () => {
     if (window.confirm('Are you sure you want to log out?')) {
+      ['padai_flashcards', 'padai_quiz', 'padai_summaries', 'padai_video_job', 'padai_video'].forEach(k => localStorage.removeItem(k));
       localStorage.removeItem('user');
       window.location.href = '/login';
     }

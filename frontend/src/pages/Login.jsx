@@ -23,6 +23,7 @@ const Login = ({ setIsAuthenticated, setUser }) => {
       });
       const data = await response.json();
       if (response.ok && data.success) {
+        ['padai_flashcards', 'padai_quiz', 'padai_summaries', 'padai_video_job', 'padai_video'].forEach(k => localStorage.removeItem(k));
         localStorage.setItem('user', JSON.stringify(data.user));
         setUser(data.user);
         setIsAuthenticated(true);

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Upload } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Icon1Image from '../assets/images/icon1.png';
-
+import BadgeToast from '../components/BadgeToast';
 const SummaryPage = () => {
   const [dragActive, setDragActive]     = useState(false);
   const [uploadedFile, setUploadedFile] = useState(null);
@@ -12,7 +12,7 @@ const SummaryPage = () => {
   const [isGenerating, setIsGenerating]   = useState(false);
   const [username, setUsername]           = useState('');
   const [userEmail, setUserEmail]         = useState('');
-
+  const [newBadges, setNewBadges] = useState([]);
   // Restore saved summaries on mount
   useEffect(() => {
     const saved = localStorage.getItem('padai_summaries');
@@ -94,6 +94,14 @@ const SummaryPage = () => {
 
       if (summaryData.success) {
         setFormalSummary(summaryData.formal_summary);
+        // Collect badges from BOTH upload AND summarize responses
+        const allNewBadges = [
+          ...(uploadData.newly_earned_badges || []),
+          ...(summaryData.newly_earned_badges || []),
+        ];
+        if (allNewBadges.length > 0) {
+          setNewBadges(allNewBadges);
+        }
         setGenzSummary(summaryData.genz_summary);
         setShowGenz(false); // default to formal
         localStorage.setItem('padai_summaries', JSON.stringify({
@@ -236,6 +244,7 @@ const SummaryPage = () => {
       <footer className="text-center py-6 text-gray-600 text-sm mt-8">
         © PadaiSathi All rights reserved.
       </footer>
+      <BadgeToast badgeIds={newBadges} onDone={() => setNewBadges([])} />
     </div>
   );
 };

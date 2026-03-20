@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
 import Navbar from '../components/Navbar';
-
+import BadgeToast from '../components/BadgeToast';
 const FlashcardPage = () => {
   const [currentCard, setCurrentCard] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
@@ -13,6 +13,7 @@ const FlashcardPage = () => {
   const [userEmail, setUserEmail] = useState('');
   const [error, setError] = useState('');
   const selectedSummaryIdRef = useRef(null);
+  const [newBadges, setNewBadges] = useState([]);
   useEffect(() => {
     const saved = localStorage.getItem('padai_flashcards');
     if (saved) {
@@ -77,6 +78,9 @@ const FlashcardPage = () => {
       const data = await res.json();
       if (data.success && data.flashcards?.length > 0) {
         setFlashcards(data.flashcards);
+        if (data.newly_earned_badges?.length > 0) {
+          setNewBadges(data.newly_earned_badges);
+        }
         localStorage.setItem('padai_flashcards', JSON.stringify({ flashcards: data.flashcards, summaryId: idToUse }));
       } else {
         setError('Could not generate flashcards. Try again.');
@@ -321,6 +325,7 @@ const FlashcardPage = () => {
       <footer className="text-center py-6 text-gray-600 text-sm mt-8">
         © PadaiSathi All rights reserved.
       </footer>
+      <BadgeToast badgeIds={newBadges} onDone={() => setNewBadges([])} />
     </div>
   );
 };

@@ -2,14 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Check } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import ChickenImage from '../assets/images/chickenicon.png';
-
+import BadgeToast from '../components/BadgeToast';
 const QuizPage = () => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [score, setScore] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
-
+  const [newBadges, setNewBadges] = useState([]);
   // ── API state ──────────────────────────────────────────────────────────────
   const [questions, setQuestions] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -95,6 +95,9 @@ const QuizPage = () => {
       const data = await res.json();
       if (data.success && data.questions?.length > 0) {
         setQuestions(data.questions);
+        if (data.newly_earned_badges?.length > 0) {
+          setNewBadges(data.newly_earned_badges);
+        }
         setQuizStarted(true);
         localStorage.setItem('padai_quiz', JSON.stringify({ questions: data.questions, summaryId: idToUse }));
       } else {
@@ -311,6 +314,7 @@ const QuizPage = () => {
       <footer className="text-center py-6 text-gray-600 text-sm mt-8">
         © PadaiSathi All rights reserved.
       </footer>
+      <BadgeToast badgeIds={newBadges} onDone={() => setNewBadges([])} />
     </div>
   );
 };
