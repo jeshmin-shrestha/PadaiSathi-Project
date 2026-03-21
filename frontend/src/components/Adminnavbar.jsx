@@ -1,8 +1,8 @@
 // ─── components/AdminNavbar.jsx ──────────────────────────────────────────────
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut } from 'lucide-react';
-import { NavBrand, NavButton } from './Navbar';          // ← shared primitives
+import { LogOut, ShieldCheck } from 'lucide-react';
+import { NavBrand } from './Navbar';
 
 const AdminNavbar = ({ user, setIsAuthenticated }) => {
   const navigate = useNavigate();
@@ -15,33 +15,81 @@ const AdminNavbar = ({ user, setIsAuthenticated }) => {
   };
 
   return (
-    <nav className="bg-gray-200 shadow-sm">
-      <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+    <nav style={{
+      background: 'rgba(255,255,255,0.55)',
+      backdropFilter: 'blur(20px)',
+      WebkitBackdropFilter: 'blur(20px)',
+      borderBottom: '1px solid rgba(170,205,240,0.42)',
+      position: 'sticky', top: 0, zIndex: 50,
+      fontFamily: "'Nunito', sans-serif",
+    }}>
+      <div style={{
+        maxWidth: '100%',
+        padding: '0 24px',
+        height: 56,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+      }}>
 
-        {/* Brand — identical markup to student navbar */}
-        <div className="flex items-center gap-3">
+        {/* Left: brand + admin badge */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <NavBrand onLogoClick={() => navigate('/dashboard')} />
-          <span className="px-2 py-0.5 bg-gray-800 text-white text-xs font-bold rounded-full uppercase tracking-wider">
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 5,
+            padding: '4px 10px', borderRadius: 20,
+            background: 'rgba(99,102,241,0.12)',
+            border: '1px solid rgba(99,102,241,0.25)',
+            fontSize: 10.5, fontWeight: 800, color: '#4338ca',
+            letterSpacing: '0.8px', textTransform: 'uppercase',
+          }}>
+            <ShieldCheck size={12} />
             Admin
-          </span>
+          </div>
         </div>
 
-        {/* User pill + logout */}
-        <div className="flex items-center gap-2">
+        {/* Right: user chip + logout */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
 
-          {/* Admin user pill — consistent size with student avatar (w-10 h-10) */}
-          <div className="flex items-center gap-2 bg-gray-800 rounded-full pl-1 pr-3 py-1 ml-2">
-            <div className="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+          {/* User pill */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '5px 14px 5px 5px', borderRadius: 30,
+            background: 'rgba(186,220,255,0.3)',
+            border: '1px solid rgba(170,205,240,0.5)',
+          }}>
+            <div style={{
+              width: 30, height: 30, borderRadius: '50%',
+              background: 'linear-gradient(135deg,#90c8f0,#6aaee0)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#fff', fontSize: 12, fontWeight: 800,
+              textShadow: '0 1px 3px rgba(0,0,0,0.2)',
+            }}>
               {user?.username?.charAt(0).toUpperCase() || 'A'}
             </div>
-            <span className="text-white text-sm font-medium">{user?.username || 'Admin'}</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#173a5c' }}>
+              {user?.username || 'Admin'}
+            </span>
           </div>
 
-          {/* Logout */}
-          <NavButton onClick={handleLogout} className="ml-1">
-            <LogOut className="w-4 h-4" />
+          {/* Logout button */}
+          <button
+            onClick={handleLogout}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '8px 14px', borderRadius: 11,
+              background: 'rgba(255,255,255,0.72)',
+              border: '1px solid rgba(170,205,240,0.5)',
+              fontSize: 12.5, fontWeight: 700, color: '#2a5a8c',
+              cursor: 'pointer', fontFamily: "'Nunito',sans-serif",
+              transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = 'rgba(110,175,240,0.7)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.72)'; e.currentTarget.style.borderColor = 'rgba(170,205,240,0.5)'; }}
+          >
+            <LogOut size={13} />
             Logout
-          </NavButton>
+          </button>
 
         </div>
       </div>

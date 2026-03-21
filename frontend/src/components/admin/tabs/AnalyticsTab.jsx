@@ -5,14 +5,17 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend,
 } from 'recharts';
-import { ChartCard, CustomTooltip } from '../../ui/DashboardUI';
+import {
+  Activity, Users, FileText, Zap,
+  Star, Flame, File, HelpCircle,
+} from 'lucide-react';
 import { PALETTE } from '../../../constants';
 
 const WEEKLY_METRICS = [
-  { key: 'total_actions',   label: 'All Actions',      color: PALETTE.indigo  },
-  { key: 'active_students', label: 'Active Students',  color: PALETTE.emerald },
-  { key: 'summaries',       label: 'Summaries',        color: PALETTE.amber   },
-  { key: 'flashcards',      label: 'Flashcards',       color: PALETTE.violet  },
+  { key: 'total_actions',   label: 'All Actions',     color: PALETTE.indigo  },
+  { key: 'active_students', label: 'Active Students', color: PALETTE.emerald },
+  { key: 'summaries',       label: 'Summaries',       color: PALETTE.amber   },
+  { key: 'flashcards',      label: 'Flashcards',      color: PALETTE.violet  },
 ];
 
 const avgPerUserRows = (stats) => stats ? [
@@ -22,45 +25,95 @@ const avgPerUserRows = (stats) => stats ? [
   { name: 'Quizzes/user',    value: stats.avg_per_user.quizzes    },
 ] : [];
 
+const CustomTooltip = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div style={{
+      background: 'rgba(255,255,255,0.97)', border: '1px solid rgba(175,215,255,0.5)',
+      borderRadius: 12, padding: '10px 14px', boxShadow: '0 4px 16px rgba(100,160,220,0.15)',
+      fontSize: 12, fontWeight: 700, color: '#173a5c',
+    }}>
+      <div style={{ marginBottom: 4, color: '#84a8c6', fontSize: 11 }}>{label}</div>
+      {payload.map(p => (
+        <div key={p.dataKey} style={{ color: p.color }}>{p.name}: <b>{p.value}</b></div>
+      ))}
+    </div>
+  );
+};
+
+const SectionCard = ({ title, subtitle, children }) => (
+  <div style={{
+    background: 'rgba(255,255,255,0.68)',
+    border: '1px solid rgba(175,215,255,0.38)',
+    borderRadius: 20, padding: '22px 24px',
+    backdropFilter: 'blur(14px)',
+    boxShadow: '0 2px 14px rgba(100,155,215,0.07)',
+  }}>
+    <div style={{ marginBottom: 16 }}>
+      <div style={{ fontFamily: "'Sora',sans-serif", fontSize: 15, fontWeight: 700, color: '#173a5c' }}>{title}</div>
+      {subtitle && <div style={{ fontSize: 11.5, color: '#8aaccb', fontWeight: 600, marginTop: 3 }}>{subtitle}</div>}
+    </div>
+    {children}
+  </div>
+);
+
+const MiniStatCard = ({ Icon, label, value, accent }) => (
+  <div style={{
+    background: 'rgba(255,255,255,0.68)',
+    border: '1px solid rgba(175,215,255,0.42)',
+    borderRadius: 18, padding: '14px 16px',
+    display: 'flex', alignItems: 'center', gap: 12,
+    backdropFilter: 'blur(12px)',
+    boxShadow: '0 2px 8px rgba(100,160,220,0.06)',
+  }}>
+    <div style={{
+      width: 38, height: 38, borderRadius: 11,
+      background: accent + '22', color: accent,
+      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+    }}>
+      <Icon size={18} />
+    </div>
+    <div>
+      <div style={{ fontFamily: "'Sora',sans-serif", fontSize: 20, fontWeight: 700, color: '#173a5c', lineHeight: 1 }}>{value ?? '—'}</div>
+      <div style={{ fontSize: 10.5, fontWeight: 700, color: '#84a8c6', textTransform: 'uppercase', letterSpacing: '0.6px', marginTop: 2 }}>{label}</div>
+    </div>
+  </div>
+);
+
 const AnalyticsTab = ({ stats, weekly, students }) => {
   const [weeklyMetric, setWeeklyMetric] = useState('total_actions');
   const activeColor = WEEKLY_METRICS.find(m => m.key === weeklyMetric)?.color || PALETTE.indigo;
 
   return (
-    <div className="space-y-6">
+    <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-      {/* Weekly summary cards */}
+      {/* Weekly summary mini cards */}
       {weekly && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { label: 'Actions This Week',  value: weekly.totals.total_actions,    icon: '⚡', color: 'bg-indigo-500'  },
-            { label: 'Avg Active/Day',     value: weekly.totals.avg_daily_active, icon: '👩‍🎓', color: 'bg-emerald-500' },
-            { label: 'Summaries (Week)',   value: weekly.totals.summaries,        icon: '📝', color: 'bg-amber-500'   },
-            { label: 'Peak Day',           value: weekly.totals.peak_day,         icon: '📈', color: 'bg-rose-500'    },
-          ].map(({ label, value, icon, color }) => (
-            <div key={label} className="bg-white rounded-2xl border-2 border-black p-4 flex flex-col gap-2">
-              <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg ${color}`}>{icon}</div>
-              <p className="text-2xl font-black text-gray-900 leading-none">{value ?? '—'}</p>
-              <p className="text-xs font-semibold text-gray-500">{label}</p>
-            </div>
-          ))}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 14 }}>
+          <MiniStatCard Icon={Activity} label="Actions This Week"  value={weekly.totals.total_actions}    accent="#6366f1" />
+          <MiniStatCard Icon={Users}    label="Avg Active / Day"   value={weekly.totals.avg_daily_active} accent="#10b981" />
+          <MiniStatCard Icon={FileText} label="Summaries (Week)"   value={weekly.totals.summaries}        accent="#f59e0b" />
+          <MiniStatCard Icon={Zap}      label="Peak Day"           value={weekly.totals.peak_day}         accent="#ef4444" />
         </div>
       )}
 
       {/* Area chart with metric toggle */}
-      <ChartCard title="📅 Weekly Student Activity" subtitle="All actions taken by students over the past 7 days">
-        {/* Metric pills */}
-        <div className="flex flex-wrap gap-2 mb-4">
+      <SectionCard title="Weekly Student Activity" subtitle="All actions taken by students over the past 7 days">
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
           {WEEKLY_METRICS.map(m => (
             <button
               key={m.key}
               onClick={() => setWeeklyMetric(m.key)}
-              className={`px-3 py-1 rounded-full text-xs font-bold transition border-2 ${
-                weeklyMetric === m.key
-                  ? 'text-white border-transparent'
-                  : 'border-gray-200 text-gray-500 bg-white hover:border-gray-400'
-              }`}
-              style={weeklyMetric === m.key ? { backgroundColor: m.color, borderColor: m.color } : {}}
+              style={{
+                padding: '6px 14px',
+                borderRadius: 20,
+                fontSize: 12, fontWeight: 700,
+                border: weeklyMetric === m.key ? 'none' : '1px solid rgba(170,205,240,0.5)',
+                background: weeklyMetric === m.key ? m.color : 'rgba(255,255,255,0.7)',
+                color: weeklyMetric === m.key ? '#fff' : '#4a6d8e',
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+              }}
             >
               {m.label}
             </button>
@@ -70,13 +123,13 @@ const AnalyticsTab = ({ stats, weekly, students }) => {
           <AreaChart data={weekly?.days || []}>
             <defs>
               <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%"  stopColor={activeColor} stopOpacity={0.3} />
+                <stop offset="5%"  stopColor={activeColor} stopOpacity={0.28} />
                 <stop offset="95%" stopColor={activeColor} stopOpacity={0.02} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-            <XAxis dataKey="day" tick={{ fontSize: 12, fontWeight: 700 }} />
-            <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(170,205,240,0.3)" />
+            <XAxis dataKey="day" tick={{ fontSize: 12, fontWeight: 700, fill: '#4a6d8e' }} />
+            <YAxis tick={{ fontSize: 11, fill: '#84a8c6' }} allowDecimals={false} />
             <Tooltip content={<CustomTooltip />} />
             <Area
               type="monotone"
@@ -90,17 +143,17 @@ const AnalyticsTab = ({ stats, weekly, students }) => {
             />
           </AreaChart>
         </ResponsiveContainer>
-      </ChartCard>
+      </SectionCard>
 
-      {/* Grouped bar chart breakdown */}
-      <ChartCard title="📊 Activity Breakdown by Type" subtitle="Compare docs, summaries, flashcards, quizzes and videos side-by-side">
+      {/* Grouped bar breakdown */}
+      <SectionCard title="Activity Breakdown by Type" subtitle="Docs, summaries, flashcards, quizzes and videos side-by-side">
         <ResponsiveContainer width="100%" height={280}>
           <BarChart data={weekly?.days || []} barSize={10}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-            <XAxis dataKey="day" tick={{ fontSize: 12, fontWeight: 700 }} />
-            <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(170,205,240,0.3)" />
+            <XAxis dataKey="day" tick={{ fontSize: 12, fontWeight: 700, fill: '#4a6d8e' }} />
+            <YAxis tick={{ fontSize: 11, fill: '#84a8c6' }} allowDecimals={false} />
             <Tooltip content={<CustomTooltip />} />
-            <Legend wrapperStyle={{ fontSize: 12, fontWeight: 700 }} />
+            <Legend wrapperStyle={{ fontSize: 12, fontWeight: 700, color: '#4a6d8e' }} />
             <Bar dataKey="documents"  name="Docs"       fill={PALETTE.indigo}  radius={[3,3,0,0]} />
             <Bar dataKey="summaries"  name="Summaries"  fill={PALETTE.emerald} radius={[3,3,0,0]} />
             <Bar dataKey="flashcards" name="Flashcards" fill={PALETTE.amber}   radius={[3,3,0,0]} />
@@ -108,90 +161,110 @@ const AnalyticsTab = ({ stats, weekly, students }) => {
             <Bar dataKey="videos"     name="Videos"     fill={PALETTE.sky}     radius={[3,3,0,0]} />
           </BarChart>
         </ResponsiveContainer>
-      </ChartCard>
+      </SectionCard>
 
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
 
         {/* Points distribution */}
-        <ChartCard title="Points Distribution" subtitle="How many students fall in each range">
+        <SectionCard title="Points Distribution" subtitle="How many students fall in each range">
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={stats?.points_dist} barSize={36}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="range" tick={{ fontSize: 11, fontWeight: 600 }} />
-              <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(170,205,240,0.3)" />
+              <XAxis dataKey="range" tick={{ fontSize: 11, fontWeight: 600, fill: '#4a6d8e' }} />
+              <YAxis tick={{ fontSize: 11, fill: '#84a8c6' }} allowDecimals={false} />
               <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="count" name="Students" fill={PALETTE.indigo} radius={[6, 6, 0, 0]} />
+              <Bar dataKey="count" name="Students" fill={PALETTE.indigo} radius={[6,6,0,0]} />
             </BarChart>
           </ResponsiveContainer>
-        </ChartCard>
+        </SectionCard>
 
         {/* Avg content per student */}
-        <ChartCard title="Avg Content per Student" subtitle="How engaged is the average student?">
+        <SectionCard title="Avg Content per Student" subtitle="How engaged is the average student?">
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={avgPerUserRows(stats)} layout="vertical" barSize={22}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis type="number" tick={{ fontSize: 11 }} />
-              <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fontWeight: 600 }} width={100} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(170,205,240,0.3)" />
+              <XAxis type="number" tick={{ fontSize: 11, fill: '#84a8c6' }} />
+              <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fontWeight: 600, fill: '#4a6d8e' }} width={100} />
               <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="value" name="Avg" fill={PALETTE.emerald} radius={[0, 6, 6, 0]} />
+              <Bar dataKey="value" name="Avg" fill={PALETTE.emerald} radius={[0,6,6,0]} />
             </BarChart>
           </ResponsiveContainer>
-        </ChartCard>
+        </SectionCard>
 
       </div>
 
       {/* Top 10 leaderboard */}
-      <ChartCard title="🏆 Top 10 Students by Points" subtitle="The highest performing students on the platform">
+      <SectionCard title="Top 10 Students by Points" subtitle="The highest performing students on the platform">
         <ResponsiveContainer width="100%" height={280}>
           <BarChart data={stats?.top_users?.map(u => ({ name: u.name, points: u.points }))} barSize={30}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-            <XAxis dataKey="name" tick={{ fontSize: 11, fontWeight: 600 }} />
-            <YAxis tick={{ fontSize: 11 }} />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(170,205,240,0.3)" />
+            <XAxis dataKey="name" tick={{ fontSize: 11, fontWeight: 600, fill: '#4a6d8e' }} />
+            <YAxis tick={{ fontSize: 11, fill: '#84a8c6' }} />
             <Tooltip content={<CustomTooltip />} />
-            <Bar dataKey="points" name="Points" fill={PALETTE.amber} radius={[6, 6, 0, 0]} />
+            <Bar dataKey="points" name="Points" fill={PALETTE.amber} radius={[6,6,0,0]} />
           </BarChart>
         </ResponsiveContainer>
-      </ChartCard>
+      </SectionCard>
 
       {/* Streak + averages */}
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 20 }}>
 
-        <ChartCard title="🔥 Top Streakers" subtitle="Students with the longest consecutive learning streaks" className="lg:col-span-2">
-          <div className="space-y-3">
+        <SectionCard title="Top Streakers" subtitle="Students with the longest consecutive learning streaks">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {[...students]
               .sort((a, b) => (b.streak || 0) - (a.streak || 0))
               .slice(0, 6)
               .map((u, i) => (
-                <div key={u.id} className="flex items-center gap-3">
-                  <span className="w-6 text-sm font-black text-gray-400">{i + 1}</span>
-                  <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-white text-xs font-black flex-shrink-0">
+                <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <span style={{ width: 20, fontSize: 12, fontWeight: 800, color: '#84a8c6', flexShrink: 0 }}>{i + 1}</span>
+                  <div style={{
+                    width: 32, height: 32, borderRadius: '50%',
+                    background: 'linear-gradient(135deg,#90c8f0,#6aaee0)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: '#fff', fontSize: 12, fontWeight: 800, flexShrink: 0,
+                  }}>
                     {u.username.charAt(0).toUpperCase()}
                   </div>
-                  <span className="flex-1 font-semibold text-gray-800 text-sm truncate">{u.username}</span>
-                  <div className="flex items-center gap-1">
-                    <div className="h-2 bg-orange-400 rounded-full" style={{ width: `${Math.min((u.streak || 0) * 3, 120)}px` }} />
-                    <span className="text-xs font-black text-orange-500 w-16 text-right">🔥 {u.streak}d</span>
+                  <span style={{ flex: 1, fontWeight: 700, color: '#173a5c', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {u.username}
+                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{
+                      height: 6, borderRadius: 3,
+                      background: 'linear-gradient(90deg,#fb923c,#f97316)',
+                      width: Math.min((u.streak || 0) * 3, 100) + 'px',
+                    }} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#ea580c', fontSize: 12, fontWeight: 800, minWidth: 50 }}>
+                      <Flame size={13} />
+                      {u.streak}d
+                    </div>
                   </div>
                 </div>
               ))}
           </div>
-        </ChartCard>
+        </SectionCard>
 
-        <ChartCard title="📊 Key Averages">
-          <div className="space-y-4">
+        <SectionCard title="Key Averages">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
             {[
-              { label: 'Avg Points',         value: stats?.avg_points,              icon: '⭐', color: 'text-amber-600'  },
-              { label: 'Avg Streak (days)',   value: stats?.avg_streak,              icon: '🔥', color: 'text-orange-500' },
-              { label: 'Docs per Student',    value: stats?.avg_per_user.documents,  icon: '📄', color: 'text-indigo-600' },
-              { label: 'Quizzes per Student', value: stats?.avg_per_user.quizzes,    icon: '❓', color: 'text-sky-600'    },
-            ].map(({ label, value, icon, color }) => (
-              <div key={label} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
-                <span className="text-xs text-gray-500 font-medium">{icon} {label}</span>
-                <span className={`text-lg font-black ${color}`}>{value}</span>
+              { label: 'Avg Points',         value: stats?.avg_points,              Icon: Star,        color: '#d97706' },
+              { label: 'Avg Streak (days)',   value: stats?.avg_streak,              Icon: Flame,       color: '#ea580c' },
+              { label: 'Docs per Student',    value: stats?.avg_per_user?.documents, Icon: File,        color: '#6366f1' },
+              { label: 'Quizzes per Student', value: stats?.avg_per_user?.quizzes,   Icon: HelpCircle,  color: '#0ea5e9' },
+            ].map(({ label, value, Icon, color }) => (
+              <div key={label} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '12px 0', borderBottom: '1px solid rgba(170,210,250,0.25)',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Icon size={14} color={color} />
+                  <span style={{ fontSize: 12, color: '#6b8eaa', fontWeight: 600 }}>{label}</span>
+                </div>
+                <span style={{ fontFamily: "'Sora',sans-serif", fontSize: 18, fontWeight: 700, color }}>{value}</span>
               </div>
             ))}
           </div>
-        </ChartCard>
+        </SectionCard>
 
       </div>
     </div>

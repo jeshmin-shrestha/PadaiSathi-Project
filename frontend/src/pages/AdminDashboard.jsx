@@ -3,7 +3,11 @@
 // All rendering is delegated to tab components.
 
 import React, { useState, useEffect } from 'react';
-import { RefreshCw } from 'lucide-react';
+import {
+  RefreshCw, LayoutDashboard, BarChart2,
+  Users, FileText, ShieldCheck, TrendingUp,
+  Zap, BookOpen, Activity
+} from 'lucide-react';
 import AdminNavbar from '../components/AdminNavbar';
 import OverviewTab  from '../components/admin/tabs/OverviewTab';
 import AnalyticsTab from '../components/admin/tabs/AnalyticsTab';
@@ -13,10 +17,10 @@ import AdminIcon from '../assets/images/adminicon.png';
 import { API } from '../constants';
 
 const TABS = [
-  { id: 'overview',  label: '📊 Overview'  },
-  { id: 'analytics', label: '📈 Analytics' },
-  { id: 'users',     label: '👥 Students'  },
-  { id: 'reports',   label: '📋 Reports'   },
+  { id: 'overview',  label: 'Overview',  Icon: LayoutDashboard },
+  { id: 'analytics', label: 'Analytics', Icon: BarChart2        },
+  { id: 'users',     label: 'Students',  Icon: Users            },
+  { id: 'reports',   label: 'Reports',   Icon: FileText         },
 ];
 
 const AdminDashboard = ({ user, setIsAuthenticated }) => {
@@ -72,82 +76,589 @@ const AdminDashboard = ({ user, setIsAuthenticated }) => {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-gray-200">
-      <AdminNavbar user={user} setIsAuthenticated={setIsAuthenticated} />
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Sora:wght@300;400;500;600;700&display=swap');
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        {/* Header */}
-        <div className="bg-gray-300 rounded-3xl p-6 mb-8">
-          <div className="flex flex-col lg:flex-row items-center gap-6">
-            <img src={AdminIcon} alt="Admin" className="w-28 h-28 object-contain flex-shrink-0" />
-            <div className="flex-1">
-              <h1 className="text-3xl font-black text-gray-900 mb-1">Admin Dashboard</h1>
-              <p className="text-gray-600">
-                Welcome back, <span className="font-bold text-gray-900">{user?.username}</span>
+        .adm-root {
+          min-height: 100vh;
+          width: 100%;
+          font-family: 'Nunito', sans-serif;
+          background: #e8f1fb;
+          position: relative;
+          overflow-x: hidden;
+        }
+
+        /* Soft sky gradient matching login page */
+        .adm-bg {
+          position: fixed;
+          inset: 0;
+          z-index: 0;
+          pointer-events: none;
+          background:
+            radial-gradient(ellipse 85% 55% at 5% 0%, rgba(186,220,255,0.6) 0%, transparent 55%),
+            radial-gradient(ellipse 65% 45% at 95% 100%, rgba(200,230,255,0.45) 0%, transparent 55%),
+            linear-gradient(160deg, #d9eeff 0%, #e5f0fb 45%, #f0f5fd 100%);
+        }
+
+        .adm-layout {
+          position: relative;
+          z-index: 1;
+          display: flex;
+          min-height: 100vh;
+        }
+
+        /* ════════════════════════════════
+           SIDEBAR
+        ════════════════════════════════ */
+        .adm-sidebar {
+          width: 230px;
+          flex-shrink: 0;
+          display: flex;
+          flex-direction: column;
+          padding: 20px 14px 20px;
+          gap: 4px;
+          background: rgba(255,255,255,0.52);
+          backdrop-filter: blur(22px);
+          -webkit-backdrop-filter: blur(22px);
+          border-right: 1px solid rgba(170,205,240,0.45);
+          min-height: 100vh;
+          position: sticky;
+          top: 0;
+          height: 100vh;
+          overflow-y: auto;
+        }
+
+        .adm-brand {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 4px 8px 18px;
+          border-bottom: 1px solid rgba(160,200,240,0.28);
+          margin-bottom: 10px;
+        }
+
+        .adm-brand img {
+          width: 34px;
+          height: 34px;
+          object-fit: contain;
+        }
+
+        .adm-brand-name {
+          font-family: 'Sora', sans-serif;
+          font-size: 14px;
+          font-weight: 700;
+          color: #173a5c;
+          line-height: 1.2;
+        }
+
+        .adm-brand-tag {
+          font-size: 9.5px;
+          font-weight: 700;
+          color: #6b95b8;
+          letter-spacing: 1.1px;
+          text-transform: uppercase;
+        }
+
+        .adm-section-label {
+          font-size: 9.5px;
+          font-weight: 800;
+          color: #9dbcd8;
+          letter-spacing: 1.6px;
+          text-transform: uppercase;
+          padding: 12px 8px 5px;
+        }
+
+        .adm-nav-item {
+          display: flex;
+          align-items: center;
+          gap: 9px;
+          padding: 10px 13px;
+          border-radius: 13px;
+          font-size: 13.5px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.16s;
+          border: none;
+          width: 100%;
+          text-align: left;
+          color: #4a6d8e;
+          background: transparent;
+        }
+
+        .adm-nav-item:hover {
+          background: rgba(180,215,255,0.32);
+          color: #163a5c;
+        }
+
+        .adm-nav-item.active {
+          background: rgba(255,255,255,0.88);
+          color: #163a5c;
+          box-shadow:
+            0 2px 10px rgba(100,160,220,0.16),
+            0 0 0 1px rgba(155,200,245,0.38);
+        }
+
+        .adm-nav-item svg {
+          width: 17px;
+          height: 17px;
+          flex-shrink: 0;
+          opacity: 0.7;
+        }
+
+        .adm-nav-item.active svg { opacity: 1; }
+
+        .adm-nav-item.muted {
+          opacity: 0.55;
+          cursor: default;
+          pointer-events: none;
+        }
+
+        .adm-sidebar-footer {
+          margin-top: auto;
+          padding: 12px;
+          background: rgba(255,255,255,0.58);
+          border-radius: 15px;
+          border: 1px solid rgba(170,210,250,0.38);
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .adm-avatar-chip {
+          width: 34px;
+          height: 34px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #90c8f0 0%, #6aaee0 100%);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 14px;
+          font-weight: 800;
+          color: white;
+          flex-shrink: 0;
+          text-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .adm-avatar-name {
+          font-size: 12.5px;
+          font-weight: 800;
+          color: #173a5c;
+        }
+
+        .adm-avatar-role {
+          font-size: 9.5px;
+          font-weight: 700;
+          color: #6b9ec6;
+          letter-spacing: 0.4px;
+          text-transform: uppercase;
+        }
+
+        /* ════════════════════════════════
+           MAIN COLUMN
+        ════════════════════════════════ */
+        .adm-main {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          min-width: 0;
+        }
+
+        /* Top bar */
+        .adm-topbar {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 16px 28px;
+          background: rgba(255,255,255,0.48);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
+          border-bottom: 1px solid rgba(170,205,240,0.38);
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+
+        .adm-page-title {
+          font-family: 'Sora', sans-serif;
+          font-size: 20px;
+          font-weight: 700;
+          color: #173a5c;
+          letter-spacing: -0.3px;
+        }
+
+        .adm-page-date {
+          font-size: 11.5px;
+          color: #88aecb;
+          font-weight: 600;
+          margin-top: 2px;
+        }
+
+        .adm-topbar-actions {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .adm-live-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 5px 11px;
+          background: rgba(167,243,208,0.4);
+          border: 1px solid rgba(74,222,128,0.35);
+          border-radius: 20px;
+          font-size: 10.5px;
+          font-weight: 800;
+          color: #166534;
+          letter-spacing: 0.4px;
+        }
+
+        .adm-live-dot {
+          width: 7px; height: 7px;
+          background: #22c55e;
+          border-radius: 50%;
+          animation: adm-pulse 1.8s ease-in-out infinite;
+        }
+
+        @keyframes adm-pulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50%       { opacity: 0.4; transform: scale(0.7); }
+        }
+
+        .adm-refresh {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 8px 16px;
+          background: rgba(255,255,255,0.72);
+          border: 1px solid rgba(160,200,240,0.5);
+          border-radius: 11px;
+          font-family: 'Nunito', sans-serif;
+          font-size: 12.5px;
+          font-weight: 700;
+          color: #2a5a8c;
+          cursor: pointer;
+          transition: all 0.16s;
+        }
+
+        .adm-refresh:hover {
+          background: #fff;
+          border-color: rgba(110,175,240,0.65);
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(100,160,220,0.14);
+        }
+
+        .adm-refresh:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        /* ── Stats row ── */
+        .adm-kpi-row {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 14px;
+          padding: 20px 28px;
+          border-bottom: 1px solid rgba(170,205,240,0.22);
+        }
+
+        @media (max-width: 1100px) {
+          .adm-kpi-row { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 700px) {
+          .adm-kpi-row { grid-template-columns: 1fr; }
+        }
+
+        .adm-kpi {
+          background: rgba(255,255,255,0.68);
+          backdrop-filter: blur(14px);
+          border: 1px solid rgba(175,215,255,0.42);
+          border-radius: 18px;
+          padding: 16px 18px;
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          box-shadow: 0 2px 10px rgba(100,160,220,0.07);
+          transition: transform 0.15s, box-shadow 0.15s;
+          animation: adm-rise 0.4s cubic-bezier(0.22,1,0.36,1) both;
+        }
+
+        .adm-kpi:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 22px rgba(100,160,220,0.13);
+        }
+
+        .adm-kpi:nth-child(1) { animation-delay: 0.04s; }
+        .adm-kpi:nth-child(2) { animation-delay: 0.08s; }
+        .adm-kpi:nth-child(3) { animation-delay: 0.12s; }
+        .adm-kpi:nth-child(4) { animation-delay: 0.16s; }
+
+        @keyframes adm-rise {
+          from { opacity: 0; transform: translateY(8px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .adm-kpi-icon {
+          width: 42px;
+          height: 42px;
+          border-radius: 13px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        .adm-kpi-icon.sky   { background: rgba(186,230,255,0.55); color: #0c6fa8; }
+        .adm-kpi-icon.mint  { background: rgba(167,243,208,0.5);  color: #0f7040; }
+        .adm-kpi-icon.honey { background: rgba(253,220,100,0.45); color: #8a6000; }
+        .adm-kpi-icon.rose  { background: rgba(255,187,200,0.5);  color: #a01840; }
+
+        .adm-kpi-val {
+          font-family: 'Sora', sans-serif;
+          font-size: 24px;
+          font-weight: 700;
+          color: #173a5c;
+          line-height: 1;
+        }
+
+        .adm-kpi-lbl {
+          font-size: 11px;
+          font-weight: 700;
+          color: #84a8c6;
+          text-transform: uppercase;
+          letter-spacing: 0.6px;
+          margin-top: 3px;
+        }
+
+        /* ── Content & panel ── */
+        .adm-content-area {
+          flex: 1;
+          padding: 24px 28px 36px;
+        }
+
+        .adm-panel {
+          background: rgba(255,255,255,0.62);
+          backdrop-filter: blur(18px);
+          -webkit-backdrop-filter: blur(18px);
+          border: 1px solid rgba(175,215,255,0.38);
+          border-radius: 22px;
+          overflow: hidden;
+          box-shadow:
+            0 4px 24px rgba(100,155,215,0.09),
+            0 1px 0 rgba(255,255,255,0.85) inset;
+          animation: adm-rise 0.3s cubic-bezier(0.22,1,0.36,1) both;
+        }
+
+        /* ── Loading ── */
+        .adm-loader {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 14px;
+          padding: 100px 0;
+        }
+
+        .adm-spinner {
+          width: 38px; height: 38px;
+          border: 3px solid rgba(130,185,240,0.2);
+          border-top-color: #55a5d8;
+          border-radius: 50%;
+          animation: adm-spin 0.7s linear infinite;
+        }
+
+        .adm-loader-lbl {
+          font-size: 12.5px;
+          font-weight: 700;
+          color: #80aacb;
+          letter-spacing: 0.5px;
+        }
+
+        @keyframes adm-spin { to { transform: rotate(360deg); } }
+
+        /* ── Footer ── */
+        .adm-footer {
+          text-align: center;
+          padding: 18px 28px;
+          font-size: 11px;
+          font-weight: 700;
+          color: #aac6df;
+          letter-spacing: 0.5px;
+          border-top: 1px solid rgba(170,210,250,0.22);
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 860px) {
+          .adm-sidebar { display: none; }
+          .adm-content-area { padding: 18px 16px 28px; }
+          .adm-topbar { padding: 14px 16px; }
+          .adm-kpi-row { padding: 16px; }
+        }
+      `}</style>
+
+      {/* Background layer */}
+      <div className="adm-bg" />
+
+      <div className="adm-root">
+        {/* Navbar */}
+        <div style={{ position: 'relative', zIndex: 20 }}>
+          <AdminNavbar user={user} setIsAuthenticated={setIsAuthenticated} />
+        </div>
+
+        <div className="adm-layout">
+
+          {/* ── SIDEBAR ── */}
+          <aside className="adm-sidebar">
+            <div className="adm-brand">
+              <img src={AdminIcon} alt="Admin" />
+              <div>
+                <div className="adm-brand-name">PadaiSathi</div>
+                <div className="adm-brand-tag">Admin Panel</div>
+              </div>
+            </div>
+
+            <div className="adm-section-label">Main Menu</div>
+
+            {TABS.map(({ id, label, Icon }) => (
+              <button
+                key={id}
+                onClick={() => setActiveTab(id)}
+                className={`adm-nav-item${activeTab === id ? ' active' : ''}`}
+              >
+                <Icon size={17} />
+                {label}
+              </button>
+            ))}
+
+            <div className="adm-section-label">System</div>
+
+            <button className="adm-nav-item muted">
+              <ShieldCheck size={17} />
+              Security
+            </button>
+            <button className="adm-nav-item muted">
+              <Activity size={17} />
+              System Logs
+            </button>
+
+            {/* User chip at bottom */}
+            <div className="adm-sidebar-footer">
+              <div className="adm-avatar-chip">
+                {(user?.username?.[0] || 'A').toUpperCase()}
+              </div>
+              <div>
+                <div className="adm-avatar-name">{user?.username}</div>
+                <div className="adm-avatar-role">Administrator</div>
+              </div>
+            </div>
+          </aside>
+
+          {/* ── MAIN COLUMN ── */}
+          <div className="adm-main">
+
+            {/* Top bar */}
+            <div className="adm-topbar">
+              <div>
+                <div className="adm-page-title">
+                  {TABS.find(t => t.id === activeTab)?.label ?? 'Dashboard'}
+                </div>
+                <div className="adm-page-date">
+                  {new Date().toLocaleDateString('en-US', {
+                    weekday: 'long', year: 'numeric',
+                    month: 'long', day: 'numeric'
+                  })}
+                </div>
+              </div>
+              <div className="adm-topbar-actions">
                 {health && (
-                  <span className="ml-2 text-xs bg-green-500 text-white px-2 py-0.5 rounded-full font-bold">
-                    ● Live
+                  <span className="adm-live-badge">
+                    <span className="adm-live-dot" />
+                    System Online
                   </span>
                 )}
-              </p>
-              {stats && (
-                <div className="flex flex-wrap gap-4 mt-3 text-sm">
-                  <span className="text-gray-700">👩‍🎓 <b>{stats.student_count}</b> students</span>
-                  <span className="text-gray-700">⭐ <b>{stats.total_points.toLocaleString()}</b> total pts</span>
-                  <span className="text-gray-700">📊 <b>{stats.avg_points}</b> avg pts/student</span>
-                  <span className="text-gray-700">🔥 <b>{stats.avg_streak}</b> avg streak days</span>
+                <button
+                  onClick={fetchAll}
+                  disabled={refreshing}
+                  className="adm-refresh"
+                >
+                  <RefreshCw
+                    size={13}
+                    style={{ animation: refreshing ? 'adm-spin 0.7s linear infinite' : 'none' }}
+                  />
+                  Refresh
+                </button>
+              </div>
+            </div>
+
+            {/* KPI cards */}
+            {stats && (
+              <div className="adm-kpi-row">
+                <div className="adm-kpi">
+                  <div className="adm-kpi-icon sky"><Users size={20} /></div>
+                  <div>
+                    <div className="adm-kpi-val">{stats.student_count}</div>
+                    <div className="adm-kpi-lbl">Total Students</div>
+                  </div>
+                </div>
+                <div className="adm-kpi">
+                  <div className="adm-kpi-icon mint"><TrendingUp size={20} /></div>
+                  <div>
+                    <div className="adm-kpi-val">{(stats.total_points || 0).toLocaleString()}</div>
+                    <div className="adm-kpi-lbl">Total Points</div>
+                  </div>
+                </div>
+                <div className="adm-kpi">
+                  <div className="adm-kpi-icon honey"><Zap size={20} /></div>
+                  <div>
+                    <div className="adm-kpi-val">{stats.avg_points}</div>
+                    <div className="adm-kpi-lbl">Avg pts / Student</div>
+                  </div>
+                </div>
+                <div className="adm-kpi">
+                  <div className="adm-kpi-icon rose"><BookOpen size={20} /></div>
+                  <div>
+                    <div className="adm-kpi-val">{stats.avg_streak}</div>
+                    <div className="adm-kpi-lbl">Avg Streak Days</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Tab content */}
+            <div className="adm-content-area">
+              {loading ? (
+                <div className="adm-loader">
+                  <div className="adm-spinner" />
+                  <div className="adm-loader-lbl">Loading dashboard data...</div>
+                </div>
+              ) : (
+                <div className="adm-panel" key={activeTab}>
+                  {activeTab === 'overview'  && (
+                    <OverviewTab stats={stats} health={health} students={students} adminCount={adminCount} weekly={weekly} />
+
+                  )}
+                  {activeTab === 'analytics' && (
+                    <AnalyticsTab stats={stats} weekly={weekly} students={students} />
+                  )}
+                  {activeTab === 'users'     && (
+                    <StudentsTab  students={students} adminCount={adminCount} onDelete={handleDelete} deletingId={deletingId} />
+                  )}
+                  {activeTab === 'reports'   && (
+                    <ReportsTab   stats={stats} weekly={weekly} students={students} />
+                  )}
                 </div>
               )}
             </div>
-            <button
-              onClick={fetchAll}
-              disabled={refreshing}
-              className="flex items-center gap-2 px-4 py-2 bg-white border-2 border-black rounded-xl font-bold text-gray-700 hover:bg-gray-50 transition disabled:opacity-50 flex-shrink-0"
-            >
-              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-              Refresh
-            </button>
+
+            {/* Footer */}
+            <div className="adm-footer">
+              © {new Date().getFullYear()} PadaiSathi — All rights reserved
+            </div>
+
           </div>
         </div>
-
-        {/* Tab bar */}
-        <div className="flex flex-wrap gap-2 mb-6">
-          {TABS.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-5 py-2.5 rounded-2xl font-bold transition text-sm ${
-                activeTab === tab.id
-                  ? 'bg-gray-900 text-white'
-                  : 'bg-white border-2 border-black text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Tab content */}
-        {loading ? (
-          <div className="flex items-center justify-center py-40">
-            <div className="w-10 h-10 border-4 border-black border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : (
-          <>
-            {activeTab === 'overview'  && <OverviewTab  stats={stats} health={health} students={students} adminCount={adminCount} />}
-            {activeTab === 'analytics' && <AnalyticsTab stats={stats} weekly={weekly} students={students} />}
-            {activeTab === 'users'     && <StudentsTab  students={students} adminCount={adminCount} onDelete={handleDelete} deletingId={deletingId} />}
-            {activeTab === 'reports'   && <ReportsTab   stats={stats} weekly={weekly} students={students} />}
-          </>
-        )}
-
       </div>
-
-      <footer className="text-center py-6 text-gray-600 text-sm mt-8 border-t border-gray-300">
-        © PadaiSathi All rights reserved.
-      </footer>
-    </div>
+    </>
   );
 };
 
