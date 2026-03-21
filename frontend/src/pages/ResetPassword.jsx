@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import catIllustration from '../assets/images/Loginimage5.png';
 import logoImage from '../assets/images/logo1.png';
-
+import successImage from '../assets/images/SuccessImage.jpeg';
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -157,7 +157,19 @@ const ResetPassword = () => {
           {/* Success */}
           {tokenValid && success && (
             <div style={{textAlign:'center',padding:'12px 0'}}>
-              <div style={{fontSize:'48px',marginBottom:'16px'}}>✅</div>
+              <img 
+                src={successImage} 
+                alt="Success" 
+                style={{
+                  width: '120px',
+                  height: '120px',
+                  objectFit: 'cover',
+                  borderRadius: '50%',
+                  display: 'block',
+                  margin: '0 auto 16px',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
+                }} 
+              />
               <h2 style={{color:'#fff',fontSize:'22px',fontWeight:'700',marginBottom:'10px'}}>Password Reset!</h2>
               <p style={{color:'rgba(255,255,255,0.75)',fontSize:'14px',lineHeight:'1.6'}}>
                 Your password has been updated successfully.<br />Redirecting you to login...

@@ -47,7 +47,6 @@ const NotebooksPage = () => {
   };
 
   const toggleFavorite = async (id) => {
-    // Optimistic update
     setFavorites(prev => {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
@@ -62,7 +61,6 @@ const NotebooksPage = () => {
       });
     } catch (error) {
       console.error('Error toggling favorite:', error);
-      // Revert optimistic update on failure
       setFavorites(prev => {
         const next = new Set(prev);
         next.has(id) ? next.delete(id) : next.add(id);
@@ -70,6 +68,25 @@ const NotebooksPage = () => {
       });
     }
   };
+
+  // ── NEW: delete handler ───────────────────────────────────────────────────
+  const deleteNotebook = async (id) => {
+    try {
+      await fetch(`http://localhost:8000/api/notebook/${id}?email=${userEmail}`, {
+        method: 'DELETE',
+      });
+      // Remove from local state so the card disappears immediately
+      setNotebooks(prev => prev.filter(n => n.id !== id));
+      setFavorites(prev => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    } catch (error) {
+      console.error('Error deleting notebook:', error);
+    }
+  };
+  // ─────────────────────────────────────────────────────────────────────────
 
   const filteredNotebooks = notebooks.filter(n =>
     n.title.toLowerCase().includes(searchQuery.toLowerCase())
@@ -140,6 +157,7 @@ const NotebooksPage = () => {
                   notebook={notebook}
                   isFavorite={favorites.has(notebook.id)}
                   onToggleFavorite={toggleFavorite}
+                  onDelete={deleteNotebook}
                   onOpen={() => navigate(`/notebook/${notebook.id}`)}
                 />
               ))}
@@ -163,6 +181,7 @@ const NotebooksPage = () => {
                   notebook={notebook}
                   isFavorite={favorites.has(notebook.id)}
                   onToggleFavorite={toggleFavorite}
+                  onDelete={deleteNotebook}
                   onOpen={() => navigate(`/notebook/${notebook.id}`)}
                 />
               ))}
@@ -178,32 +197,68 @@ const NotebooksPage = () => {
   );
 };
 
-const NotebookCard = ({ notebook, isFavorite, onToggleFavorite, onOpen }) => (
-  <div className="bg-white rounded-3xl p-6 border-4 border-black">
-    <div className="flex flex-col items-center text-center space-y-4">
-      <img src={Icon3Image} alt="Folder Icon" className="w-20 h-20 object-contain" />
-      <div className="flex-1">
-        <h4 className="text-lg font-bold text-gray-900">{notebook.title}</h4>
-        <p className="text-sm text-gray-500">
-          {new Date(notebook.created_at).toLocaleDateString()}
-        </p>
-      </div>
-      <div className="flex items-center space-x-3 w-full justify-center">
-        <button
-          onClick={onOpen}
-          className="px-8 py-2 bg-black text-white rounded-lg font-semibold hover:bg-gray-800 transition"
-        >
-          Open
-        </button>
-        <button
-          onClick={() => onToggleFavorite(notebook.id)}
-          className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 rounded-lg transition"
-        >
-          <Star className={`w-6 h-6 ${isFavorite ? 'text-yellow-500 fill-yellow-500' : 'text-gray-400'}`} />
-        </button>
+// ── NotebookCard now has delete button + inline confirmation ─────────────────
+const NotebookCard = ({ notebook, isFavorite, onToggleFavorite, onOpen, onDelete }) => {
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  return (
+    <div className="bg-white rounded-3xl p-6 border-4 border-black">
+      <div className="flex flex-col items-center text-center space-y-4">
+        <img src={Icon3Image} alt="Folder Icon" className="w-20 h-20 object-contain" />
+        <div className="flex-1">
+          <h4 className="text-lg font-bold text-gray-900">{notebook.title}</h4>
+          <p className="text-sm text-gray-500">
+            {new Date(notebook.created_at).toLocaleDateString()}
+          </p>
+        </div>
+
+        <div className="flex items-center space-x-3 w-full justify-center">
+          <button
+            onClick={onOpen}
+            className="px-8 py-2 bg-black text-white rounded-lg font-semibold hover:bg-gray-800 transition"
+          >
+            Open
+          </button>
+          <button
+            onClick={() => onToggleFavorite(notebook.id)}
+            className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 rounded-lg transition"
+          >
+            <Star className={`w-6 h-6 ${isFavorite ? 'text-yellow-500 fill-yellow-500' : 'text-gray-400'}`} />
+          </button>
+          {/* NEW: trash button */}
+          <button
+            onClick={() => setConfirmDelete(true)}
+            className="w-10 h-10 flex items-center justify-center hover:bg-red-50 rounded-lg transition text-gray-400 hover:text-red-500"
+            title="Delete notebook"
+          >
+            🗑️
+          </button>
+        </div>
+
+        {/* NEW: inline confirmation that appears after clicking trash */}
+        {confirmDelete && (
+          <div className="w-full bg-red-50 border-2 border-red-200 rounded-xl p-3 text-center">
+            <p className="text-sm font-semibold text-red-700 mb-2">Delete this notebook?</p>
+            <div className="flex justify-center gap-2">
+              <button
+                onClick={() => { onDelete(notebook.id); setConfirmDelete(false); }}
+                className="px-4 py-1 bg-red-500 text-white rounded-lg text-sm font-semibold hover:bg-red-600 transition"
+              >
+                Yes, delete
+              </button>
+              <button
+                onClick={() => setConfirmDelete(false)}
+                className="px-4 py-1 bg-gray-200 text-gray-700 rounded-lg text-sm font-semibold hover:bg-gray-300 transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default NotebooksPage;

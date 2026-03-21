@@ -1584,6 +1584,136 @@ def debug_streak(email: str, db: Session = Depends(get_db)):
         "today_utc": str(datetime.utcnow().date()),
         "is_active_today": user.last_activity_date == datetime.utcnow().date(),
     }
+@app.delete("/api/notebook/{notebook_id}")
+def delete_notebook(notebook_id: int, email: str, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    notebook = db.query(models.Notebook).filter(
+        models.Notebook.id == notebook_id,
+        models.Notebook.user_id == user.id  # ensure ownership
+    ).first()
+    if not notebook:
+        raise HTTPException(status_code=404, detail="Notebook not found")
+
+    # Clean up favorites for this notebook
+    db.query(models.Favorite).filter(
+        models.Favorite.notebook_id == notebook_id
+    ).delete()
+
+    db.delete(notebook)
+    db.commit()
+    return {"success": True, "message": "Notebook deleted."}
+
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from datetime import timedelta
+
+SMTP_HOST     = os.getenv("SMTP_HOST", "smtp.gmail.com")
+SMTP_PORT     = int(os.getenv("SMTP_PORT", "587"))
+SMTP_USER     = os.getenv("GMAIL_USER", "")
+SMTP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD", "")
+FRONTEND_URL  = os.getenv("FRONTEND_URL", "http://localhost:5173")
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
+@app.post("/api/forgot-password")
+def forgot_password(req: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    email = req.email.strip().lower()
+    user  = db.query(models.User).filter(models.User.email == email).first()
+
+    # Always return success — never reveal whether the email exists
+    if not user:
+        return {"success": True, "message": "If that email exists, a reset link has been sent."}
+
+    # Create a reset token (valid 30 min)
+    token      = secrets.token_urlsafe(32)
+    expires_at = datetime.utcnow() + timedelta(minutes=30)
+
+    # Invalidate any previous tokens for this user
+    db.query(models.PasswordResetToken).filter(
+        models.PasswordResetToken.user_id == user.id,
+        models.PasswordResetToken.used    == 0
+    ).delete()
+
+    db.add(models.PasswordResetToken(
+        user_id=user.id, token=token, expires_at=expires_at
+    ))
+    db.commit()
+
+    reset_link = f"{FRONTEND_URL}/reset-password?token={token}"
+
+    # Send email if SMTP is configured, otherwise just print the link
+    print(f"[ForgotPassword] Reset link for {email}: {reset_link}")
+
+    if SMTP_USER and SMTP_PASSWORD:
+        try:
+            msg = MIMEMultipart("alternative")
+            msg["Subject"] = "PadaiSathi — Reset Your Password"
+            msg["From"]    = SMTP_USER
+            msg["To"]      = email
+
+            html = f"""
+            <h2>Reset Your Password</h2>
+            <p>Click the link below to reset your password. It expires in 30 minutes.</p>
+            <a href="{reset_link}" style="background:#6d28d9;color:white;padding:12px 24px;
+            border-radius:8px;text-decoration:none;display:inline-block;">
+            Reset Password
+            </a>
+            <p>If you didn't request this, ignore this email.</p>
+            """
+            msg.attach(MIMEText(html, "html"))
+
+            with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
+                server.starttls()
+                server.login(SMTP_USER, SMTP_PASSWORD)
+                server.sendmail(SMTP_USER, email, msg.as_string())
+            print(f"[ForgotPassword] Email sent to {email} ✅")
+        except Exception as e:
+            print(f"[ForgotPassword] Email send failed: {e}")
+    else:
+        print(f"[ForgotPassword] No SMTP configured — link printed above only")
+
+    return {"success": True, "message": "If that email exists, a reset link has been sent."}
+
+
+@app.post("/api/reset-password")
+def reset_password(req: ResetPasswordRequest, db: Session = Depends(get_db)):
+    record = db.query(models.PasswordResetToken).filter(
+        models.PasswordResetToken.token == req.token,
+        models.PasswordResetToken.used  == 0
+    ).first()
+
+    if not record:
+        raise HTTPException(status_code=400, detail="Invalid or already used reset link.")
+    if record.expires_at < datetime.utcnow():
+        raise HTTPException(status_code=400, detail="Reset link has expired. Please request a new one.")
+
+    # Validate new password (reuse your existing rules)
+    if len(req.new_password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    if not re.search(r'[A-Z]', req.new_password):
+        raise HTTPException(status_code=400, detail="Password must contain at least one uppercase letter")
+    if not re.search(r'\d', req.new_password):
+        raise HTTPException(status_code=400, detail="Password must contain at least one number")
+    if not re.search(r'[^a-zA-Z0-9]', req.new_password):
+        raise HTTPException(status_code=400, detail="Password must contain at least one special character")
+
+    user = db.query(models.User).filter(models.User.id == record.user_id).first()
+    user.password_hash = simple_hash_password(req.new_password)
+    record.used = 1   # mark token as consumed
+    db.commit()
+
+    return {"success": True, "message": "Password reset successfully! You can now log in."}
+
+
 # ── Run ───────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     import uvicorn

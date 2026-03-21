@@ -238,3 +238,13 @@ class UserBadge(Base):
             "badge_id":  self.badge_id,
             "earned_at": self.earned_at.isoformat(),
         }
+class PasswordResetToken(Base):
+    __tablename__ = "password_reset_tokens"
+
+    id         = Column(Integer, primary_key=True, index=True)
+    user_id    = Column(Integer, ForeignKey("users.id"), nullable=False)
+    token      = Column(String(100), unique=True, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    used       = Column(Integer, default=0)   # 0 = unused, 1 = used
+
+    user = relationship("User", backref="reset_tokens")
