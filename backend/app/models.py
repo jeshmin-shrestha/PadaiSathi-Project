@@ -34,6 +34,7 @@ class User(Base):
             "points":   self.points,
             "streak":   self.streak,
             "avatar": self.avatar or "student",
+            "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 
 

@@ -1382,6 +1382,7 @@ def admin_weekly_activity(db: Session = Depends(get_db)):
     flashcard_counts = count_by_day(models.Flashcard, models.Flashcard.created_at)
     quiz_counts      = count_by_day(models.Quiz,      models.Quiz.created_at)
     video_counts     = count_by_day(models.Video,     models.Video.generated_at)
+    notebook_counts  = count_by_day(models.Notebook,  models.Notebook.created_at)  # ← ADD THIS
 
     # Also count unique active students per day (students who uploaded/summarized)
     active_students_by_day = {}
@@ -1418,6 +1419,7 @@ def admin_weekly_activity(db: Session = Depends(get_db)):
             "flashcards":     flashcard_counts[iso],
             "quizzes":        quiz_counts[iso],
             "videos":         video_counts[iso],
+            "notebooks":      notebook_counts[iso],
             "active_students": active_students_by_day[iso],
             "total_actions":  (
                 doc_counts[iso] +
@@ -1435,6 +1437,7 @@ def admin_weekly_activity(db: Session = Depends(get_db)):
         "flashcards":      sum(flashcard_counts.values()),
         "quizzes":         sum(quiz_counts.values()),
         "videos":          sum(video_counts.values()),
+        "notebooks":  sum(notebook_counts.values()),
         "total_actions":   sum(d["total_actions"] for d in result),
         "peak_day":        max(result, key=lambda d: d["total_actions"])["day"] if result else "—",
         "avg_daily_active": round(sum(active_students_by_day.values()) / 7, 1),
