@@ -207,10 +207,105 @@ const StudentModal = ({ student, onClose }) => {
   );
 };
 
+// ── Confirm Delete Modal ──────────────────────────────────────────────────────
+const ConfirmDeleteModal = ({ student, onConfirm, onCancel }) => {
+  if (!student) return null;
+  return (
+    <>
+      <div
+        onClick={onCancel}
+        style={{
+          position: 'fixed', inset: 0, zIndex: 200,
+          background: 'rgba(10,30,60,0.35)',
+          backdropFilter: 'blur(4px)',
+          animation: 'fadeIn 0.15s ease',
+        }}
+      />
+      <div style={{
+        position: 'fixed', top: '50%', left: '50%', zIndex: 201,
+        transform: 'translate(-50%, -50%)',
+        width: '100%', maxWidth: 380,
+        background: 'rgba(255,255,255,0.97)',
+        border: '1px solid rgba(175,215,255,0.5)',
+        borderRadius: 24,
+        boxShadow: '0 20px 60px rgba(30,80,160,0.18)',
+        backdropFilter: 'blur(20px)',
+        animation: 'slideUp 0.2s cubic-bezier(0.22,1,0.36,1)',
+        overflow: 'hidden',
+        fontFamily: "'Nunito', sans-serif",
+      }}>
+        {/* Header */}
+        <div style={{
+          background: 'linear-gradient(135deg, #fff0f0 0%, #ffe8e8 100%)',
+          borderBottom: '1px solid rgba(252,165,165,0.35)',
+          padding: '18px 24px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <div style={{ fontFamily: "'Sora',sans-serif", fontSize: 15, fontWeight: 700, color: '#991b1b', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Trash2 size={15} /> Delete Student
+          </div>
+          <button
+            onClick={onCancel}
+            style={{
+              width: 28, height: 28, borderRadius: 8, border: 'none',
+              background: 'rgba(252,165,165,0.3)', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#991b1b',
+            }}
+          >
+            <X size={13} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div style={{ padding: '24px', textAlign: 'center' }}>
+          <p style={{ fontSize: 14, fontWeight: 600, color: '#173a5c', marginBottom: 6 }}>
+            Permanently delete <strong>"{student.username}"</strong>?
+          </p>
+          <p style={{ fontSize: 12, color: '#84a8c6', fontWeight: 500 }}>
+            This will remove all their summaries, flashcards, quizzes, videos, and notebooks. This cannot be undone.
+          </p>
+        </div>
+
+        {/* Footer */}
+        <div style={{
+          padding: '14px 24px',
+          borderTop: '1px solid rgba(170,205,240,0.3)',
+          display: 'flex', justifyContent: 'flex-end', gap: 10,
+        }}>
+          <button
+            onClick={onCancel}
+            style={{
+              padding: '9px 20px', borderRadius: 11, border: '1px solid rgba(170,205,240,0.5)',
+              background: 'rgba(255,255,255,0.8)', color: '#4a6d8e',
+              fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: "'Nunito',sans-serif",
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            style={{
+              padding: '9px 20px', borderRadius: 11, border: 'none',
+              background: 'linear-gradient(135deg,#f87171,#dc2626)',
+              color: '#fff', fontSize: 13, fontWeight: 700,
+              cursor: 'pointer', fontFamily: "'Nunito',sans-serif",
+              boxShadow: '0 2px 10px rgba(220,38,38,0.3)',
+            }}
+          >
+            Yes, Delete
+          </button>
+        </div>
+      </div>
+    </>
+  );
+};
+
 // ── MAIN COMPONENT ────────────────────────────────────────────────────────────
 const StudentsTab = ({ students, adminCount, onDelete, deletingId }) => {
   const [search,          setSearch]          = useState('');
   const [selectedStudent, setSelectedStudent] = useState(null);
+  const [pendingDelete,   setPendingDelete]   = useState(null);
 
   const filtered = students.filter(u =>
     u.username.toLowerCase().includes(search.toLowerCase()) ||
@@ -220,8 +315,13 @@ const StudentsTab = ({ students, adminCount, onDelete, deletingId }) => {
   return (
     <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 18 }}>
 
-      {/* Modal */}
+      {/* Modals */}
       <StudentModal student={selectedStudent} onClose={() => setSelectedStudent(null)} />
+      <ConfirmDeleteModal
+        student={pendingDelete}
+        onConfirm={() => { onDelete(pendingDelete.id, pendingDelete.username); setPendingDelete(null); }}
+        onCancel={() => setPendingDelete(null)}
+      />
 
       {/* Count chips */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
@@ -358,7 +458,7 @@ const StudentsTab = ({ students, adminCount, onDelete, deletingId }) => {
 
                       {/* Delete button */}
                       <button
-                        onClick={() => onDelete(u.id, u.username)}
+                        onClick={() => setPendingDelete(u)}
                         disabled={deletingId === u.id}
                         style={{
                           display: 'inline-flex', alignItems: 'center', gap: 6,

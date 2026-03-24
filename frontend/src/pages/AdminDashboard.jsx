@@ -55,13 +55,17 @@ const AdminDashboard = ({ user, setIsAuthenticated }) => {
   useEffect(() => { fetchAll(); }, []);
 
   const handleDelete = async (userId, username) => {
-    if (!window.confirm(`Permanently delete "${username}"? This cannot be undone.`)) return;
     setDeletingId(userId);
     try {
-      await fetch(`${API}/api/users/${userId}`, { method: 'DELETE' });
-      setUsers(prev => prev.filter(u => u.id !== userId));
+      const res = await fetch(`${API}/api/users/${userId}`, { method: 'DELETE' });
+      if (res.ok) {
+        setUsers(prev => prev.filter(u => u.id !== userId));
+      } else {
+        const data = await res.json();
+        alert(data.detail || 'Failed to delete user.');
+      }
     } catch {
-      alert('Add DELETE /api/users/:id to your backend first.');
+      alert('Could not connect to backend.');
     } finally {
       setDeletingId(null);
     }

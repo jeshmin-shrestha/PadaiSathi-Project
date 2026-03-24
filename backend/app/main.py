@@ -256,6 +256,31 @@ def get_users(db: Session = Depends(get_db)):
     return {"users": result, "total": len(users)}
 
 
+@app.delete("/api/users/{user_id}")
+def delete_user(user_id: int, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user.role == "admin":
+        raise HTTPException(status_code=403, detail="Cannot delete admin accounts")
+    db.query(models.UserBadge).filter(models.UserBadge.user_id == user_id).delete()
+    db.query(models.PasswordResetToken).filter(models.PasswordResetToken.user_id == user_id).delete()
+    db.query(models.Friendship).filter(
+        (models.Friendship.sender_id == user_id) |
+        (models.Friendship.receiver_id == user_id)
+    ).delete(synchronize_session=False)
+    db.query(models.Favorite).filter(models.Favorite.user_id == user_id).delete()
+    db.query(models.Quiz).filter(models.Quiz.user_id == user_id).delete()
+    db.query(models.Flashcard).filter(models.Flashcard.user_id == user_id).delete()
+    db.query(models.Video).filter(models.Video.user_id == user_id).delete()
+    db.query(models.Summary).filter(models.Summary.user_id == user_id).delete()
+    db.query(models.Notebook).filter(models.Notebook.user_id == user_id).delete()
+    db.query(models.Document).filter(models.Document.user_id == user_id).delete()
+    db.delete(user)
+    db.commit()
+    return {"success": True, "message": f"User {user.username} deleted"}
+
+
 # ═════════════════════════════════════════════════════════════════════════════
 # Upload — now also extracts text and stores Document record
 # ═════════════════════════════════════════════════════════════════════════════
