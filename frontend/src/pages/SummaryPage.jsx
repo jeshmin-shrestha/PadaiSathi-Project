@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Upload } from 'lucide-react';
+import { Upload, BookOpen, Star } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Icon1Image from '../assets/images/icon1.png';
 import BadgeToast from '../components/BadgeToast';
+import { API } from '../constants';
+
 const SummaryPage = () => {
   const [dragActive, setDragActive]     = useState(false);
   const [uploadedFile, setUploadedFile] = useState(null);
@@ -13,7 +15,7 @@ const SummaryPage = () => {
   const [username, setUsername]           = useState('');
   const [userEmail, setUserEmail]         = useState('');
   const [newBadges, setNewBadges] = useState([]);
-  // Restore saved summaries on mount
+
   useEffect(() => {
     const saved = localStorage.getItem('padai_summaries');
     if (saved) {
@@ -67,20 +69,18 @@ const SummaryPage = () => {
     setIsGenerating(true);
 
     try {
-      // Step 1: Upload
       const formData = new FormData();
       formData.append('file', uploadedFile);
       formData.append('email', userEmail);
 
-      const uploadRes = await fetch('http://localhost:8000/api/upload', {
+      const uploadRes = await fetch(`${API}/api/upload`, {
         method: 'POST',
         body: formData,
       });
       if (!uploadRes.ok) throw new Error('Upload failed');
       const uploadData = await uploadRes.json();
 
-      // Step 2: Summarize
-      const summaryRes = await fetch('http://localhost:8000/api/summarize', {
+      const summaryRes = await fetch(`${API}/api/summarize`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -94,7 +94,6 @@ const SummaryPage = () => {
 
       if (summaryData.success) {
         setFormalSummary(summaryData.formal_summary);
-        // Collect badges from BOTH upload AND summarize responses
         const allNewBadges = [
           ...(uploadData.newly_earned_badges || []),
           ...(summaryData.newly_earned_badges || []),
@@ -103,7 +102,7 @@ const SummaryPage = () => {
           setNewBadges(allNewBadges);
         }
         setGenzSummary(summaryData.genz_summary);
-        setShowGenz(false); // default to formal
+        setShowGenz(false);
         localStorage.setItem('padai_summaries', JSON.stringify({
           formal: summaryData.formal_summary,
           genz:   summaryData.genz_summary,
@@ -122,29 +121,58 @@ const SummaryPage = () => {
   const activeSummary = showGenz ? genzSummary : formalSummary;
 
   return (
-    <div className="min-h-screen bg-gray-200">
+    <div className="min-h-screen pad-bg">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Sora:wght@400;600;700;800&display=swap');
+        .pad-bg * { font-family: 'Nunito', sans-serif; }
+        .pad-bg {
+          background: radial-gradient(ellipse 85% 55% at 5% 0%, rgba(186,220,255,0.6) 0%, transparent 60%),
+                      radial-gradient(ellipse 70% 50% at 95% 10%, rgba(200,225,255,0.5) 0%, transparent 55%),
+                      radial-gradient(ellipse 60% 40% at 50% 100%, rgba(176,212,255,0.4) 0%, transparent 60%),
+                      #e8f1fb;
+          min-height: 100vh;
+        }
+        .pad-card {
+          background: rgba(255,255,255,0.62);
+          backdrop-filter: blur(18px);
+          -webkit-backdrop-filter: blur(18px);
+          border: 1px solid rgba(175,215,255,0.38);
+          border-radius: 22px;
+        }
+        .pad-hero {
+          background: linear-gradient(135deg, rgba(186,220,255,0.55) 0%, rgba(214,233,255,0.35) 100%);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          border: 1px solid rgba(175,215,255,0.45);
+          border-radius: 28px;
+        }
+      `}</style>
+
       <Navbar />
 
       <div className="max-w-7xl mx-auto px-6 py-6 lg:px-8">
 
         {/* Hero Banner */}
-        <div className="bg-gray-300 rounded-3xl p-8 mb-8 flex items-center justify-between">
+        <div className="pad-hero p-8 mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Hello {username}!</h1>
-            <p className="text-gray-700">Transform your documents into interactive learning materials</p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2" style={{ fontFamily: "'Sora', sans-serif" }}>
+              Hello {username}!
+            </h1>
+            <p className="text-gray-600">Transform your documents into interactive learning materials</p>
           </div>
           <img src={Icon1Image} alt="icon" className="w-32 h-32 object-contain" />
         </div>
 
         {/* Upload Section */}
-        <div className="bg-white rounded-3xl p-8 mb-6 border-4 border-black">
+        <div className="pad-card p-8 mb-6">
           <div className="flex items-center mb-6">
-            <Upload className="w-8 h-8 text-gray-800" />
+            <Upload className="w-7 h-7 text-blue-500" />
+            <span className="ml-2 font-bold text-gray-700 text-lg">Upload PDF</span>
           </div>
 
           <div
-            className={`border-4 border-dashed rounded-2xl p-16 text-center transition ${
-              dragActive ? 'border-purple-500 bg-purple-50' : 'border-gray-400 bg-white'
+            className={`border-2 border-dashed rounded-2xl p-16 text-center transition ${
+              dragActive ? 'border-blue-400 bg-blue-50' : 'border-blue-200 bg-white/40'
             }`}
             onDragEnter={handleDrag}
             onDragLeave={handleDrag}
@@ -154,25 +182,27 @@ const SummaryPage = () => {
             <input type="file" id="file-upload" className="hidden" onChange={handleChange} accept=".pdf" />
 
             <div className="mb-4">
-              <div className="w-20 h-20 bg-gray-400 rounded-full mx-auto flex items-center justify-center">
-                <Upload className="w-10 h-10 text-white" />
+              <div className="w-20 h-20 rounded-full mx-auto flex items-center justify-center"
+                style={{ background: 'rgba(99,130,190,0.15)' }}>
+                <Upload className="w-10 h-10 text-blue-500" />
               </div>
             </div>
 
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Drop your files here</h3>
-            <p className="text-gray-600 mb-1">or click to browse</p>
-            <p className="text-sm text-gray-500">Supports PDF (Max 5MB)</p>
+            <h3 className="text-xl font-bold text-gray-800 mb-2">Drop your files here</h3>
+            <p className="text-gray-500 mb-1">or click to browse</p>
+            <p className="text-sm text-gray-400">Supports PDF (Max 5MB)</p>
 
             <label
               htmlFor="file-upload"
-              className="inline-block mt-4 px-6 py-2 bg-gray-800 text-white rounded-lg font-medium cursor-pointer hover:bg-gray-700 transition"
+              className="inline-block mt-4 px-6 py-2 text-white rounded-xl font-semibold cursor-pointer transition"
+              style={{ background: 'rgba(90,120,180,0.85)' }}
             >
               Browse Files
             </label>
 
             {uploadedFile && (
-              <div className="mt-4 p-3 bg-green-100 rounded-lg">
-                <p className="text-green-800 font-medium">✓ {uploadedFile.name}</p>
+              <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-xl">
+                <p className="text-green-700 font-medium">✓ {uploadedFile.name}</p>
               </div>
             )}
           </div>
@@ -182,49 +212,48 @@ const SummaryPage = () => {
         <button
           onClick={generateSummary}
           disabled={isGenerating}
-          className="w-full bg-black text-white py-4 rounded-2xl font-bold text-lg hover:bg-gray-800 transition disabled:bg-gray-400 mb-6"
+          className="w-full text-white py-4 rounded-2xl font-bold text-lg transition mb-6"
+          style={{
+            background: isGenerating ? 'rgba(150,170,200,0.7)' : 'rgba(90,120,180,0.9)',
+            backdropFilter: 'blur(8px)',
+          }}
         >
           {isGenerating ? 'Generating Summary...' : 'Generate Summary'}
         </button>
 
         {/* Summary Display */}
-        <div className="bg-white rounded-3xl p-8 border-4 border-black min-h-64">
+        <div className="pad-card p-8 min-h-64">
 
-          {/* Header + Toggle */}
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-gray-900">Summary</h2>
+            <h2 className="text-xl font-bold text-gray-800">Summary</h2>
 
-            {/* Only show toggle once we have summaries */}
             {(formalSummary || genzSummary) && !isGenerating && (
               <div className="flex gap-2">
                 <button
                   onClick={() => setShowGenz(false)}
-                  className={`px-4 py-2 rounded-xl font-bold text-sm transition ${
-                    !showGenz
-                      ? 'bg-black text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition ${
+                    !showGenz ? 'text-white' : 'text-gray-500 hover:bg-blue-50'
                   }`}
+                  style={!showGenz ? { background: 'rgba(90,120,180,0.85)' } : {}}
                 >
-                  📖 Formal
+                  <BookOpen className="w-4 h-4" /> Formal
                 </button>
                 <button
                   onClick={() => setShowGenz(true)}
-                  className={`px-4 py-2 rounded-xl font-bold text-sm transition ${
-                    showGenz
-                      ? 'bg-purple-600 text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition ${
+                    showGenz ? 'text-white' : 'text-gray-500 hover:bg-purple-50'
                   }`}
+                  style={showGenz ? { background: 'rgba(140,80,200,0.85)' } : {}}
                 >
-                  ✨ Fun Mode
+                  <Star className="w-4 h-4" /> Fun Mode
                 </button>
               </div>
             )}
           </div>
 
-          {/* Content */}
           {isGenerating ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-4 border-black" />
+              <div className="animate-spin rounded-full h-10 w-10 border-b-4 border-blue-400" />
               <p className="text-gray-500">AI is analyzing your document...</p>
               <p className="text-gray-400 text-sm">BART + Flan-T5 working together</p>
             </div>
@@ -241,7 +270,7 @@ const SummaryPage = () => {
 
       </div>
 
-      <footer className="text-center py-6 text-gray-600 text-sm mt-8">
+      <footer className="text-center py-6 text-gray-500 text-sm mt-8">
         © PadaiSathi All rights reserved.
       </footer>
       <BadgeToast badgeIds={newBadges} onDone={() => setNewBadges([])} />

@@ -1,6 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft, BookOpen, FileText, Layers, HelpCircle, Film, CheckCircle, ArrowRight } from 'lucide-react';
 import Navbar from '../components/Navbar';
+import { API } from '../constants';
+
+const PAD_STYLE = `
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Sora:wght@400;600;700;800&display=swap');
+  .pad-bg * { font-family: 'Nunito', sans-serif; }
+  .pad-bg {
+    background: radial-gradient(ellipse 85% 55% at 5% 0%, rgba(186,220,255,0.6) 0%, transparent 60%),
+                radial-gradient(ellipse 70% 50% at 95% 10%, rgba(200,225,255,0.5) 0%, transparent 55%),
+                radial-gradient(ellipse 60% 40% at 50% 100%, rgba(176,212,255,0.4) 0%, transparent 60%),
+                #e8f1fb;
+    min-height: 100vh;
+  }
+  .pad-card {
+    background: rgba(255,255,255,0.62);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid rgba(175,215,255,0.38);
+    border-radius: 22px;
+  }
+`;
 
 const NotebookDetailPage = () => {
   const { id } = useParams();
@@ -26,9 +47,7 @@ const NotebookDetailPage = () => {
   const fetchNotebookDetails = async (email) => {
     setIsLoading(true);
     try {
-      const response = await fetch(
-        `http://localhost:8000/api/notebook/${id}?email=${email}`
-      );
+      const response = await fetch(`${API}/api/notebook/${id}?email=${email}`);
       const data = await response.json();
       if (data.notebook) {
         setNotebook(data.notebook);
@@ -44,39 +63,62 @@ const NotebookDetailPage = () => {
     }
   };
 
+  const goToPageWithHint = (path) => {
+    if (summary?.id) {
+      localStorage.setItem('padai_notebook_summary_hint', summary.id);
+    }
+    navigate(path);
+  };
+
   if (isLoading) return (
-    <div className="min-h-screen bg-gray-200">
+    <div className="min-h-screen pad-bg">
+      <style>{PAD_STYLE}</style>
       <Navbar />
       <div className="flex justify-center py-32">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-black" />
+        <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-blue-400" />
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-gray-200">
+    <div className="min-h-screen pad-bg">
+      <style>{PAD_STYLE}</style>
       <Navbar />
+
       <div className="max-w-7xl mx-auto px-6 py-6 lg:px-8">
 
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <button
             onClick={() => navigate('/notebook')}
-            className="px-4 py-2 bg-black text-white rounded-xl font-semibold hover:bg-gray-800 transition"
+            className="flex items-center gap-2 px-4 py-2 text-white rounded-xl font-semibold hover:opacity-90 transition"
+            style={{ background: 'rgba(90,120,180,0.85)' }}
           >
-            ← Back
+            <ArrowLeft className="w-4 h-4" /> Back
           </button>
-          <h1 className="text-3xl font-bold text-gray-900">
-            📓 {notebook?.title}
+          <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2" style={{ fontFamily: "'Sora', sans-serif" }}>
+            <BookOpen className="w-7 h-7 text-blue-400" /> {notebook?.title}
           </h1>
         </div>
 
         {/* Summary Section */}
-        <div className="bg-white rounded-3xl p-8 border-4 border-black mb-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">📄 Summary</h2>
+        <div className="pad-card p-8 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+              <FileText className="w-5 h-5 text-blue-400" /> Summary
+            </h2>
+            <button
+              onClick={() => navigate('/summary')}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white rounded-xl hover:opacity-90 transition"
+              style={{ background: 'rgba(90,120,180,0.85)' }}
+            >
+              {summary ? 'View Summary' : 'Generate Summary'} <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+
           {summary ? (
             <div>
-              <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+              <p className="text-gray-600 leading-relaxed whitespace-pre-line">
                 {summary.slang_version_text || summary.summary_text}
               </p>
               <p className="text-xs text-gray-400 mt-4">
@@ -85,82 +127,108 @@ const NotebookDetailPage = () => {
             </div>
           ) : (
             <p className="text-gray-400 italic">
-              No summary yet — go to Summary page to generate one!
+              No summary yet — click the button above to generate one!
             </p>
           )}
         </div>
 
         {/* Flashcards Section */}
-        <div className="bg-white rounded-3xl p-8 border-4 border-black mb-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">
-            🃏 Flashcards ({flashcards.length})
-          </h2>
+        <div className="pad-card p-8 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+              <Layers className="w-5 h-5 text-indigo-400" /> Flashcards ({flashcards.length})
+            </h2>
+            <button
+              onClick={() => goToPageWithHint('/flashcards')}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white rounded-xl hover:opacity-90 transition"
+              style={{ background: 'rgba(90,120,180,0.85)' }}
+            >
+              {flashcards.length > 0 ? 'Practice Cards' : 'Generate Cards'} <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
           {flashcards.length > 0 ? (
             <div className="space-y-3">
               {flashcards.map((card, i) => (
-                <div key={i} className="border-2 border-gray-200 rounded-xl p-4">
-                  <p className="font-semibold text-gray-800">Q: {card.question}</p>
-                  <p className="text-gray-600 mt-1">A: {card.answer}</p>
+                <div key={i} className="border border-blue-100 rounded-xl p-4 bg-white/40">
+                  <p className="font-semibold text-gray-700">Q: {card.question}</p>
+                  <p className="text-gray-500 mt-1">A: {card.answer}</p>
                 </div>
               ))}
             </div>
           ) : (
             <p className="text-gray-400 italic">
-              No flashcards yet — go to Flashcards page to generate some!
+              No flashcards yet — click the button above to generate some!
             </p>
           )}
         </div>
 
         {/* Quiz Section */}
-        <div className="bg-white rounded-3xl p-8 border-4 border-black mb-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">
-            ❓ Quiz Questions ({quizzes.length})
-          </h2>
+        <div className="pad-card p-8 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+              <HelpCircle className="w-5 h-5 text-purple-400" /> Quiz Questions ({quizzes.length})
+            </h2>
+            <button
+              onClick={() => goToPageWithHint('/quiz')}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white rounded-xl hover:opacity-90 transition"
+              style={{ background: 'rgba(90,120,180,0.85)' }}
+            >
+              {quizzes.length > 0 ? 'Take Quiz' : 'Generate Quiz'} <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
           {quizzes.length > 0 ? (
             <div className="space-y-3">
               {quizzes.map((q, i) => (
-                <div key={i} className="border-2 border-gray-200 rounded-xl p-4">
-                  <p className="font-semibold text-gray-800">{i + 1}. {q.question}</p>
-                  <p className="text-green-600 text-sm mt-1">✅ Answer: {q.correct_answer}</p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-400 italic">
-              No quiz yet — go to Quiz page to generate one!
-            </p>
-          )}
-        </div>
-
-        {/* Videos Section */}
-        <div className="bg-white rounded-3xl p-8 border-4 border-black mb-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">
-            🎬 Videos ({videos.length})
-          </h2>
-          {videos.length > 0 ? (
-            <div className="space-y-4">
-              {videos.map((video, i) => (
-                <div key={i} className="border-2 border-gray-200 rounded-xl p-4">
-                  <video
-                    controls
-                    className="w-full rounded-xl"
-                    src={video.s3_path}
-                  />
-                  <p className="text-xs text-gray-400 mt-2">
-                    Theme: {video.background_theme} • {new Date(video.generated_at).toLocaleString()}
+                <div key={i} className="border border-blue-100 rounded-xl p-4 bg-white/40">
+                  <p className="font-semibold text-gray-700">{i + 1}. {q.question}</p>
+                  <p className="text-green-600 text-sm mt-1 flex items-center gap-1">
+                    <CheckCircle className="w-4 h-4" /> Answer: {q.correct_answer}
                   </p>
                 </div>
               ))}
             </div>
           ) : (
             <p className="text-gray-400 italic">
-              No videos yet — go to Video page to generate one!
+              No quiz yet — click the button above to generate one!
+            </p>
+          )}
+        </div>
+
+        {/* Videos Section */}
+        <div className="pad-card p-8 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+              <Film className="w-5 h-5 text-blue-500" /> Videos ({videos.length})
+            </h2>
+            <button
+              onClick={() => goToPageWithHint('/video')}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white rounded-xl hover:opacity-90 transition"
+              style={{ background: 'rgba(90,120,180,0.85)' }}
+            >
+              {videos.length > 0 ? 'View Videos' : 'Generate Video'} <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+          {videos.length > 0 ? (
+            <div className="space-y-4">
+              {videos.map((video, i) => (
+                <div key={i} className="border border-blue-100 rounded-xl p-4 bg-white/40">
+                  <video controls className="w-full rounded-xl" src={video.s3_path} />
+                  <p className="text-xs text-gray-400 mt-2">
+                    Theme: {video.background_theme} · {new Date(video.generated_at).toLocaleString()}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-400 italic">
+              No videos yet — click the button above to generate one!
             </p>
           )}
         </div>
 
       </div>
-      <footer className="text-center py-6 text-gray-600 text-sm">
+
+      <footer className="text-center py-6 text-gray-500 text-sm">
         © PadaiSathi All rights reserved.
       </footer>
     </div>

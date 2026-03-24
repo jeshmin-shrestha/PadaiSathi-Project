@@ -1,7 +1,35 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
+import { ChevronLeft, ChevronRight, RotateCcw, Layers, CheckCircle, Check } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import BadgeToast from '../components/BadgeToast';
+import { API } from '../constants';
+
+const PAD_STYLE = `
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Sora:wght@400;600;700;800&display=swap');
+  .pad-bg * { font-family: 'Nunito', sans-serif; }
+  .pad-bg {
+    background: radial-gradient(ellipse 85% 55% at 5% 0%, rgba(186,220,255,0.6) 0%, transparent 60%),
+                radial-gradient(ellipse 70% 50% at 95% 10%, rgba(200,225,255,0.5) 0%, transparent 55%),
+                radial-gradient(ellipse 60% 40% at 50% 100%, rgba(176,212,255,0.4) 0%, transparent 60%),
+                #e8f1fb;
+    min-height: 100vh;
+  }
+  .pad-card {
+    background: rgba(255,255,255,0.62);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid rgba(175,215,255,0.38);
+    border-radius: 22px;
+  }
+  @keyframes flipIn {
+    from { opacity: 0; transform: scale(0.97); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+  .card-enter { animation: flipIn 0.3s cubic-bezier(0.34,1.56,0.64,1); }
+  .nav-dot { transition: all 0.2s ease; cursor: pointer; }
+  .nav-dot:hover { transform: scale(1.4); }
+`;
+
 const FlashcardPage = () => {
   const [currentCard, setCurrentCard] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
@@ -14,6 +42,7 @@ const FlashcardPage = () => {
   const [error, setError] = useState('');
   const selectedSummaryIdRef = useRef(null);
   const [newBadges, setNewBadges] = useState([]);
+
   useEffect(() => {
     const saved = localStorage.getItem('padai_flashcards');
     if (saved) {
@@ -23,6 +52,7 @@ const FlashcardPage = () => {
       selectedSummaryIdRef.current = parsed.summaryId;
     }
   }, []);
+
   useEffect(() => {
     selectedSummaryIdRef.current = selectedSummaryId;
   }, [selectedSummaryId]);
@@ -30,7 +60,7 @@ const FlashcardPage = () => {
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem('user'));
     if (!storedUser) {
-      window.location.href = '/login'; // redirect if not logged in
+      window.location.href = '/login';
       return;
     }
     setUserEmail(storedUser.email);
@@ -39,14 +69,19 @@ const FlashcardPage = () => {
 
   const fetchSummaries = async (email) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/my-summaries?email=${email}`);
+      const response = await fetch(`${API}/api/my-summaries?email=${email}`);
       const data = await response.json();
       if (data.summaries?.length > 0) {
         const sorted = [...data.summaries].sort(
           (a, b) => new Date(b.generated_at) - new Date(a.generated_at)
         );
         setAvailableSummaries(sorted);
-        if (!selectedSummaryIdRef.current) {
+        const hint = Number(localStorage.getItem('padai_notebook_summary_hint'));
+        if (hint && sorted.find(s => s.id === hint)) {
+          setSelectedSummaryId(hint);
+          selectedSummaryIdRef.current = hint;
+          localStorage.removeItem('padai_notebook_summary_hint');
+        } else if (!selectedSummaryIdRef.current) {
           setSelectedSummaryId(sorted[0].id);
           selectedSummaryIdRef.current = sorted[0].id;
         }
@@ -70,7 +105,7 @@ const FlashcardPage = () => {
     setKnownCards(new Set());
 
     try {
-      const res = await fetch('http://localhost:8000/api/generate-flashcards', {
+      const res = await fetch(`${API}/api/generate-flashcards`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ summary_id: idToUse, user_email: userEmail })
@@ -116,25 +151,21 @@ const FlashcardPage = () => {
   const progressPercent = flashcards.length > 0 ? (knownCount / flashcards.length) * 100 : 0;
   const isKnown = knownCards.has(currentCard);
 
-  return (
-    <div className="min-h-screen bg-gray-200">
-      <Navbar />
+  const selectedSummaryEntry = availableSummaries.find(s => s.id === selectedSummaryId);
+  const summaryLabel = selectedSummaryEntry
+    ? new Date(selectedSummaryEntry.generated_at).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    : selectedSummaryId ? `Summary ${selectedSummaryId}` : '';
 
-      <style>{`
-        @keyframes flipIn {
-          from { opacity: 0; transform: scale(0.97); }
-          to   { opacity: 1; transform: scale(1); }
-        }
-        .card-enter { animation: flipIn 0.3s cubic-bezier(0.34,1.56,0.64,1); }
-        .nav-dot { transition: all 0.2s ease; cursor: pointer; }
-        .nav-dot:hover { transform: scale(1.4); }
-      `}</style>
+  return (
+    <div className="min-h-screen pad-bg">
+      <style>{PAD_STYLE}</style>
+      <Navbar />
 
       <div className="max-w-7xl mx-auto px-6 py-6 lg:px-8">
 
         {/* Summary selector */}
-        <div className="bg-white rounded-3xl p-6 border-4 border-black mb-6">
-          <h3 className="text-lg font-bold text-gray-900 mb-1">Generate Flashcards</h3>
+        <div className="pad-card p-6 mb-6">
+          <h3 className="text-lg font-bold text-gray-800 mb-1">Generate Flashcards</h3>
           <p className="text-sm text-gray-500 mb-4">
             Newest summary is auto-selected. Switch below if needed.
           </p>
@@ -142,13 +173,13 @@ const FlashcardPage = () => {
           {availableSummaries.length > 0 ? (
             <>
               {selectedSummaryId && (
-                <div className="mb-3 px-3 py-2 bg-green-50 border border-green-300 rounded-xl text-sm text-green-700 font-medium">
-                  ✅ Using summary #{selectedSummaryId}
+                <div className="mb-3 px-3 py-2 bg-green-50 border border-green-200 rounded-xl text-sm text-green-700 font-medium flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-green-500" /> Using {summaryLabel}
                 </div>
               )}
               <div className="flex gap-3 items-center">
                 <select
-                  className="flex-1 p-3 border-2 border-gray-300 rounded-xl text-gray-800"
+                  className="flex-1 p-3 border border-blue-100 rounded-xl text-gray-700 bg-white/60"
                   value={selectedSummaryId || ''}
                   onChange={e => {
                     const val = Number(e.target.value);
@@ -156,16 +187,19 @@ const FlashcardPage = () => {
                     selectedSummaryIdRef.current = val;
                   }}
                 >
-                  {availableSummaries.map(s => (
+                  {availableSummaries.map((s, i) => (
                     <option key={s.id} value={s.id}>
-                      #{s.id} — {new Date(s.generated_at).toLocaleString()}
+                      Summary {i + 1} — {new Date(s.generated_at).toLocaleString()}
                     </option>
                   ))}
                 </select>
                 <button
                   onClick={loadFlashcards}
                   disabled={isLoading || !selectedSummaryId}
-                  className="px-6 py-3 bg-black text-white font-bold rounded-xl hover:bg-gray-800 transition disabled:bg-gray-400 whitespace-nowrap"
+                  className="px-6 py-3 text-white font-bold rounded-xl transition whitespace-nowrap"
+                  style={{
+                    background: (isLoading || !selectedSummaryId) ? 'rgba(150,170,200,0.7)' : 'rgba(90,120,180,0.9)',
+                  }}
                 >
                   {isLoading ? 'Generating...' : 'Generate Cards'}
                 </button>
@@ -177,21 +211,21 @@ const FlashcardPage = () => {
             </p>
           )}
 
-          {error && <p className="mt-3 text-red-600 text-sm font-medium">{error}</p>}
+          {error && <p className="mt-3 text-red-500 text-sm font-medium">{error}</p>}
         </div>
 
         {/* Loading */}
         {isLoading && (
-          <div className="bg-white rounded-3xl border-4 border-black p-16 flex flex-col items-center justify-center mb-6">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-black mb-4" />
+          <div className="pad-card p-16 flex flex-col items-center justify-center mb-6">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-blue-400 mb-4" />
             <p className="text-gray-500 font-medium">AI is creating your flashcards...</p>
           </div>
         )}
 
         {/* Empty state */}
         {!isLoading && flashcards.length === 0 && (
-          <div className="bg-white rounded-3xl border-4 border-black p-16 flex flex-col items-center justify-center gap-3">
-            <span className="text-5xl">🃏</span>
+          <div className="pad-card p-16 flex flex-col items-center justify-center gap-3">
+            <Layers className="w-14 h-14 text-blue-200 mb-2" />
             <p className="text-gray-400 italic text-center">
               Select a summary and click "Generate Cards"
             </p>
@@ -206,16 +240,16 @@ const FlashcardPage = () => {
               <span className="text-sm text-gray-500">{knownCount} / {flashcards.length} mastered</span>
               <div className="flex items-center gap-3">
                 <span className="text-sm text-gray-500">Card {currentCard + 1} of {flashcards.length}</span>
-                <button onClick={resetCards} title="Reset all" className="text-gray-400 hover:text-gray-700 transition">
+                <button onClick={resetCards} title="Reset all" className="text-gray-400 hover:text-gray-600 transition">
                   <RotateCcw size={15} />
                 </button>
               </div>
             </div>
 
             {/* Progress bar */}
-            <div className="w-full bg-gray-300 rounded-full h-2 mb-5 overflow-hidden">
+            <div className="w-full bg-blue-100 rounded-full h-2 mb-5 overflow-hidden">
               <div
-                className="h-full bg-green-500 rounded-full transition-all duration-500"
+                className="h-full rounded-full transition-all duration-500 bg-green-400"
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
@@ -224,29 +258,35 @@ const FlashcardPage = () => {
             <div
               key={`${currentCard}-${isFlipped}`}
               onClick={handleFlip}
-              className={`card-enter cursor-pointer rounded-3xl border-4 min-h-96 flex flex-col items-center justify-center p-12 mb-5 relative select-none transition-all duration-300 ${
+              className={`card-enter cursor-pointer rounded-3xl min-h-96 flex flex-col items-center justify-center p-12 mb-5 relative select-none transition-all duration-300 ${
                 isFlipped
-                  ? 'border-gray-800 bg-gray-900'
+                  ? 'border border-gray-200'
                   : isKnown
-                  ? 'border-green-500 bg-green-50'
-                  : 'border-black bg-white'
+                  ? 'border border-green-300'
+                  : 'border border-blue-100'
               }`}
+              style={{
+                background: isFlipped
+                  ? 'rgba(30,40,60,0.88)'
+                  : isKnown
+                  ? 'rgba(240,255,245,0.85)'
+                  : 'rgba(255,255,255,0.72)',
+                backdropFilter: 'blur(18px)',
+              }}
             >
-              {/* Corner label */}
-              <span className={`absolute top-4 right-5 text-xs font-bold uppercase tracking-widest ${isFlipped ? 'text-gray-500' : 'text-gray-300'}`}>
+              <span className={`absolute top-4 right-5 text-xs font-bold uppercase tracking-widest ${isFlipped ? 'text-gray-400' : 'text-gray-300'}`}>
                 {isFlipped ? 'Answer' : 'Question'}
               </span>
 
-              {/* Known badge */}
               {isKnown && !isFlipped && (
-                <span className="absolute top-4 left-5 text-xs font-bold text-green-600 bg-green-100 px-3 py-1 rounded-full">
-                  ✓ Known
+                <span className="absolute top-4 left-5 text-xs font-bold text-green-600 bg-green-100 px-3 py-1 rounded-full flex items-center gap-1">
+                  <Check className="w-3 h-3" /> Known
                 </span>
               )}
 
               {!isFlipped ? (
                 <>
-                  <h2 className="text-2xl font-bold text-gray-900 text-center mb-8 leading-relaxed max-w-lg">
+                  <h2 className="text-2xl font-bold text-gray-800 text-center mb-8 leading-relaxed max-w-lg">
                     {flashcards[currentCard].question}
                   </h2>
                   <p className="text-gray-400 text-sm">Click to Reveal</p>
@@ -272,7 +312,7 @@ const FlashcardPage = () => {
                     width: i === currentCard ? '28px' : '10px',
                     height: '10px',
                     borderRadius: '5px',
-                    background: knownCards.has(i) ? '#22c55e' : i === currentCard ? '#111' : '#d1d5db',
+                    background: knownCards.has(i) ? '#22c55e' : i === currentCard ? 'rgba(90,120,180,0.85)' : '#bfdbfe',
                     transition: 'all 0.25s ease'
                   }}
                 />
@@ -284,26 +324,31 @@ const FlashcardPage = () => {
               <button
                 onClick={handlePrevious}
                 disabled={currentCard === 0}
-                className="w-12 h-12 rounded-full border-4 border-black bg-white flex items-center justify-center hover:bg-gray-100 transition disabled:opacity-30 disabled:cursor-not-allowed"
+                className="w-12 h-12 rounded-full border border-blue-200 bg-white/60 flex items-center justify-center hover:bg-blue-50 transition disabled:opacity-30 disabled:cursor-not-allowed"
               >
-                <ChevronLeft className="w-6 h-6 text-gray-800" />
+                <ChevronLeft className="w-6 h-6 text-gray-600" />
               </button>
 
               <button
                 onClick={toggleKnown}
-                className={`flex-1 py-4 rounded-2xl font-bold text-lg border-2 transition ${
+                className={`flex-1 py-4 rounded-2xl font-bold text-lg border transition ${
                   isKnown
-                    ? 'bg-green-500 text-white border-green-700 hover:bg-green-600'
-                    : 'bg-white text-gray-800 border-gray-400 hover:bg-gray-50'
+                    ? 'bg-green-500 text-white border-green-400 hover:bg-green-600'
+                    : 'bg-white/60 text-gray-700 border-blue-100 hover:bg-blue-50'
                 }`}
               >
-                {isKnown ? '✓ Got It!' : 'Mark as Known'}
+                {isKnown ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Check className="w-5 h-5" /> Got It!
+                  </span>
+                ) : 'Mark as Known'}
               </button>
 
               <button
                 onClick={handleNext}
                 disabled={currentCard === flashcards.length - 1}
-                className="w-12 h-12 rounded-full border-4 border-black bg-black flex items-center justify-center hover:bg-gray-800 transition disabled:opacity-30 disabled:cursor-not-allowed"
+                className="w-12 h-12 rounded-full flex items-center justify-center hover:opacity-90 transition disabled:opacity-30 disabled:cursor-not-allowed"
+                style={{ background: 'rgba(90,120,180,0.85)' }}
               >
                 <ChevronRight className="w-6 h-6 text-white" />
               </button>
@@ -311,7 +356,7 @@ const FlashcardPage = () => {
 
             {/* Completion banner */}
             {knownCount === flashcards.length && flashcards.length > 0 && (
-              <div className="mt-6 p-5 bg-green-50 border-4 border-green-500 rounded-3xl text-center">
+              <div className="mt-6 p-5 bg-green-50 border border-green-200 rounded-3xl text-center">
                 <p className="text-lg font-bold text-green-700">YAYY!!!</p>
                 <p className="text-lg font-bold text-green-700">
                   You've mastered all {flashcards.length} cards!
@@ -322,7 +367,7 @@ const FlashcardPage = () => {
         )}
       </div>
 
-      <footer className="text-center py-6 text-gray-600 text-sm mt-8">
+      <footer className="text-center py-6 text-gray-500 text-sm mt-8">
         © PadaiSathi All rights reserved.
       </footer>
       <BadgeToast badgeIds={newBadges} onDone={() => setNewBadges([])} />

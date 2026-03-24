@@ -1,12 +1,12 @@
 // ─── components/Navbar.jsx ───────────────────────────────────────────────────
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { Bell, BellOff } from 'lucide-react';
 import logoImage from '../assets/images/reading-cat.png';
 import { API, AVATARS, CUSTOM_AVATAR_KEY, STUDENT_NAV_LINKS } from '../constants';
 
-// ── Shared primitives (used by both Navbar & AdminNavbar) ─────────────────────
+// ── Shared primitives ─────────────────────────────────────────────────────────
 
-/** Logo + wordmark — identical in both navbars */
 export const NavBrand = ({ onLogoClick }) => (
   <div className="flex items-center space-x-3 cursor-pointer" onClick={onLogoClick}>
     <div className="w-14 h-14 flex items-center justify-center overflow-hidden flex-shrink-0">
@@ -16,24 +16,30 @@ export const NavBrand = ({ onLogoClick }) => (
         className="h-full w-auto object-contain hover:opacity-80 transition-opacity"
       />
     </div>
-    <span className="font-extrabold text-gray-900 text-lg tracking-tight select-none">
-      Padai<span className="px-1.5 py-0.5 bg-gray-300 rounded-full ml-0.5">Sathi</span>
+    <span
+      className="text-gray-900 text-lg tracking-tight select-none"
+      style={{ fontFamily: "'Sora', sans-serif", fontWeight: 800 }}
+    >
+      Padai
+      <span style={{
+        background: 'rgba(186,220,255,0.7)',
+        borderRadius: '999px',
+        padding: '2px 10px',
+        marginLeft: '2px',
+      }}>Sathi</span>
     </span>
   </div>
 );
 
-/** Pill nav button — active / hover states are consistent in both navbars */
 export const NavButton = ({ onClick, active, children, className = '' }) => (
   <button
     onClick={onClick}
     className={`
       flex items-center gap-1.5 px-4 py-2 rounded-2xl text-sm font-semibold transition-all
-      ${active
-        ? 'bg-gray-800 text-white shadow-sm'
-        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-300'
-      }
+      ${active ? 'text-white shadow-sm' : 'text-gray-600 hover:text-gray-900 hover:bg-blue-50'}
       ${className}
     `}
+    style={active ? { background: 'rgba(90,120,180,0.85)' } : {}}
   >
     {children}
   </button>
@@ -53,7 +59,6 @@ const Navbar = () => {
   const [showDrop,     setShowDrop]     = useState(false);
   const [respondingId, setRespondingId] = useState(null);
 
-  // Load avatar on every route change
   useEffect(() => {
     const stored   = JSON.parse(localStorage.getItem('user'));
     const avatarId = stored?.avatar || 'avatar1';
@@ -66,7 +71,6 @@ const Navbar = () => {
     }
   }, [location]);
 
-  // Poll for pending friend requests every 30 s
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem('user'));
     if (!stored?.email) return;
@@ -85,7 +89,6 @@ const Navbar = () => {
     return () => clearInterval(id);
   }, [location]);
 
-  // Close dropdown on outside click
   useEffect(() => {
     const handler = (e) => {
       if (dropRef.current && !dropRef.current.contains(e.target)) setShowDrop(false);
@@ -113,120 +116,137 @@ const Navbar = () => {
   const isActive = (path) => location.pathname === path;
 
   return (
-    <nav className="bg-gray-200 shadow-sm">
-      <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Sora:wght@400;600;700;800&display=swap');
+        .pad-nav * { font-family: 'Nunito', sans-serif; }
+        .pad-nav {
+          background: rgba(255,255,255,0.75);
+          backdrop-filter: blur(14px);
+          -webkit-backdrop-filter: blur(14px);
+          border-bottom: 1px solid rgba(175,215,255,0.45);
+        }
+        .pad-drop {
+          background: rgba(255,255,255,0.92);
+          backdrop-filter: blur(18px);
+          -webkit-backdrop-filter: blur(18px);
+          border: 1px solid rgba(175,215,255,0.5);
+          border-radius: 18px;
+          box-shadow: 0 8px 32px rgba(100,150,220,0.12);
+        }
+      `}</style>
 
-        {/* Brand */}
-        <NavBrand onLogoClick={() => navigate('/dashboard')} />
+      <nav className="pad-nav shadow-sm sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
 
-        {/* Nav links + bell + avatar */}
-        <div className="flex items-center gap-2">
+          <NavBrand onLogoClick={() => navigate('/dashboard')} />
 
-          {STUDENT_NAV_LINKS.map(({ label, path }) => (
-            <NavButton key={path} onClick={() => navigate(path)} active={isActive(path)}>
-              {label}
-            </NavButton>
-          ))}
+          <div className="flex items-center gap-2">
 
-          {/* Notification Bell */}
-          <div className="relative ml-1" ref={dropRef}>
-            <button
-              onClick={() => setShowDrop(prev => !prev)}
-              className="relative w-10 h-10 flex items-center justify-center rounded-2xl hover:bg-gray-300 transition"
-              aria-label="Notifications"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-gray-700" fill="none"
-                viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round"
-                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
-              {pendingCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-extrabold rounded-full flex items-center justify-center leading-none shadow">
-                  {pendingCount > 9 ? '9+' : pendingCount}
-                </span>
+            {STUDENT_NAV_LINKS.map(({ label, path }) => (
+              <NavButton key={path} onClick={() => navigate(path)} active={isActive(path)}>
+                {label}
+              </NavButton>
+            ))}
+
+            {/* Notification Bell */}
+            <div className="relative ml-1" ref={dropRef}>
+              <button
+                onClick={() => setShowDrop(prev => !prev)}
+                className="relative w-10 h-10 flex items-center justify-center rounded-2xl hover:bg-blue-50 transition"
+                aria-label="Notifications"
+              >
+                <Bell className="w-5 h-5 text-gray-600" />
+                {pendingCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-extrabold rounded-full flex items-center justify-center leading-none shadow">
+                    {pendingCount > 9 ? '9+' : pendingCount}
+                  </span>
+                )}
+              </button>
+
+              {showDrop && (
+                <div className="absolute right-0 mt-2 w-80 pad-drop z-50 overflow-hidden">
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-blue-100"
+                    style={{ background: 'rgba(235,245,255,0.7)' }}>
+                    <span className="font-bold text-gray-800 text-sm flex items-center gap-2">
+                      <Bell className="w-4 h-4 text-blue-400" /> Friend Requests
+                    </span>
+                    {pendingCount > 0 && (
+                      <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                        {pendingCount} new
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="max-h-72 overflow-y-auto">
+                    {requests.length === 0 ? (
+                      <div className="text-center py-8 text-gray-400">
+                        <BellOff className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                        <p className="text-sm font-medium">No pending requests</p>
+                      </div>
+                    ) : (
+                      requests.map(r => (
+                        <div key={r.friendship_id}
+                          className="flex items-center gap-3 px-4 py-3 border-b border-blue-50 last:border-0">
+                          <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-blue-100 flex-shrink-0">
+                            <img
+                              src={AVATARS.find(a => a.id === r.from_avatar)?.img || AVATARS[0].img}
+                              alt="avatar"
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-bold text-gray-900 text-sm truncate">{r.from_username}</p>
+                            <p className="text-xs text-gray-400 truncate">{r.from_email}</p>
+                          </div>
+                          <div className="flex gap-1 flex-shrink-0">
+                            <button
+                              disabled={respondingId === r.friendship_id}
+                              onClick={() => respond(r.friendship_id, 'accept')}
+                              className="bg-blue-500 text-white text-xs px-3 py-1.5 rounded-full font-bold hover:bg-blue-600 transition disabled:opacity-50"
+                            >✓</button>
+                            <button
+                              disabled={respondingId === r.friendship_id}
+                              onClick={() => respond(r.friendship_id, 'decline')}
+                              className="bg-gray-100 text-gray-600 text-xs px-3 py-1.5 rounded-full font-bold hover:bg-gray-200 transition disabled:opacity-50"
+                            >✕</button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  <div className="px-4 py-3 border-t border-blue-100" style={{ background: 'rgba(235,245,255,0.7)' }}>
+                    <button
+                      onClick={() => { setShowDrop(false); navigate('/friends'); }}
+                      className="w-full text-center text-xs font-bold text-blue-600 hover:text-blue-800 transition"
+                    >
+                      View all friends →
+                    </button>
+                  </div>
+                </div>
               )}
+            </div>
+
+            {/* Profile avatar */}
+            <button
+              onClick={() => navigate('/profile')}
+              className={`w-10 h-10 rounded-full overflow-hidden border-2 transition ml-1 ${
+                isActive('/profile') ? 'border-blue-400' : 'border-blue-200 hover:border-blue-400'
+              } bg-gradient-to-br ${userAvatar?.bg || 'from-gray-600 to-gray-800'}`}
+            >
+              {customImg
+                ? <img src={customImg}       alt="Your avatar" className="w-full h-full object-cover" />
+                : userAvatar?.img
+                  ? <img src={userAvatar.img} alt="Your avatar" className="w-full h-full object-cover" />
+                  : null
+              }
             </button>
 
-            {/* Dropdown panel */}
-            {showDrop && (
-              <div className="absolute right-0 mt-2 w-80 bg-white border-2 border-gray-900 rounded-2xl shadow-xl z-50 overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gray-50">
-                  <span className="font-bold text-gray-900 text-sm">🔔 Friend Requests</span>
-                  {pendingCount > 0 && (
-                    <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                      {pendingCount} new
-                    </span>
-                  )}
-                </div>
-
-                <div className="max-h-72 overflow-y-auto">
-                  {requests.length === 0 ? (
-                    <div className="text-center py-8 text-gray-400">
-                      <p className="text-3xl mb-2">📭</p>
-                      <p className="text-sm font-medium">No pending requests</p>
-                    </div>
-                  ) : (
-                    requests.map(r => (
-                      <div key={r.friendship_id}
-                        className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 last:border-0">
-                        <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-gray-900 flex-shrink-0">
-                          <img
-                            src={AVATARS.find(a => a.id === r.from_avatar)?.img || AVATARS[0].img}
-                            alt="avatar"
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-bold text-gray-900 text-sm truncate">{r.from_username}</p>
-                          <p className="text-xs text-gray-400 truncate">{r.from_email}</p>
-                        </div>
-                        <div className="flex gap-1 flex-shrink-0">
-                          <button
-                            disabled={respondingId === r.friendship_id}
-                            onClick={() => respond(r.friendship_id, 'accept')}
-                            className="bg-gray-900 text-white text-xs px-3 py-1.5 rounded-full font-bold hover:bg-gray-700 transition disabled:opacity-50"
-                          >✓</button>
-                          <button
-                            disabled={respondingId === r.friendship_id}
-                            onClick={() => respond(r.friendship_id, 'decline')}
-                            className="bg-gray-200 text-gray-700 text-xs px-3 py-1.5 rounded-full font-bold hover:bg-gray-300 transition disabled:opacity-50"
-                          >✕</button>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-
-                <div className="px-4 py-3 border-t border-gray-200 bg-gray-50">
-                  <button
-                    onClick={() => { setShowDrop(false); navigate('/friends'); }}
-                    className="w-full text-center text-xs font-bold text-gray-600 hover:text-gray-900 transition"
-                  >
-                    View all friends →
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
-
-          {/* Profile avatar */}
-          <button
-            onClick={() => navigate('/profile')}
-            className={`w-10 h-10 rounded-full overflow-hidden border-2 transition ml-1 ${
-              isActive('/profile') ? 'border-gray-900' : 'border-gray-400 hover:border-gray-700'
-            } bg-gradient-to-br ${userAvatar?.bg || 'from-gray-600 to-gray-800'}`}
-          >
-            {customImg
-              ? <img src={customImg}       alt="Your avatar" className="w-full h-full object-cover" />
-              : userAvatar?.img
-                ? <img src={userAvatar.img} alt="Your avatar" className="w-full h-full object-cover" />
-                : null
-            }
-          </button>
-
         </div>
-      </div>
-    </nav>
+      </nav>
+    </>
   );
 };
 
