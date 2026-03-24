@@ -8,7 +8,26 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os, shutil, hashlib
-from datetime import datetime
+from datetime import datetime, timezone, timedelta as _timedelta
+
+# Nepal Time = UTC+5:45
+_NPT = timezone(_timedelta(hours=5, minutes=45))
+
+def _today_npt():
+    """Return today's date in Nepal Time (UTC+5:45)."""
+    return datetime.now(_NPT).date()
+
+def _effective_streak(user) -> int:
+    """Return the correct streak without touching the DB.
+    Applies the same decay rules as decay_streak_if_inactive so that
+    admin views and leaderboard always show the true value even if the
+    user hasn't logged in yet to trigger the lazy DB update."""
+    today = _today_npt()
+    if not user.last_activity_date:
+        return 0
+    if user.last_activity_date < today - timedelta(days=1):
+        return 0
+    return user.streak or 0
 from pathlib import Path
 from sqlalchemy.orm import Session
 
@@ -92,13 +111,11 @@ def update_streak(user_id: int, db: Session):
     if not user:
         return
 
-    today = datetime.utcnow().date()
+    today = _today_npt()
 
     if user.last_activity_date is None:
-        # Don't reset — preserve existing streak, just set the date
-        if user.streak is None or user.streak < 1:
-            user.streak = 1
-        # If streak already exists (e.g. from registration), keep it
+        # First ever activity — start streak at 1
+        user.streak = 1
     elif user.last_activity_date == today:
         return  # already active today, no change
     elif user.last_activity_date == today - timedelta(days=1):
@@ -202,7 +219,7 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
         username=name,
         email=email,
         password_hash=simple_hash_password(user.password),
-        role="student", points=100, streak=1,
+        role="student", points=100, streak=0,
         created_at=datetime.utcnow()
     )
     db.add(new_user); db.commit(); db.refresh(new_user)
@@ -231,7 +248,12 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
 @app.get("/api/users")
 def get_users(db: Session = Depends(get_db)):
     users = db.query(models.User).all()
-    return {"users": [u.to_dict() for u in users], "total": len(users)}
+    result = []
+    for u in users:
+        d = u.to_dict()
+        d['streak'] = _effective_streak(u)   # show correct decayed value
+        result.append(d)
+    return {"users": result, "total": len(users)}
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -750,7 +772,7 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
                 password_hash=simple_hash_password(random_password),
                 role="student",
                 points=100,
-                streak=1,
+                streak=0,
                 avatar="avatar1",  # Default avatar
                 created_at=datetime.utcnow()
             )
@@ -829,7 +851,7 @@ async def google_token_auth(request: Request, db: Session = Depends(get_db)):
                 password_hash=simple_hash_password(random_password),
                 role="student",
                 points=150,  # Bonus for Google signup
-                streak=1,
+                streak=0,
                 avatar="avatar1",
                 created_at=datetime.utcnow()
             )
@@ -1162,7 +1184,7 @@ def my_friends(email: str, db: Session = Depends(get_db)):
             "username": friend_user.username,
             "email":    friend_user.email,
             "points":   friend_user.points,
-            "streak":   friend_user.streak,
+            "streak":   _effective_streak(friend_user),
             "avatar":   friend_user.avatar or "avatar1",
         })
 
@@ -1284,7 +1306,7 @@ def get_leaderboard(email: str, friends_only: bool = False, db: Session = Depend
             "email":    u.email,
             "points":   u.points,
             "avatar":   u.avatar or "avatar1",
-            "streak":   u.streak or 0,
+            "streak":   _effective_streak(u),
             "is_you":   u.email == email,
         }
         leaderboard.append(entry)
@@ -1305,7 +1327,7 @@ def admin_stats(db: Session = Depends(get_db)):
     total_points = sum(u.points or 0 for u in students)
     n = len(students) or 1
     avg_points   = round(total_points / n, 1)
-    avg_streak   = round(sum(u.streak or 0 for u in students) / n, 1)
+    avg_streak   = round(sum(_effective_streak(u) for u in students) / n, 1)
 
     # Top 10 students by points
     top_users = sorted(students, key=lambda u: u.points or 0, reverse=True)[:10]
@@ -1334,7 +1356,7 @@ def admin_stats(db: Session = Depends(get_db)):
         "avg_points":    avg_points,
         "avg_streak":    avg_streak,
         "top_users": [
-            {"name": u.username, "points": u.points or 0, "streak": u.streak or 0, "avatar": u.avatar}
+            {"name": u.username, "points": u.points or 0, "streak": _effective_streak(u), "avatar": u.avatar}
             for u in top_users
         ],
         "points_dist": [{"range": k, "count": v} for k, v in buckets.items()],
@@ -1570,8 +1592,13 @@ def decay_streak_if_inactive(user_id: int, db: Session):
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
         return
-    today = datetime.utcnow().date()
-    if user.last_activity_date and user.last_activity_date < today - timedelta(days=1):
+    today = _today_npt()
+    if not user.last_activity_date:
+        # Never did any activity — streak should be 0
+        if user.streak != 0:
+            user.streak = 0
+            db.commit()
+    elif user.last_activity_date < today - timedelta(days=1):
         user.streak = 0
         db.commit()
 
@@ -1584,8 +1611,8 @@ def debug_streak(email: str, db: Session = Depends(get_db)):
         "email": user.email,
         "streak": user.streak,
         "last_activity_date": str(user.last_activity_date),
-        "today_utc": str(datetime.utcnow().date()),
-        "is_active_today": user.last_activity_date == datetime.utcnow().date(),
+        "today_npt": str(_today_npt()),
+        "is_active_today": user.last_activity_date == _today_npt(),
     }
 @app.delete("/api/notebook/{notebook_id}")
 def delete_notebook(notebook_id: int, email: str, db: Session = Depends(get_db)):

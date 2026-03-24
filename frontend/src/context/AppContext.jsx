@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useRef, useCallback } from 'react';
+import { API } from '../constants';
 
 const AppContext = createContext(null);
 
@@ -24,7 +25,7 @@ export const AppProvider = ({ children }) => {
       formData.append('file', file);
       formData.append('email', userEmail);
 
-      const uploadRes = await fetch('http://localhost:8000/api/upload', {
+      const uploadRes = await fetch(`${API}/api/upload`, {
         method: 'POST',
         body: formData,
       });
@@ -33,7 +34,7 @@ export const AppProvider = ({ children }) => {
 
       updateSummaryJob(jobId, { status: 'summarizing', documentId: uploadData.document_id });
 
-      const summaryRes = await fetch('http://localhost:8000/api/summarize', {
+      const summaryRes = await fetch(`${API}/api/summarize`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -63,7 +64,7 @@ export const AppProvider = ({ children }) => {
     updateVideoJob(summaryId, { status: 'queued', theme });
 
     try {
-      const res = await fetch('http://localhost:8000/api/generate-video', {
+      const res = await fetch(`${API}/api/generate-video`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ summary_id: summaryId, user_email: userEmail, theme }),
@@ -73,14 +74,14 @@ export const AppProvider = ({ children }) => {
 
       const poll = async () => {
         try {
-          const statusRes = await fetch(`http://localhost:8000/api/video-status/${summaryId}`);
+          const statusRes = await fetch(`${API}/api/video-status/${summaryId}`);
           const statusData = await statusRes.json();
           updateVideoJob(summaryId, { status: statusData.status });
 
           if (statusData.status === 'done') {
             const url = statusData.video_url?.startsWith('http')
               ? statusData.video_url
-              : `http://localhost:8000${statusData.video_url}`;
+              : `${API}${statusData.video_url}`;
             updateVideoJob(summaryId, { status: 'done', videoUrl: url });
           } else if (statusData.status === 'error') {
             updateVideoJob(summaryId, { status: 'error', error: statusData.error });

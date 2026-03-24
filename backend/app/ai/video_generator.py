@@ -34,9 +34,12 @@ if not hasattr(PIL.Image, 'ANTIALIAS'):
     PIL.Image.ANTIALIAS = PIL.Image.Resampling.LANCZOS
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
-OUTPUT_DIR = Path("generated_videos")
-ASSET_DIR  = Path("../frontend/src/assets/backgrounds")
-TEMP_DIR   = Path("temp_video")
+# Use absolute paths so these work regardless of which directory uvicorn is started from
+_HERE      = Path(__file__).resolve().parent          # backend/app/ai/
+_ROOT      = _HERE.parent.parent.parent               # project root
+OUTPUT_DIR = _ROOT / "backend" / "generated_videos"
+ASSET_DIR  = _ROOT / "frontend" / "src" / "assets" / "backgrounds"
+TEMP_DIR   = _ROOT / "backend" / "temp_video"
 
 # ── Caption style ─────────────────────────────────────────────────────────────
 BASE_WIDTH       = 1920

@@ -13,16 +13,9 @@ import Icon6Image from '../assets/images/slimeicon.png';
 const JOB_KEY   = 'padai_video_job';   // { summaryId, status, videoUrl, theme }
 const VIDEO_KEY = 'padai_video';       // legacy key — keep writing for other pages
 
-function saveJob(job) {
-  localStorage.setItem(JOB_KEY, JSON.stringify(job));
-}
-function loadJob() {
-  try { return JSON.parse(localStorage.getItem(JOB_KEY)); }
-  catch { return null; }
-}
-function clearJob() {
-  localStorage.removeItem(JOB_KEY);
-}
+const saveJob  = (job) => localStorage.setItem(JOB_KEY, JSON.stringify(job));
+const loadJob  = () => { try { return JSON.parse(localStorage.getItem(JOB_KEY)); } catch { return null; } };
+const clearJob = () => localStorage.removeItem(JOB_KEY);
 
 const VideoPage = () => {
   const [dragActive, setDragActive]         = useState(false);
