@@ -67,6 +67,9 @@ const NotebookDetailPage = () => {
     if (summary?.id) {
       localStorage.setItem('padai_notebook_summary_hint', summary.id);
     }
+    if (path === '/flashcards' && flashcards.length > 0 && summary?.id) {
+      localStorage.setItem('padai_flashcards', JSON.stringify({ flashcards, summaryId: summary.id }));
+    }
     navigate(path);
   };
 
@@ -205,7 +208,7 @@ const NotebookDetailPage = () => {
               className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white rounded-xl hover:opacity-90 transition"
               style={{ background: 'rgba(90,120,180,0.85)' }}
             >
-              {videos.length > 0 ? 'View Videos' : 'Generate Video'} <ArrowRight className="w-4 h-4" />
+              {videos.length > 0 ? 'Generate New Video' : 'Generate Video'} <ArrowRight className="w-4 h-4" />
             </button>
           </div>
           {videos.length > 0 ? (
