@@ -5,6 +5,7 @@ Primary  : Local fine-tuned Mistral 7B (fast settings for CPU)
 Fallback : Gemini API
 """
 KAGGLE_API_URL = "https://centaurial-pseudoapologetically-dominique.ngrok-free.dev/summarize"
+
 import re
 import os
 import time
@@ -49,21 +50,23 @@ def _mistral_kaggle_api(lecture_text: str) -> dict | None:
         print("[Summarizer] Calling Kaggle GPU API...")
         response = requests.post(
             KAGGLE_API_URL,
-            json={"text": lecture_text[:6000], "max_tokens": 600},
+            json={"text": lecture_text[:6000], "max_tokens": 700},
             timeout=120,
         )
         if response.status_code == 200:
             data = response.json()
-            if data.get("success"):
-                print(f"[Summarizer] RAW OUTPUT:\n{data.get('raw_output','')[:500]}")  # ← ADD HERE
-                print(f"[Summarizer] Kaggle API response: {len(data.get('raw_output',''))} chars")
+            formal   = data.get("formal_summary", "")
+            creative = data.get("genz_summary", "")
+            video    = data.get("video_script", "")
+            if formal or creative:
+                print(f"[Summarizer] Kaggle ✅ formal={len(formal)} creative={len(creative)}")
                 return {
-                    "formal_summary": data.get("formal_summary", ""),
-                    "genz_summary":   data.get("genz_summary", ""),
-                    "video_script":   data.get("video_script", ""),
+                    "formal_summary": formal,
+                    "genz_summary":   creative,
+                    "video_script":   video,
                 }
-        print(f"[Summarizer] Kaggle API error: {response.status_code}")
-        return None
+            print(f"[Summarizer] Kaggle empty response: {str(data)[:200]}")
+            return None
     except Exception as e:
         print(f"[Summarizer] Kaggle API exception: {e}")
         return None
@@ -122,7 +125,7 @@ def _mistral_local(lecture_text: str) -> dict | None:
         )
 
         print("[Summarizer] Tokenizing input...")
-        inputs = _mistral_local_tokenizer(
+        inputs = _mistral_tokenizer(
             prompt,
             return_tensors="pt",
             truncation=True,

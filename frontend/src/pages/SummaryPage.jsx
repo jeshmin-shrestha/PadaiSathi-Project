@@ -147,6 +147,12 @@ const SummaryPage = () => {
           border: 1px solid rgba(175,215,255,0.45);
           border-radius: 28px;
         }
+          .prose ul { list-style-type: disc; padding-left: 1.5rem; margin: 0.5rem 0; }
+          .prose ol { list-style-type: decimal; padding-left: 1.5rem; margin: 0.5rem 0; }
+          .prose li { margin: 0.25rem 0; display: list-item; }
+          .prose p { margin: 0.5rem 0; }
+          .prose strong { font-weight: 700; }
+          .prose h1, .prose h2, .prose h3 { font-weight: 700; margin: 1rem 0 0.5rem; color: #1e293b; }
       `}</style>
 
       <Navbar />
