@@ -63,7 +63,38 @@ THEME_VOICES = {
 }
 DEFAULT_VOICE = "en-US-GuyNeural"
 
+# openers 
 
+VIDEO_OPENERS = [
+    "Hey besties!", "Okay real talk...", "Here's the tea!",
+    "Sup scholars!", "Alright listen up!", "No cap this topic is wild —",
+]
+VIDEO_CLOSERS = [
+    "Now go ace that exam!", "That's the tea fam!", "You got this bestie!",
+    "Go slay that paper!", "Stay curious, stay winning!",
+]
+MAX_TTS_CHARS = 1500
+
+def _ensure_video_script(text: str) -> str:
+    import random
+    text = text.strip()
+    if not text:
+        return text
+    has_opener = any(text.lower().startswith(o.lower()) or o.lower() in text[:80].lower() for o in VIDEO_OPENERS)
+    if not has_opener:
+        text = random.choice(VIDEO_OPENERS) + " " + text
+    if len(text) > MAX_TTS_CHARS:
+        truncated = text[:MAX_TTS_CHARS]
+        last_end = max(truncated.rfind('.'), truncated.rfind('!'), truncated.rfind('?'))
+        text = truncated[:last_end + 1] if last_end > MAX_TTS_CHARS // 2 else truncated[:truncated.rfind(' ')]
+    has_closer = any(c.lower() in text[-100:].lower() for c in VIDEO_CLOSERS)
+    if not has_closer:
+        if text and text[-1] not in '.!?':
+            last_end = max(text.rfind('.'), text.rfind('!'), text.rfind('?'))
+            if last_end > len(text) // 2:
+                text = text[:last_end + 1]
+        text = text + " " + random.choice(VIDEO_CLOSERS)
+    return text
 # ─────────────────────────────────────────────────────────────────────────────
 # Helpers
 # ─────────────────────────────────────────────────────────────────────────────
@@ -128,9 +159,8 @@ def _run_async(coro):
 def _tts(text: str, mp3_path: str, theme: str = "subway") -> float:
     """Generate MP3, return duration in seconds."""
     clean = _clean_text(text)
-    if len(clean) > 1500:
-        clean = clean[:1500]
-        print("[TTS] Truncated to 1500 chars")
+    clean = _ensure_video_script(clean)
+    print(f"[TTS] Script ({len(clean)} chars): {clean[:80]}…")
 
     voice = THEME_VOICES.get(theme, DEFAULT_VOICE)
     print(f"[TTS] 🎙️  {voice}")

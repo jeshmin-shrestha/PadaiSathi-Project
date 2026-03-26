@@ -5,7 +5,6 @@ Primary  : Local fine-tuned Mistral 7B (fast settings for CPU)
 Fallback : Gemini API
 """
 KAGGLE_API_URL = "https://centaurial-pseudoapologetically-dominique.ngrok-free.dev/summarize"
-
 import re
 import os
 import time
@@ -43,15 +42,41 @@ _mistral_model     = None
 _mistral_tokenizer = None
 
 def _mistral_kaggle_api(lecture_text: str) -> dict | None:
-    """Call your fine-tuned Mistral running on Kaggle GPU."""
     if not KAGGLE_API_URL:
         return None
     try:
+        # Smart text extraction based on length
+        total_len = len(lecture_text)
+        
+        if total_len <= 3000:
+            # Short PDF — send everything
+            text_to_send = lecture_text
+            print(f"[Summarizer] Short PDF — sending full text ({total_len} chars)")
+            
+        elif total_len <= 8000:
+            # Medium PDF — first 1500 + last 1500
+            text_to_send = (
+                lecture_text[:1500] +
+                "\n\n[...middle section...]\n\n" +
+                lecture_text[-1500:]
+            )
+            print(f"[Summarizer] Medium PDF — sending first+last ({len(text_to_send)} chars)")
+            
+        else:
+            # Long PDF — extract key sentences evenly from whole doc
+            sentences = re.split(r'(?<=[.!?])\s+', lecture_text)
+            total_sentences = len(sentences)
+            # Pick ~40 sentences evenly spread across the whole doc
+            step = max(1, total_sentences // 40)
+            selected = sentences[::step][:40]
+            text_to_send = " ".join(selected)
+            print(f"[Summarizer] Long PDF — extracted {len(selected)} sentences ({len(text_to_send)} chars)")
+
         print("[Summarizer] Calling Kaggle GPU API...")
         response = requests.post(
             KAGGLE_API_URL,
-            json={"text": lecture_text[:6000], "max_tokens": 700},
-            timeout=120,
+            json={"text": text_to_send, "max_tokens": 800},
+            timeout=180,
         )
         if response.status_code == 200:
             data = response.json()
@@ -65,8 +90,10 @@ def _mistral_kaggle_api(lecture_text: str) -> dict | None:
                     "genz_summary":   creative,
                     "video_script":   video,
                 }
-            print(f"[Summarizer] Kaggle empty response: {str(data)[:200]}")
+            print(f"[Summarizer] Kaggle empty: {str(data)[:200]}")
             return None
+        print(f"[Summarizer] Kaggle error: {response.status_code}")
+        return None
     except Exception as e:
         print(f"[Summarizer] Kaggle API exception: {e}")
         return None
