@@ -74,8 +74,26 @@ def _setup():
 
 
 def _clean_text(text: str) -> str:
+    # Remove markdown headers
+    text = re.sub(r'^#{1,6}\s*', '', text, flags=re.MULTILINE)
+    
+    # Remove emoji characters
+    text = re.sub(r'[\U00010000-\U0010ffff]', '', text)  # emoji range
+    text = re.sub(r'[\U0001F300-\U0001F9FF]', '', text)  # more emojis
+    text = re.sub(r'[^\x00-\x7F]+', ' ', text)           # any non-ASCII
+    
+    # Remove markdown bold/italic
+    text = re.sub(r'\*\*(.+?)\*\*', r'\1', text)  # **bold**
+    text = re.sub(r'\*(.+?)\*', r'\1', text)        # *italic*
+    
+    # Remove bullet points and arrows
+    text = re.sub(r'^[\*\-•→]\s*', '', text, flags=re.MULTILINE)
+    text = re.sub(r'→', '', text)
+    
+    # Remove leading special characters per line
     text = re.sub(r'^[^\w\s]+\s*', '', text, flags=re.MULTILINE)
-    text = re.sub(r'[^\x00-\x7F]+', ' ', text)
+    
+    # Clean up whitespace
     text = re.sub(r'\s+', ' ', text).strip()
     return text
 

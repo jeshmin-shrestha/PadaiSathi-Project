@@ -4,7 +4,7 @@ import Navbar from '../components/Navbar';
 import Icon1Image from '../assets/images/icon1.png';
 import BadgeToast from '../components/BadgeToast';
 import { API } from '../constants';
-
+import ReactMarkdown from 'react-markdown'
 const SummaryPage = () => {
   const [dragActive, setDragActive]     = useState(false);
   const [uploadedFile, setUploadedFile] = useState(null);
@@ -88,6 +88,7 @@ const SummaryPage = () => {
           user_email: userEmail,
           genz_style: true,
         }),
+        signal: AbortSignal.timeout(600000),
       });
       if (!summaryRes.ok) throw new Error('Summary generation failed');
       const summaryData = await summaryRes.json();
@@ -255,11 +256,11 @@ const SummaryPage = () => {
             <div className="flex flex-col items-center justify-center py-12 gap-3">
               <div className="animate-spin rounded-full h-10 w-10 border-b-4 border-blue-400" />
               <p className="text-gray-500">AI is analyzing your document...</p>
-              <p className="text-gray-400 text-sm">BART + Flan-T5 working together</p>
+              <p className="text-gray-400 text-sm">Fine-tuned Mistral 7B generating your summary...</p>
             </div>
           ) : activeSummary ? (
-            <div className="text-gray-700 whitespace-pre-line leading-relaxed">
-              {activeSummary}
+            <div className="text-gray-700 leading-relaxed prose max-w-none">
+              <ReactMarkdown>{activeSummary}</ReactMarkdown>
             </div>
           ) : (
             <p className="text-gray-400 italic">

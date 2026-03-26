@@ -955,6 +955,8 @@ def my_stats(email: str, db: Session = Depends(get_db)):
         "flashcards": flashcards,
         "quizzes":    quizzes,
         "videos":     videos,
+        "streak":     _effective_streak(user),
+        "points":     user.points or 0,
     }
 
 def _check_and_award_badges(user_id: int, db: Session):

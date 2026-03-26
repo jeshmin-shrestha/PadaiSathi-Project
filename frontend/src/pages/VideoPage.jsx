@@ -355,7 +355,7 @@ const VideoPage = () => {
             >
               {availableSummaries.map((s, i) => (
                 <option key={s.id} value={s.id}>
-                  Summary {i + 1} — {new Date(s.generated_at).toLocaleString()}
+                  Summary {availableSummaries.length - i} — {new Date(s.generated_at).toLocaleString()}
                 </option>
               ))}
             </select>

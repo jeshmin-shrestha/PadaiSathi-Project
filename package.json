@@ -6,6 +6,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.97.0",
-    "lucide-react": "^0.562.0"
+    "lucide-react": "^0.562.0",
+    "react-markdown": "^10.1.0"
   }
 }

@@ -106,6 +106,8 @@ const StudentDashboard = () => {
         flashcards: data.flashcards || 0,
         quizzes:    data.quizzes    || 0,
         videos:     data.videos     || 0,
+        streak:     data.streak     ?? prev.streak,
+        points:     data.points     ?? prev.points,
       }));
     } catch (err) {
       console.error('Stats error:', err);
