@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, BookOpen, FileText, Layers, HelpCircle, Film, CheckCircle, ArrowRight } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { API } from '../constants';
+import ReactMarkdown from 'react-markdown';
 
 const PAD_STYLE = `
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Sora:wght@400;600;700;800&display=swap');
@@ -121,9 +122,9 @@ const NotebookDetailPage = () => {
 
           {summary ? (
             <div>
-              <p className="text-gray-600 leading-relaxed whitespace-pre-line">
-                {summary.slang_version_text || summary.summary_text}
-              </p>
+              <div className="text-gray-600 leading-relaxed prose prose-sm max-w-none">
+                <ReactMarkdown>{summary.slang_version_text || summary.summary_text}</ReactMarkdown>
+              </div>
               <p className="text-xs text-gray-400 mt-4">
                 Generated: {new Date(summary.generated_at).toLocaleString()}
               </p>

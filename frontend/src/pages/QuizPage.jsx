@@ -53,6 +53,33 @@ const QuizPage = () => {
   }, []);
 
   useEffect(() => {
+    if (!localStorage.getItem('padai_quiz_generating')) return;
+    setIsLoading(true);
+    setQuizStarted(false);
+    setQuestions([]);
+    const interval = setInterval(() => {
+      if (!localStorage.getItem('padai_quiz_generating')) {
+        const saved = localStorage.getItem('padai_quiz');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          setQuestions(parsed.questions);
+          setQuizStarted(true);
+          setSelectedSummaryId(Number(parsed.summaryId));
+          selectedSummaryIdRef.current = Number(parsed.summaryId);
+        }
+        setIsLoading(false);
+        clearInterval(interval);
+      }
+    }, 500);
+    const timeout = setTimeout(() => {
+      clearInterval(interval);
+      setIsLoading(false);
+      localStorage.removeItem('padai_quiz_generating');
+    }, 600000);
+    return () => { clearInterval(interval); clearTimeout(timeout); };
+  }, []);
+
+  useEffect(() => {
     selectedSummaryIdRef.current = selectedSummaryId;
   }, [selectedSummaryId]);
 
@@ -100,6 +127,7 @@ const QuizPage = () => {
     }
 
     setIsLoading(true);
+    localStorage.setItem('padai_quiz_generating', idToUse);
     setError('');
     setQuestions([]);
     setCurrentQuestion(0);
@@ -129,6 +157,7 @@ const QuizPage = () => {
       setError('Failed to connect to backend: ' + e.message);
     } finally {
       setIsLoading(false);
+      localStorage.removeItem('padai_quiz_generating');
     }
   };
 

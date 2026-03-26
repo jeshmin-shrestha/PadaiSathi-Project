@@ -54,6 +54,31 @@ const FlashcardPage = () => {
   }, []);
 
   useEffect(() => {
+    if (!localStorage.getItem('padai_flashcards_generating')) return;
+    setIsLoading(true);
+    setFlashcards([]);
+    const interval = setInterval(() => {
+      if (!localStorage.getItem('padai_flashcards_generating')) {
+        const saved = localStorage.getItem('padai_flashcards');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          setFlashcards(parsed.flashcards);
+          setSelectedSummaryId(Number(parsed.summaryId));
+          selectedSummaryIdRef.current = Number(parsed.summaryId);
+        }
+        setIsLoading(false);
+        clearInterval(interval);
+      }
+    }, 500);
+    const timeout = setTimeout(() => {
+      clearInterval(interval);
+      setIsLoading(false);
+      localStorage.removeItem('padai_flashcards_generating');
+    }, 600000);
+    return () => { clearInterval(interval); clearTimeout(timeout); };
+  }, []);
+
+  useEffect(() => {
     selectedSummaryIdRef.current = selectedSummaryId;
   }, [selectedSummaryId]);
 
@@ -98,6 +123,7 @@ const FlashcardPage = () => {
       return;
     }
     setIsLoading(true);
+    localStorage.setItem('padai_flashcards_generating', idToUse);
     setError('');
     setFlashcards([]);
     setCurrentCard(0);
@@ -124,6 +150,7 @@ const FlashcardPage = () => {
       setError('Failed to connect to backend: ' + e.message);
     } finally {
       setIsLoading(false);
+      localStorage.removeItem('padai_flashcards_generating');
     }
   };
 

@@ -26,6 +26,29 @@ const SummaryPage = () => {
   }, []);
 
   useEffect(() => {
+    if (!localStorage.getItem('padai_summary_generating')) return;
+    setIsGenerating(true);
+    const interval = setInterval(() => {
+      if (!localStorage.getItem('padai_summary_generating')) {
+        const saved = localStorage.getItem('padai_summaries');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          setFormalSummary(parsed.formal || '');
+          setGenzSummary(parsed.genz || '');
+        }
+        setIsGenerating(false);
+        clearInterval(interval);
+      }
+    }, 500);
+    const timeout = setTimeout(() => {
+      clearInterval(interval);
+      setIsGenerating(false);
+      localStorage.removeItem('padai_summary_generating');
+    }, 600000);
+    return () => { clearInterval(interval); clearTimeout(timeout); };
+  }, []);
+
+  useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem('user'));
     if (!storedUser) {
       window.location.href = '/login';
@@ -67,6 +90,7 @@ const SummaryPage = () => {
   const generateSummary = async () => {
     if (!uploadedFile) { alert('Please upload a file first!'); return; }
     setIsGenerating(true);
+    localStorage.setItem('padai_summary_generating', '1');
 
     try {
       const formData = new FormData();
@@ -116,6 +140,7 @@ const SummaryPage = () => {
       alert('Failed to generate summary: ' + error.message);
     } finally {
       setIsGenerating(false);
+      localStorage.removeItem('padai_summary_generating');
     }
   };
 
