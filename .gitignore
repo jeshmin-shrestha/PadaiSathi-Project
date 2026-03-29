@@ -23,7 +23,7 @@ out/
 *.db
 *.db-journal
 
-# Huge files that broke your push
+# Huge files that breaks your push
 backend/generated_videos/
 backend/temp_video/
 backend/uploads/
@@ -55,15 +55,13 @@ frontend/src/assets/backgrounds/*.mp4
 # Environment variables
 .env
 *.env
-# AI/ML models - too large, download on demand
+# AI/ML models 
 backend/app/ai/model/
 backend/app/ai/model/*
 !backend/app/ai/model/*.py   # optional: keep python files if any
 !backend/app/ai/model/*.json # keep configs if needed
-# Large AI/ML model files - too big for Git, download separately
+# Large AI/ML model files, too big for Git, download separately
 backend/app/ai/model/model.safetensors
 backend/app/ai/model/*.safetensors
 backend/app/ai/model/*.bin
 backend/app/ai/model/*.pt
-# Or ignore the whole folder if no small files needed:
-# backend/app/ai/model/

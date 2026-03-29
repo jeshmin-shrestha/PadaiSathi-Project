@@ -1,9 +1,9 @@
 """
-PadaiSathi AI — PDF Text Extractor
+PadaiSathi AI — Document Text Extractor
 Place at:  backend/app/ai/pdf_extractor.py
 
-Tries PyMuPDF first (better quality), falls back to your existing
-PyPDF2-based extractor if PyMuPDF isn't installed.
+Supports PDF, PPTX, and TXT files.
+Tries PyMuPDF first (better quality), falls back to PyPDF2 for PDFs.
 """
 
 import os
@@ -12,21 +12,59 @@ import re
 
 def extract_text_from_pdf(filepath: str) -> str:
     """
-    Extract and clean text from a PDF.
-    Returns cleaned string ready for BART summarization.
+    Extract and clean text from a PDF, PPTX, or TXT file.
+    Returns cleaned string ready for summarization.
     """
     if not os.path.exists(filepath):
-        raise FileNotFoundError(f"PDF not found: {filepath}")
+        raise FileNotFoundError(f"File not found: {filepath}")
 
-    raw = _try_pymupdf(filepath) or _try_pypdf2(filepath)
+    ext = os.path.splitext(filepath)[1].lower()
+
+    if ext == ".txt":
+        raw = _extract_txt(filepath)
+    elif ext == ".pptx":
+        raw = _extract_pptx(filepath)
+    else:
+        raw = _try_pymupdf(filepath) or _try_pypdf2(filepath)
 
     if not raw or not raw.strip():
         raise ValueError(
-            "Could not extract text from this PDF. "
-            "It may be a scanned image — OCR not supported yet."
+            "Could not extract text from this file. "
+            "It may be empty or in an unsupported format."
         )
 
     return _clean(raw)
+
+
+def _extract_txt(filepath: str) -> str:
+    """Extract text from a plain .txt file."""
+    with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
+        text = f.read()
+    print(f"[Extractor] TXT: {len(text)} chars")
+    return text
+
+
+def _extract_pptx(filepath: str) -> str:
+    """Extract text from a .pptx file (all slides, all shapes)."""
+    try:
+        from pptx import Presentation
+        prs = Presentation(filepath)
+        parts = []
+        for slide in prs.slides:
+            for shape in slide.shapes:
+                if shape.has_text_frame:
+                    for para in shape.text_frame.paragraphs:
+                        line = " ".join(run.text for run in para.runs).strip()
+                        if line:
+                            parts.append(line)
+        text = "\n".join(parts)
+        print(f"[Extractor] PPTX: {len(text)} chars")
+        return text
+    except ImportError:
+        raise ImportError("python-pptx is required for PPTX support. Run: pip install python-pptx")
+    except Exception as e:
+        print(f"[Extractor] PPTX error: {e}")
+        return ""
 
 
 def _try_pymupdf(filepath: str) -> str:

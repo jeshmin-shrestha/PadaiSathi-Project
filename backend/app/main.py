@@ -7,7 +7,7 @@ from fastapi import FastAPI, HTTPException, Form, UploadFile, File, Depends, Bac
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import os, shutil, hashlib
+import os, shutil, hashlib, bcrypt
 from datetime import datetime, timezone, timedelta as _timedelta
 
 # Nepal Time = UTC+5:45
@@ -73,12 +73,24 @@ app.mount("/videos", StaticFiles(directory=str(VIDEO_OUT_DIR)), name="videos")
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
 
-# ── Password helpers (same as before) ─────────────────────────────────────────
+# ── Password helpers (bcrypt with SHA256 backward compatibility) ──────────────
 def simple_hash_password(password: str) -> str:
-    return hashlib.sha256(password.encode()).hexdigest()
+    # All new passwords use bcrypt
+    return bcrypt.hashpw(
+        password.encode('utf-8'),
+        bcrypt.gensalt()
+    ).decode('utf-8')
 
 def simple_verify_password(plain: str, hashed: str) -> bool:
-    return simple_hash_password(plain) == hashed
+    # bcrypt hashes always start with $2b$
+    if hashed.startswith('$2b$') or hashed.startswith('$2a$'):
+        return bcrypt.checkpw(
+            plain.encode('utf-8'),
+            hashed.encode('utf-8')
+        )
+    else:
+        # Old SHA256 hash — still works for existing users
+        return hashlib.sha256(plain.encode()).hexdigest() == hashed
 
 # ── Video job tracker (in-memory) ─────────────────────────────────────────────
 _video_jobs: dict = {}   # { summary_id: {status, video_url, error} }
@@ -241,7 +253,14 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
     db_user = db.query(models.User).filter(models.User.email == user.email).first()
     if not db_user or not simple_verify_password(user.password, db_user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    decay_streak_if_inactive(db_user.id, db)  # ← ADD THIS
+    
+    #  Silent upgrade: if still SHA256, re-hash with bcrypt on login
+    if not db_user.password_hash.startswith('$2b$'):
+        db_user.password_hash = simple_hash_password(user.password)
+        db.commit()
+        print(f"[Security] {db_user.email} upgraded to bcrypt ✅")
+
+    decay_streak_if_inactive(db_user.id, db)
     db.refresh(db_user)                    
     return {"success": True, "message": f"Welcome back, {db_user.username}!", "user": db_user.to_dict()}
 
@@ -294,8 +313,10 @@ async def upload_pdf(
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
 
-    if not file.filename.lower().endswith('.pdf'):
-        raise HTTPException(status_code=400, detail="Only PDF files are allowed")
+    _allowed_exts = {'.pdf', '.pptx', '.txt'}
+    _ext = Path(file.filename).suffix.lower()
+    if _ext not in _allowed_exts:
+        raise HTTPException(status_code=400, detail="Only PDF, PPTX, and TXT files are allowed")
 
     file_path = str(UPLOAD_DIR / file.filename)
     with open(file_path, "wb") as buffer:
@@ -312,7 +333,7 @@ async def upload_pdf(
         user_id=user.id,
         file_name=file.filename,
         file_path=file_path,
-        file_type="pdf",
+        file_type=_ext.lstrip('.'),
         upload_date=datetime.utcnow(),
         extracted_text=extracted_text,
     )
@@ -324,7 +345,7 @@ async def upload_pdf(
     notebook = models.Notebook(
         user_id=user.id,
         document_id=doc.id,  # ← now this has the real ID!
-        title=file.filename.replace('.pdf', ''),
+        title=Path(file.filename).stem,
         created_at=datetime.utcnow()
     )
     db.add(notebook)

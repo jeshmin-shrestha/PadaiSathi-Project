@@ -17,8 +17,24 @@ import AuthCallback from './pages/AuthCallback';
 import FriendsPage from './pages/FriendsPage';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+function isTokenValid() {
+  const token = localStorage.getItem('token');
+  if (!token) return false;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.exp * 1000 > Date.now();
+  } catch {
+    return false;
+  }
+}
+
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    if (!isTokenValid()) {
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
+      return false;
+    }
     return !!localStorage.getItem('user');
   });
   const [user, setUser] = useState(() => {

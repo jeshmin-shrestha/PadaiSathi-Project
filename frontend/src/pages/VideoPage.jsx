@@ -138,11 +138,13 @@ const VideoPage = () => {
     if (e.target.files?.[0]) handleFile(e.target.files[0]);
   };
   const handleFile = (file) => {
-    if (file.type === 'application/pdf' && file.size <= 5242880) {
+    const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
+    const allowed = ['.pdf', '.pptx', '.txt'];
+    if (allowed.includes(ext) && file.size <= 5242880) {
       setUploadedFile(file);
       uploadAndCreateSummary(file);
     } else {
-      alert('Please upload PDF files only (Max 5MB)');
+      alert('Please upload PDF, PPTX, or TXT files only (Max 5MB)');
     }
   };
 
@@ -378,14 +380,14 @@ const VideoPage = () => {
               onDragEnter={handleDrag} onDragLeave={handleDrag}
               onDragOver={handleDrag} onDrop={handleDrop}
             >
-              <input type="file" id="file-upload" className="hidden" onChange={handleChange} accept=".pdf" />
+              <input type="file" id="file-upload" className="hidden" onChange={handleChange} accept=".pdf,.pptx,.txt" />
               <div className="w-16 h-16 rounded-full mx-auto flex items-center justify-center mb-4"
                 style={{ background: 'rgba(99,130,190,0.15)' }}>
                 <Upload className="w-8 h-8 text-blue-500" />
               </div>
               <h3 className="text-lg font-bold text-gray-800 mb-2">Drop your file here</h3>
               <p className="text-sm text-gray-500 mb-1">or click to browse</p>
-              <p className="text-xs text-gray-400">PDF only · Max 5MB</p>
+              <p className="text-xs text-gray-400">PDF, PPTX, TXT · Max 5MB</p>
               <label htmlFor="file-upload"
                 className="inline-block mt-3 px-4 py-2 text-white text-sm rounded-xl font-semibold cursor-pointer transition"
                 style={{ background: 'rgba(90,120,180,0.85)' }}>

@@ -78,12 +78,14 @@ const SummaryPage = () => {
   };
 
   const handleFile = (file) => {
-    if (file.type === 'application/pdf' && file.size <= 5242880) {
+    const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
+    const allowed = ['.pdf', '.pptx', '.txt'];
+    if (allowed.includes(ext) && file.size <= 5242880) {
       setUploadedFile(file);
       setFormalSummary('');
       setGenzSummary('');
     } else {
-      alert('Please upload PDF files only (Max 5MB)');
+      alert('Please upload PDF, PPTX, or TXT files only (Max 5MB)');
     }
   };
 
@@ -199,7 +201,7 @@ const SummaryPage = () => {
         <div className="pad-card p-8 mb-6">
           <div className="flex items-center mb-6">
             <Upload className="w-7 h-7 text-blue-500" />
-            <span className="ml-2 font-bold text-gray-700 text-lg">Upload PDF</span>
+            <span className="ml-2 font-bold text-gray-700 text-lg">Upload File</span>
           </div>
 
           <div
@@ -211,7 +213,7 @@ const SummaryPage = () => {
             onDragOver={handleDrag}
             onDrop={handleDrop}
           >
-            <input type="file" id="file-upload" className="hidden" onChange={handleChange} accept=".pdf" />
+            <input type="file" id="file-upload" className="hidden" onChange={handleChange} accept=".pdf,.pptx,.txt" />
 
             <div className="mb-4">
               <div className="w-20 h-20 rounded-full mx-auto flex items-center justify-center"
@@ -222,7 +224,7 @@ const SummaryPage = () => {
 
             <h3 className="text-xl font-bold text-gray-800 mb-2">Drop your files here</h3>
             <p className="text-gray-500 mb-1">or click to browse</p>
-            <p className="text-sm text-gray-400">Supports PDF (Max 5MB)</p>
+            <p className="text-sm text-gray-400">Supports PDF, PPTX, TXT (Max 5MB)</p>
 
             <label
               htmlFor="file-upload"
