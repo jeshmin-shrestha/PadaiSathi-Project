@@ -65,3 +65,4 @@ backend/app/ai/model/model.safetensors
 backend/app/ai/model/*.safetensors
 backend/app/ai/model/*.bin
 backend/app/ai/model/*.pt
+padaisathi-final-runner-gpu.ipynb
