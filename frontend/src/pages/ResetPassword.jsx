@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import catIllustration from '../assets/images/Loginimage5.png';
+import { API } from '../constants';
+import catIllustration from '../assets/images/LoginImage5.png';
 import logoImage from '../assets/images/logo1.png';
 import successImage from '../assets/images/SuccessImage.jpeg';
 const ResetPassword = () => {
@@ -62,7 +63,7 @@ const ResetPassword = () => {
 
     setLoading(true);
     try {
-      const res  = await fetch('http://localhost:8000/api/reset-password', {
+      const res  = await fetch(`${API}/api/reset-password`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ token, new_password: password }),

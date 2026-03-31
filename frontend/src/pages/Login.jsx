@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import catIllustration from '../assets/images/Loginimage5.png';
+import catIllustration from '../assets/images/LoginImage5.png';
 import logoImage from '../assets/images/logo1.png';
 import { useNavigate, Link } from 'react-router-dom';
+import { API } from '../constants';
 const Login = ({ setIsAuthenticated, setUser }) => {
   const [email, setEmail] = useState('demo@padai.com');
   const [password, setPassword] = useState('demo123');
@@ -15,7 +16,7 @@ const Login = ({ setIsAuthenticated, setUser }) => {
     setLoading(true);
     setError('');
     try {
-      const response = await fetch('http://localhost:8000/api/login', {
+      const response = await fetch(`${API}/api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -431,7 +432,7 @@ const Login = ({ setIsAuthenticated, setUser }) => {
               </button>
 
               <button 
-                onClick={() => window.location.href = 'http://localhost:8000/api/auth/google/login'}
+                onClick={() => window.location.href = `${API}/api/auth/google/login`}
                 className="
                   flex items-center justify-center py-3.5 
                   bg-white/10 border border-white/20 rounded-xl 

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import catIllustration from '../assets/images/Loginimage5.png';
+import { API } from '../constants';
+import catIllustration from '../assets/images/LoginImage5.png';
 import logoImage from '../assets/images/logo1.png';
 
 const Register = ({ setIsAuthenticated, setUser }) => {
@@ -91,7 +92,7 @@ const Register = ({ setIsAuthenticated, setUser }) => {
     setLoading(true);
 
     try {
-      const registerResponse = await fetch('http://localhost:8000/api/register', {
+      const registerResponse = await fetch(`${API}/api/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -109,7 +110,7 @@ const Register = ({ setIsAuthenticated, setUser }) => {
         return;
       }
 
-      const loginResponse = await fetch('http://localhost:8000/api/login', {
+      const loginResponse = await fetch(`${API}/api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: formData.email.trim().toLowerCase(), password: formData.password }),
@@ -438,7 +439,7 @@ const Register = ({ setIsAuthenticated, setUser }) => {
               Facebook
             </button>
             <button
-              onClick={() => window.location.href = 'http://localhost:8000/api/auth/google/login'}
+              onClick={() => window.location.href = `${API}/api/auth/google/login`}
               className="flex items-center justify-center py-3.5 bg-white/10 border border-white/20 rounded-xl hover:bg-white/20 transition text-gray-200 text-sm"
             >
               <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">

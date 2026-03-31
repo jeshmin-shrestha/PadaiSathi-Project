@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import catIllustration from '../assets/images/Loginimage5.png';
+import { API } from '../constants';
+import catIllustration from '../assets/images/LoginImage5.png';
 import logoImage from '../assets/images/logo1.png';
 
 const ForgotPassword = () => {
@@ -19,7 +20,7 @@ const ForgotPassword = () => {
     }
     setLoading(true);
     try {
-      const res  = await fetch('http://localhost:8000/api/forgot-password', {
+      const res  = await fetch(`${API}/api/forgot-password`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ email: email.trim().toLowerCase() }),
