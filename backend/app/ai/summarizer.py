@@ -4,7 +4,6 @@ PadaiSathi — summarizer.py (v3 — Local Mistral + Gemini fallback)
 Primary  : Local fine-tuned Mistral 7B (fast settings for CPU)
 Fallback : Gemini API
 """
-KAGGLE_API_URL = "https://centaurial-pseudoapologetically-dominique.ngrok-free.dev/summarize"
 import re
 import os
 import time
@@ -19,6 +18,8 @@ from transformers import (
 # ── Config ────────────────────────────────────────────────────────────────────
 HF_TOKEN       = os.getenv("HF_TOKEN", "")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+GROQ_API_KEY   = os.getenv("GROQ_API_KEY", "")
+KAGGLE_API_URL = os.getenv("KAGGLE_API_URL", "")
 MISTRAL_REPO   = "jeshmin/padaisathi-mistral-7b"
 FLAN_REPO      = "jeshmin/padaisathi-flan-t5"
 BASE_MODEL     = "mistralai/Mistral-7B-Instruct-v0.2"
@@ -222,11 +223,11 @@ def _parse_output(raw: str) -> dict:
         raw, re.DOTALL | re.IGNORECASE
     )
     creative_match = re.search(
-        r"#\s*(?:🎨|✨)?\s*(?:PadaiSathi Breakdown|PadaiSathi|Creative|Fun|Breakdown)[^\n]*\n(.*?)(?=#\s*(?:🎬|📘|🎨|Video Script)|Video Script:|$)",
+        r"#\s*(?:🎨|✨)?\s*(?:PadaiSathi Breakdown|PadaiSathi|Creative|Fun|Breakdown)[^\n]*\n(.*?)(?=#\s*(?:🎬|📘|🎨|Video Script)|Video Script[:\s]|$)",
         raw, re.DOTALL | re.IGNORECASE
     )
     video_match = re.search(
-        r"#\s*(?:🎬)?\s*Video Script\s*(.*?)$",
+        r"(?:#\s*(?:🎬)?\s*)?Video Script[:\s]\s*(.*?)$",
         raw, re.DOTALL | re.IGNORECASE
     )
 
@@ -259,50 +260,66 @@ def _parse_output(raw: str) -> dict:
         "video_script":   video_script,
     }
 
-# ── Gemini fallback ───────────────────────────────────────────────────────────
-def _gemini_summarize(text: str) -> dict | None:
-    if not GEMINI_API_KEY:
-        print("[Summarizer] No GEMINI_API_KEY — skipping Gemini")
+# ── Groq fallback ─────────────────────────────────────────────────────────────
+def _groq_summarize(text: str) -> dict | None:
+    if not GROQ_API_KEY:
+        print("[Summarizer] No GROQ_API_KEY — skipping Groq")
         return None
     try:
-        print("[Summarizer] Trying Gemini API...")
-        from google import genai
+        print("[Summarizer] Trying Groq API...")
+        from groq import Groq
 
-        client = genai.Client(api_key=GEMINI_API_KEY)
-        prompt = f"""You are PadaiSathi, a fun AI study assistant.
-Summarize this lecture in exactly 3 sections:
+        client = Groq(api_key=GROQ_API_KEY)
+        prompt = f"""You are PadaiSathi, a fun and smart AI study assistant.
+Summarize the following lecture notes in EXACTLY this format with these EXACT headers:
 
-# 📘 Formal Summary
-[Academic formal summary]
+PART 1 — FORMAL SUMMARY
+[Write a comprehensive bullet-point summary covering the ENTIRE lecture from start to finish.
+   - Use "• " before each bullet point
+   - Cover every major topic, concept, definition, and process mentioned in the lecture in order
+   - Be thorough — do not skip sections
+   - Use formal academic language
+   - Do NOT add any facts or examples not present in the lecture notes]
 
-# 🎨 PadaiSathi Breakdown
-[Fun creative breakdown with emojis, game analogies, step-by-step]
+PART 2 — PADAISATHI BREAKDOWN
+[Write a fun creative breakdown with:
+   - A relatable analogy based on the actual lecture topic (do NOT force unrelated brands like Netflix or Spotify — only use them if they genuinely relate to the topic)
+   - Step-by-step numbered levels with emojis based on the lecture content
+   - Easy way to remember section based on actual concepts from the lecture
+   - Final Big Idea summarizing the lecture]
 
-# 🎬 Video Script
-[Short punchy 5-8 sentence video script]
+Video Script:
+[Write ONLY 5-6 casual spoken sentences — no bullet points, no headers, just natural speech.but summarize the text in the best way possible
+   Base it strictly on what is in the lecture notes — do NOT invent facts or examples not in the text.
+   MUST open with one of: "Hey besties!", "Okay real talk...", "Here's the tea!", "Sup scholars!", "Alright listen up!", "No cap this topic is wild —"
+   MUST end with one of: "Now go ace that exam!", "That's the tea fam!", "You got this bestie!", "Go slay that paper!", "Stay curious, stay winning!"]
 
-Lecture:
+Lecture Notes:
 {text[:6000]}"""
 
-        # retry up to 3 times for rate limit
-        for attempt in range(3):
-            try:
-                response = client.models.generate_content(
-                    model="gemini-2.0-flash",
-                    contents=prompt,
-                )
-                raw = response.text
-                print(f"[Summarizer] Gemini response: {len(raw)} chars")
-                return _parse_output(raw)
-            except Exception as e:
-                if "429" in str(e) and attempt < 2:
-                    print(f"[Summarizer] Gemini rate limit — waiting 5s ({attempt+1}/3)")
-                    time.sleep(5)
-                else:
-                    raise e
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=1000,
+            temperature=0.7,
+        )
+        raw = response.choices[0].message.content
+        print(f"[Summarizer] Groq response: {len(raw)} chars")
+
+        # Groq outputs "PART 1 — FORMAL SUMMARY" with em dash — parse separately
+        # so we don't disturb _parse_output which works correctly for Mistral
+        formal_m   = re.search(r"PART\s*1[^:\n]*[:\-—][^\n]*\n(.*?)(?=PART\s*2|$)", raw, re.DOTALL | re.IGNORECASE)
+        creative_m = re.search(r"PART\s*2[^:\n]*[:\-—][^\n]*\n(.*?)(?=Video Script:|$)", raw, re.DOTALL | re.IGNORECASE)
+        video_m    = re.search(r"Video Script:\s*(.*?)$", raw, re.DOTALL | re.IGNORECASE)
+
+        formal   = formal_m.group(1).strip()   if formal_m   else raw[:600]
+        creative = creative_m.group(1).strip() if creative_m else raw
+        video    = video_m.group(1).strip()    if video_m    else creative[:250]
+
+        return {"formal_summary": formal, "genz_summary": creative, "video_script": video}
 
     except Exception as e:
-        print(f"[Summarizer] Gemini error: {e}")
+        print(f"[Summarizer] Groq error: {e}")
         return None
 
 
@@ -321,10 +338,10 @@ def summarize(text: str, genz_style: bool = True,
     # 1. Kaggle GPU API (your fine-tuned Mistral — FAST!)
     result = _mistral_kaggle_api(text)
 
-    # 2. Gemini fallback
+    # 2. Groq fallback
     if not result:
-        print("[Summarizer] Kaggle API failed — trying Gemini...")
-        result = _gemini_summarize(text)
+        print("[Summarizer] Kaggle API failed — trying Groq...")
+        result = _groq_summarize(text)
 
     # 3. Last resort
     if not result:

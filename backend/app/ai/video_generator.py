@@ -160,7 +160,8 @@ def _tts(text: str, mp3_path: str, theme: str = "subway") -> float:
     """Generate MP3, return duration in seconds."""
     clean = _clean_text(text)
     clean = _ensure_video_script(clean)
-    print(f"[TTS] Script ({len(clean)} chars): {clean[:80]}…")
+    print(f"[TTS] Script ({len(clean)} chars): {clean}")
+
 
     voice = THEME_VOICES.get(theme, DEFAULT_VOICE)
     print(f"[TTS] 🎙️  {voice}")
