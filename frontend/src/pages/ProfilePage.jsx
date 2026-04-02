@@ -57,6 +57,7 @@ const ProfilePage = () => {
   const [avatarSaving, setAvatarSaving] = useState(false);
   const [customImageBase64, setCustomImageBase64] = useState(null);
   const [previewCustomImage, setPreviewCustomImage] = useState(null);
+  const [customUploadFile, setCustomUploadFile] = useState(null);
   const fileInputRef = useRef(null);
 
   const [pwForm, setPwForm] = useState({ current: '', newPw: '', confirm: '' });
@@ -74,8 +75,9 @@ const ProfilePage = () => {
     if (savedCustom) setCustomImageBase64(savedCustom);
   }, []);
 
-  const resolveAvatarImg = (avatarId, base64 = customImageBase64) => {
-    if (avatarId === CUSTOM_AVATAR_ID) return base64 || null;
+  const resolveAvatarImg = (avatarId) => {
+    if (avatarId && avatarId.startsWith('https://')) return avatarId;
+    if (avatarId === CUSTOM_AVATAR_ID) return previewCustomImage || customImageBase64 || null;
     return AVATARS.find(a => a.id === avatarId)?.img || AVATARS[0].img;
   };
 
@@ -110,6 +112,7 @@ const ProfilePage = () => {
     if (!file) return;
     if (!file.type.startsWith('image/')) { alert('Please select an image file.'); return; }
     if (file.size > 5 * 1024 * 1024) { alert('Image must be under 5MB.'); return; }
+    setCustomUploadFile(file);
     const reader = new FileReader();
     reader.onload = (ev) => {
       setPreviewCustomImage(ev.target.result);
@@ -120,24 +123,37 @@ const ProfilePage = () => {
 
   const handleSaveAvatar = async () => {
     setAvatarSaving(true);
+    let avatarValue = selectedAvatar;
     try {
-      if (selectedAvatar === CUSTOM_AVATAR_ID && previewCustomImage) {
-        localStorage.setItem(CUSTOM_AVATAR_KEY, previewCustomImage);
-        setCustomImageBase64(previewCustomImage);
+      if (selectedAvatar === CUSTOM_AVATAR_ID && customUploadFile) {
+        const { supabase } = await import('../supabase');
+        const fileExt = customUploadFile.name.split('.').pop();
+        const fileName = `${user.email.replace('@', '_')}-${Date.now()}.${fileExt}`;
+        const { error } = await supabase.storage
+          .from('avatars')
+          .upload(fileName, customUploadFile, { upsert: true });
+        if (!error) {
+          const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
+          avatarValue = urlData.publicUrl;
+          setCustomImageBase64(avatarValue);
+          localStorage.removeItem(CUSTOM_AVATAR_KEY);
+        }
       }
       await fetch(`${API}/api/update-profile`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: user.email, avatar: selectedAvatar }),
+        body: JSON.stringify({ email: user.email, avatar: avatarValue }),
       });
     } catch {
       // backend may not be ready, save locally anyway
     } finally {
-      const updated = { ...user, avatar: selectedAvatar };
+      const updated = { ...user, avatar: avatarValue };
       localStorage.setItem('user', JSON.stringify(updated));
       setUser(updated);
+      window.dispatchEvent(new Event('avatar-updated'));
       setAvatarSaving(false);
       setPreviewCustomImage(null);
+      setCustomUploadFile(null);
       setModal(null);
     }
   };

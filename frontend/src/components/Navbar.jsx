@@ -59,17 +59,29 @@ const Navbar = () => {
   const [showDrop,     setShowDrop]     = useState(false);
   const [respondingId, setRespondingId] = useState(null);
 
-  useEffect(() => {
+  const refreshAvatar = () => {
     const stored   = JSON.parse(localStorage.getItem('user'));
     const avatarId = stored?.avatar || 'avatar1';
-    if (avatarId === 'custom') {
+    if (avatarId && avatarId.startsWith('https://')) {
+      setCustomImg(avatarId);
+      setUserAvatar({ id: 'custom', bg: 'from-indigo-400 to-purple-500' });
+    } else if (avatarId === 'custom') {
       setCustomImg(localStorage.getItem(CUSTOM_AVATAR_KEY) || null);
       setUserAvatar({ id: 'custom', bg: 'from-indigo-400 to-purple-500' });
     } else {
       setCustomImg(null);
       setUserAvatar(AVATARS.find(a => a.id === avatarId) || AVATARS[0]);
     }
+  };
+
+  useEffect(() => {
+    refreshAvatar();
   }, [location]);
+
+  useEffect(() => {
+    window.addEventListener('avatar-updated', refreshAvatar);
+    return () => window.removeEventListener('avatar-updated', refreshAvatar);
+  }, []);
 
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem('user'));

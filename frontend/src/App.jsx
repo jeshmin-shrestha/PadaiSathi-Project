@@ -30,12 +30,16 @@ function isTokenValid() {
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    if (!isTokenValid()) {
+    const token = localStorage.getItem('token');
+    const user  = localStorage.getItem('user');
+    // If a token exists, validate it; if it's expired, clear everything
+    if (token && !isTokenValid()) {
       localStorage.removeItem('user');
       localStorage.removeItem('token');
       return false;
     }
-    return !!localStorage.getItem('user');
+    // Regular login has no token — just trust the stored user
+    return !!user;
   });
   const [user, setUser] = useState(() => {
     return JSON.parse(localStorage.getItem('user')) || null;
