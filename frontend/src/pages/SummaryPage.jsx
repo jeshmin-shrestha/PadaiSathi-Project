@@ -15,6 +15,7 @@ const SummaryPage = () => {
   const [username, setUsername]           = useState('');
   const [userEmail, setUserEmail]         = useState('');
   const [newBadges, setNewBadges] = useState([]);
+  const [alertModal, setAlertModal] = useState({ show: false, title: '', message: '', type: 'error' });
 
   useEffect(() => {
     const saved = localStorage.getItem('padai_summaries');
@@ -85,12 +86,12 @@ const SummaryPage = () => {
       setFormalSummary('');
       setGenzSummary('');
     } else {
-      alert('Please upload PDF, PPTX, or TXT files only (Max 5MB)');
+      setAlertModal({ show: true, title: 'Invalid File', message: 'Please upload PDF, PPTX, or TXT files only (Max 5MB).', type: 'warning' });
     }
   };
 
   const generateSummary = async () => {
-    if (!uploadedFile) { alert('Please upload a file first!'); return; }
+    if (!uploadedFile) { setAlertModal({ show: true, title: 'No File Selected', message: 'Please upload a PDF, PPTX, or TXT file before generating a summary.', type: 'warning' }); return; }
     setIsGenerating(true);
     localStorage.setItem('padai_summary_generating', '1');
 
@@ -139,7 +140,7 @@ const SummaryPage = () => {
       }
     } catch (error) {
       console.error('Error:', error);
-      alert('Failed to generate summary: ' + error.message);
+      setAlertModal({ show: true, title: 'Summary Failed', message: 'Failed to generate summary: ' + error.message, type: 'error' });
     } finally {
       setIsGenerating(false);
       localStorage.removeItem('padai_summary_generating');
@@ -308,6 +309,37 @@ const SummaryPage = () => {
         © PadaiSathi All rights reserved.
       </footer>
       <BadgeToast badgeIds={newBadges} onDone={() => setNewBadges([])} />
+
+      {/* ── Styled Alert Modal ── */}
+      {alertModal.show && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 px-4">
+          <div className="w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.97)' }}>
+            {/* Header */}
+            <div style={{ background: alertModal.type === 'error' ? 'rgba(220,38,38,0.08)' : 'rgba(90,120,180,0.08)', padding: '20px 24px 12px' }}>
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-lg" style={{ color: alertModal.type === 'error' ? '#dc2626' : '#3b5fa0' }}>
+                  {alertModal.title}
+                </span>
+                <button onClick={() => setAlertModal({ ...alertModal, show: false })} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: '#888' }}>✕</button>
+              </div>
+            </div>
+            {/* Body */}
+            <div style={{ padding: '16px 24px 24px' }}>
+              <div className="flex items-start gap-3">
+                <span style={{ fontSize: 28 }}>{alertModal.type === 'error' ? '❌' : '⚠️'}</span>
+                <p className="text-gray-600 text-sm leading-relaxed">{alertModal.message}</p>
+              </div>
+              <button
+                onClick={() => setAlertModal({ ...alertModal, show: false })}
+                className="w-full mt-5 py-2 rounded-xl font-semibold text-white text-sm"
+                style={{ background: alertModal.type === 'error' ? 'rgba(220,38,38,0.85)' : 'rgba(90,120,180,0.9)' }}
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
