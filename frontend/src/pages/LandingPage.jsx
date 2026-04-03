@@ -58,7 +58,6 @@ const PAD_STYLE = `
   }
 
   @media (max-width: 480px) {
-    .nav-login { display: none; }
     .nav-home  { display: none; }
     .hero-mascot { max-width: 240px !important; }
     .hero-pad { padding: 24px 16px !important; }
