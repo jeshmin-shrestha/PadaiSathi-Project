@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, Film, GraduationCap, ChevronDown } from 'lucide-react';
+import { FileText, Film, GraduationCap, Layers, Users, BookOpen } from 'lucide-react';
 import logoImage from '../assets/images/logo1.png';
 import totoro from '../assets/images/totoro.png';
 
@@ -34,41 +34,117 @@ const PAD_STYLE = `
     -webkit-backdrop-filter: blur(14px);
     border-bottom: 1px solid rgba(175,215,255,0.45);
   }
+
+  /* ── Responsive helpers ── */
+  .hero-heading {
+    font-family: 'Sora', sans-serif;
+    font-size: clamp(28px, 6vw, 48px);
+    font-weight: 700;
+    color: #111827;
+    line-height: 1.2;
+    margin-bottom: 16px;
+  }
+  .section-heading {
+    font-family: 'Sora', sans-serif;
+    font-size: clamp(22px, 5vw, 36px);
+    font-weight: 700;
+    color: #111827;
+  }
+  .cta-heading {
+    font-family: 'Sora', sans-serif;
+    font-size: clamp(20px, 4.5vw, 34px);
+    font-weight: 700;
+    color: #111827;
+  }
+
+  @media (max-width: 480px) {
+    .nav-login { display: none; }
+    .nav-home  { display: none; }
+    .hero-mascot { max-width: 240px !important; }
+    .hero-pad { padding: 24px 16px !important; }
+    .features-section { padding-top: 40px !important; padding-bottom: 40px !important; }
+    .cta-pad { padding: 32px 16px !important; }
+    .testimonials-pad { padding: 32px 16px !important; }
+  }
+
+  @media (max-width: 640px) {
+    .hero-mascot { max-width: 280px; }
+  }
 `;
+
+const FEATURES = [
+  {
+    title: 'AI Summaries',
+    desc: 'Upload your boring PDFs & get summaries that actually make sense — in seconds.',
+    icon: <FileText className="w-10 h-10 text-blue-500" />,
+    bg: 'rgba(186,220,255,0.5)',
+  },
+  {
+    title: 'Video Magic',
+    desc: 'Tired of endless reading? Watch flashy AI-generated engaging videos from your notes.',
+    icon: <Film className="w-10 h-10 text-indigo-500" />,
+    bg: 'rgba(200,220,255,0.5)',
+  },
+  {
+    title: 'Exam Ready',
+    desc: 'Relax and grasp AI-generated quizzes tailored exactly to your content.',
+    icon: <GraduationCap className="w-10 h-10 text-blue-600" />,
+    bg: 'rgba(210,230,255,0.5)',
+  },
+  {
+    title: 'Smart Flashcards',
+    desc: 'Flip through AI-generated flashcards to lock in key concepts fast.',
+    icon: <Layers className="w-10 h-10 text-violet-500" />,
+    bg: 'rgba(220,210,255,0.5)',
+  },
+  {
+    title: 'Compete with Friends',
+    desc: 'Challenge your friends on the leaderboard and climb the ranks together.',
+    icon: <Users className="w-10 h-10 text-emerald-500" />,
+    bg: 'rgba(200,240,220,0.5)',
+  },
+  {
+    title: 'Smart Notebooks',
+    desc: 'Save, organise and revisit your notes all in one beautiful place.',
+    icon: <BookOpen className="w-10 h-10 text-rose-400" />,
+    bg: 'rgba(255,210,210,0.5)',
+  },
+];
+
+const TESTIMONIALS = [
+  { name: 'Riya B.',  text: 'PadaiSathi turned my 50-page notes into a crisp summary in seconds. Game changer!', grad: 'from-blue-300 to-blue-500' },
+  { name: 'Dixita B.', text: 'The flashcards are so good. I went from failing to topping my class!',               grad: 'from-purple-300 to-indigo-400' },
+  { name: 'Jenisha S.', text: 'The Minecraft video mode kept me focused the whole revision session.',               grad: 'from-green-300 to-teal-400' },
+  { name: 'Prasamsha S.',  text: 'Finally an app that gets students. The Gen-Z summaries are hilarious and helpful.',  grad: 'from-pink-300 to-rose-400' },
+];
 
 const LandingPage = () => {
   return (
     <div className="land-root land-bg min-h-screen">
       <style>{PAD_STYLE}</style>
 
-      {/* Navbar */}
+      {/* ── Navbar ── */}
       <nav className="land-nav shadow-sm sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <img
-              src={logoImage}
-              alt="PadaiSathi Logo"
-              className="w-40 h-auto object-contain"
-            />
-          </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
+          <img src={logoImage} alt="PadaiSathi Logo" className="h-10 sm:h-12 w-auto object-contain" />
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <Link
               to="/"
-              className="px-5 py-2 rounded-xl font-semibold text-sm transition"
+              className="nav-home px-4 py-2 rounded-xl font-semibold text-sm transition"
               style={{ background: 'rgba(186,220,255,0.6)', color: '#3b6fa0' }}
             >
               Home
             </Link>
             <Link
               to="/login"
-              className="text-gray-600 font-semibold text-sm hover:text-blue-600 transition"
+              className="nav-login text-gray-600 font-semibold text-sm hover:text-blue-600 transition"
             >
               Login
             </Link>
             <Link
               to="/register"
-              className="px-5 py-2 text-white rounded-xl font-semibold text-sm transition"
+              className="px-4 sm:px-5 py-2 text-white rounded-xl font-semibold text-sm transition"
               style={{ background: 'rgba(90,120,180,0.85)' }}
             >
               Sign Up
@@ -77,146 +153,105 @@ const LandingPage = () => {
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="max-w-7xl mx-auto mt-8 px-6 lg:px-8">
-        <div className="pad-hero px-8 py-16">
-          <div className="flex flex-col md:flex-row items-center justify-between">
-            <div className="md:w-1/2 mb-8 md:mb-0">
-              <h2
-                className="text-5xl font-bold text-gray-900 leading-tight mb-4"
-                style={{ fontFamily: "'Sora', sans-serif" }}
-              >
-                Study Less,<br />
-                Understand More
+      {/* ── Hero ── */}
+      <section className="max-w-7xl mx-auto mt-6 sm:mt-8 px-4 sm:px-6 lg:px-8">
+        <div className="pad-hero hero-pad px-6 sm:px-10 py-10 sm:py-16">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+            <div className="md:w-1/2 text-center md:text-left">
+              <h2 className="hero-heading">
+                Study Less,<br />Understand More
               </h2>
-              <p className="text-gray-600 text-lg mb-3">
+              <p className="text-gray-600 text-base sm:text-lg mb-2">
                 Upload, Summarize &amp; Learn.
               </p>
-              <p className="text-gray-500 mb-8">
+              <p className="text-gray-500 text-sm sm:text-base mb-8">
                 Transform your documents into engaging videos, flashcards and quizzes with AI magic.
               </p>
               <Link
                 to="/register"
-                className="inline-block text-white px-8 py-3 rounded-xl font-semibold hover:opacity-90 transition"
+                className="inline-block text-white px-7 py-3 rounded-xl font-semibold hover:opacity-90 transition text-sm sm:text-base"
                 style={{ background: 'rgba(90,120,180,0.9)' }}
               >
                 Get Started
               </Link>
             </div>
 
-            <div className="md:w-1/2 flex justify-center">
-              <img src={totoro} alt="PadaiSathi mascot" className="max-w-xs w-full" />
+            <div className="md:w-1/2 flex justify-center items-center">
+              <img
+                src={totoro}
+                alt="PadaiSathi mascot"
+                className="hero-mascot"
+                style={{
+                  maxWidth: 360,
+                  width: '100%',
+                  filter: 'drop-shadow(0 12px 28px rgba(100,160,220,0.3))',
+                  objectFit: 'contain',
+                  marginTop: '-16px',
+                  marginBottom: '-16px',
+                }}
+              />
             </div>
           </div>
         </div>
       </section>
 
-      {/* Why Students Love Us */}
-      <section className="max-w-7xl mx-auto px-6 py-20 lg:px-8">
-        <div className="text-center mb-16">
-          <h3
-            className="text-4xl font-bold text-gray-900 mb-3"
-            style={{ fontFamily: "'Sora', sans-serif" }}
-          >
-            Why Students Love Us
-          </h3>
-          <p className="text-gray-500 text-lg">Everything you need to ace your exam</p>
+      {/* ── Features ── */}
+      <section className="features-section max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-20">
+        <div className="text-center mb-10 sm:mb-14">
+          <h3 className="section-heading mb-3">Why Students Love Us</h3>
+          <p className="text-gray-500 text-base sm:text-lg">Everything you need to ace your exam</p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8">
-          {/* AI Summaries */}
-          <div className="pad-card p-8 text-center hover:shadow-xl transition">
-            <h4 className="text-2xl font-bold text-gray-800 mb-4">AI Summaries</h4>
-            <p className="text-gray-500 mb-6">
-              Big chapters leaving you? Upload your boring PDFs &amp; get summaries that actually make sense.
-            </p>
-            <div
-              className="w-24 h-24 rounded-full mx-auto flex items-center justify-center"
-              style={{ background: 'rgba(186,220,255,0.5)' }}
-            >
-              <FileText className="w-12 h-12 text-blue-500" />
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-8">
+          {FEATURES.map((f) => (
+            <div key={f.title} className="pad-card p-4 sm:p-8 text-center hover:shadow-xl transition flex flex-col items-center">
+              <h4 className="text-base sm:text-2xl font-bold text-gray-800 mb-2 sm:mb-4">{f.title}</h4>
+              <p className="text-gray-500 text-xs sm:text-sm mb-4 sm:mb-6 hidden sm:block">{f.desc}</p>
+              <div
+                className="w-16 h-16 sm:w-24 sm:h-24 rounded-full flex items-center justify-center"
+                style={{ background: f.bg }}
+              >
+                {f.icon}
+              </div>
+              <p className="text-gray-500 text-xs mt-3 sm:hidden leading-snug">{f.desc}</p>
             </div>
-          </div>
-
-          {/* Video Magic */}
-          <div className="pad-card p-8 text-center hover:shadow-xl transition">
-            <h4 className="text-2xl font-bold text-gray-800 mb-4">Video Magic</h4>
-            <p className="text-gray-500 mb-6">
-              Tired of endless reading? Watch flashy AI-generated engaging videos.
-            </p>
-            <div
-              className="w-24 h-24 rounded-full mx-auto flex items-center justify-center"
-              style={{ background: 'rgba(200,220,255,0.5)' }}
-            >
-              <Film className="w-12 h-12 text-indigo-500" />
-            </div>
-          </div>
-
-          {/* Exam Ready */}
-          <div className="pad-card p-8 text-center hover:shadow-xl transition">
-            <h4 className="text-2xl font-bold text-gray-800 mb-4">Exam Ready</h4>
-            <p className="text-gray-500 mb-6">
-              Relax and grasp AI-generated quizzes tailored to your content.
-            </p>
-            <div
-              className="w-24 h-24 rounded-full mx-auto flex items-center justify-center"
-              style={{ background: 'rgba(210,230,255,0.5)' }}
-            >
-              <GraduationCap className="w-12 h-12 text-blue-600" />
-            </div>
-          </div>
+          ))}
         </div>
       </section>
 
-      {/* What Students Say */}
-      <section className="max-w-7xl mx-auto px-6 pb-8 lg:px-8">
-        <div className="pad-hero px-8 py-16">
-          <h3
-            className="text-4xl font-bold text-gray-900 text-center mb-12"
-            style={{ fontFamily: "'Sora', sans-serif" }}
-          >
-            What Students Say
-          </h3>
+      {/* ── Testimonials ── */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 pb-8 lg:px-8">
+        <div className="pad-hero testimonials-pad px-6 sm:px-10 py-10 sm:py-16">
+          <h3 className="section-heading text-center mb-10 sm:mb-12">What Students Say</h3>
 
-          <div className="grid md:grid-cols-4 gap-6 mb-6">
-            {[
-              { name: 'Aarav S.', text: 'PadaiSathi turned my 50-page notes into a crisp summary in seconds. Game changer!', grad: 'from-blue-300 to-blue-500' },
-              { name: 'Priya M.', text: 'The flashcards are so good. I went from failing to topping my class!', grad: 'from-purple-300 to-indigo-400' },
-              { name: 'Rohan K.', text: 'The Minecraft video mode kept me focused the whole revision session.', grad: 'from-green-300 to-teal-400' },
-              { name: 'Sita T.', text: 'Finally an app that gets students. The Gen-Z summaries are hilarious and helpful.', grad: 'from-pink-300 to-rose-400' },
-            ].map((t, i) => (
-              <div key={i} className="pad-card p-6">
-                <div className={`w-16 h-16 rounded-full mx-auto mb-4 bg-gradient-to-br ${t.grad} flex items-center justify-center`}>
-                  <span className="text-white font-bold text-lg">{t.name[0]}</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mb-6">
+            {TESTIMONIALS.map((t, i) => (
+              <div key={i} className="pad-card p-5 sm:p-6 hover:shadow-xl transition">
+                <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full mx-auto mb-3 sm:mb-4 bg-gradient-to-br ${t.grad} flex items-center justify-center`}>
+                  <span className="text-white font-bold text-base sm:text-lg">{t.name[0]}</span>
                 </div>
-                <p className="font-bold text-gray-700 text-center text-sm mb-2">{t.name}</p>
-                <p className="text-gray-500 text-sm text-center">{t.text}</p>
+                <p className="font-bold text-gray-700 text-center text-sm mb-1 sm:mb-2">{t.name}</p>
+                <p className="text-gray-500 text-xs sm:text-sm text-center">{t.text}</p>
               </div>
             ))}
           </div>
 
-          <div className="text-center">
-            <ChevronDown className="w-8 h-8 mx-auto text-blue-300" />
-          </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="max-w-7xl mx-auto px-6 py-8 mb-8 lg:px-8">
-        <div className="pad-card p-16 text-center">
-          <h3
-            className="text-4xl font-bold text-gray-900 mb-4 flex items-center justify-center gap-3"
-            style={{ fontFamily: "'Sora', sans-serif" }}
-          >
+      {/* ── CTA ── */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-8 mb-8 lg:px-8">
+        <div className="pad-card cta-pad p-8 sm:p-16 text-center">
+          <h3 className="cta-heading mb-3 sm:mb-4 flex items-center justify-center gap-3 flex-wrap">
             Ready to Transform Your Learning?
-            <GraduationCap className="w-9 h-9 text-blue-500" />
+            <GraduationCap className="w-10 h-10 sm:w-10 sm:h-10 text-blue-500 flex-shrink-0" />
           </h3>
-          <p className="text-gray-500 text-lg mb-8">
-            Join 10,000+ students who are studying smarter, not harder
+          <p className="text-gray-500 text-sm sm:text-lg mb-6 sm:mb-8">
+            Join students who are studying smarter, not harder
           </p>
           <Link
             to="/register"
-            className="inline-block text-white px-8 py-4 rounded-xl font-semibold text-lg hover:opacity-90 transition"
+            className="inline-block text-white px-7 sm:px-8 py-3 sm:py-4 rounded-xl font-semibold text-base sm:text-lg hover:opacity-90 transition"
             style={{ background: 'rgba(90,120,180,0.9)' }}
           >
             Start Learning Now
@@ -224,8 +259,8 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="text-center py-8 text-gray-400 text-sm">
+      {/* ── Footer ── */}
+      <footer className="text-center py-6 sm:py-8 text-gray-400 text-xs sm:text-sm">
         © PadaiSathi All rights reserved.
       </footer>
     </div>
