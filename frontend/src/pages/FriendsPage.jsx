@@ -4,7 +4,6 @@ import {
   Users, UserPlus, UserCheck, Search, Mail,
   Check, X, User, Flame, Star, Trash2, Loader,
 } from 'lucide-react';
-import Navbar from '../components/Navbar';
 import { API, AVATARS } from '../constants';
 
 const getAvatarImg = (avatarId) => {
@@ -193,7 +192,6 @@ export default function FriendsPage() {
   return (
     <div className="min-h-screen pad-bg">
       <style>{PAD_STYLE}</style>
-      <Navbar />
 
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
 

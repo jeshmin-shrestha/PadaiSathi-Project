@@ -53,10 +53,14 @@ const Login = ({ setIsAuthenticated, setUser }) => {
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 32px;
+          padding: 16px;
           font-family: 'DM Sans', sans-serif;
           position: relative;
           overflow: hidden;
+        }
+
+        @media (min-width: 480px) {
+          .login-root { padding: 32px; }
         }
 
         .login-root::before {
@@ -87,12 +91,19 @@ const Login = ({ setIsAuthenticated, setUser }) => {
           backdrop-filter: blur(33px);
           -webkit-backdrop-filter: blur(30px);
           border: 1px solid rgba(255, 255, 255, 0.25);
-          border-radius: 32px;
-          padding: 60px 56px 52px;
+          border-radius: 24px;
+          padding: 32px 20px 28px;
           box-shadow:
             0 8px 40px rgba(0, 0, 0, 0.35),
             0 1px 0 rgba(255,255,255,0.18) inset;
           animation: cardIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+
+        @media (min-width: 480px) {
+          .login-card {
+            border-radius: 32px;
+            padding: 60px 56px 52px;
+          }
         }
 
         @keyframes cardIn {
@@ -121,7 +132,7 @@ const Login = ({ setIsAuthenticated, setUser }) => {
 
         .card-heading {
           font-family: 'DM Serif Display', serif;
-          font-size: 42px;
+          font-size: clamp(28px, 7vw, 42px);
           font-weight: 400;
           color: #ffffff;
           letter-spacing: -0.5px;
@@ -132,12 +143,16 @@ const Login = ({ setIsAuthenticated, setUser }) => {
         }
 
         .card-sub {
-          font-size: 17px;
+          font-size: clamp(14px, 3.5vw, 17px);
           color: #ffffff;
           font-weight: 400;
-          margin-bottom: 38px;
+          margin-bottom: 28px;
           text-align: center;
           text-shadow: 0 1px 8px rgba(0,0,0,0.5);
+        }
+
+        @media (min-width: 480px) {
+          .card-sub { margin-bottom: 38px; }
         }
 
         .error-msg {
@@ -450,15 +465,15 @@ const Login = ({ setIsAuthenticated, setUser }) => {
           
             <div className="mt-6 grid grid-cols-2 gap-4">
               <button className="
-                flex items-center justify-center py-3.5 
-                bg-white/10 border border-white/20 rounded-xl 
+                flex items-center justify-center py-3.5
+                bg-white/10 border border-white/20 rounded-xl
                 hover:bg-white/20 transition text-gray-200 text-sm
               ">
                 <span className="mr-2 text-blue-400 font-bold text-xl">f</span>
                 Facebook
               </button>
 
-              <button 
+              <button
                 onClick={() => window.location.href = `${API}/api/auth/google/login`}
                 className="
                   flex items-center justify-center py-3.5 

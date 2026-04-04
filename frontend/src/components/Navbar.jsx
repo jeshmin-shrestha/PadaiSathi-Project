@@ -31,8 +31,9 @@ export const NavBrand = ({ onLogoClick }) => (
   </div>
 );
 
-export const NavButton = ({ onClick, active, children, className = '' }) => (
+export const NavButton = ({ onClick, active, children, className = '', id }) => (
   <button
+    id={id}
     onClick={onClick}
     className={`
       flex items-center gap-1.5 px-4 py-2 rounded-2xl text-sm font-semibold transition-all
@@ -155,8 +156,8 @@ const Navbar = () => {
 
           <div className="flex items-center gap-2">
 
-            {STUDENT_NAV_LINKS.map(({ label, path }) => (
-              <NavButton key={path} onClick={() => navigate(path)} active={isActive(path)}>
+            {STUDENT_NAV_LINKS.map(({ label, path, id }) => (
+              <NavButton key={path} onClick={() => navigate(path)} active={isActive(path)} id={id || undefined}>
                 {label}
               </NavButton>
             ))}

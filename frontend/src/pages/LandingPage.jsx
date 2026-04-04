@@ -4,73 +4,6 @@ import { FileText, Film, GraduationCap, Layers, Users, BookOpen } from 'lucide-r
 import logoImage from '../assets/images/logo1.png';
 import totoro from '../assets/images/totoro.png';
 
-const PAD_STYLE = `
-  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Sora:wght@400;600;700;800&display=swap');
-  .land-root * { font-family: 'Nunito', sans-serif; }
-  .land-bg {
-    background: radial-gradient(ellipse 85% 55% at 5% 0%, rgba(186,220,255,0.6) 0%, transparent 60%),
-                radial-gradient(ellipse 70% 50% at 95% 10%, rgba(200,225,255,0.5) 0%, transparent 55%),
-                radial-gradient(ellipse 60% 40% at 50% 100%, rgba(176,212,255,0.4) 0%, transparent 60%),
-                #e8f1fb;
-    min-height: 100vh;
-  }
-  .pad-card {
-    background: rgba(255,255,255,0.62);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
-    border: 1px solid rgba(175,215,255,0.38);
-    border-radius: 22px;
-  }
-  .pad-hero {
-    background: linear-gradient(135deg, rgba(186,220,255,0.55) 0%, rgba(214,233,255,0.35) 100%);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(175,215,255,0.45);
-    border-radius: 28px;
-  }
-  .land-nav {
-    background: rgba(255,255,255,0.75);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border-bottom: 1px solid rgba(175,215,255,0.45);
-  }
-
-  /* ── Responsive helpers ── */
-  .hero-heading {
-    font-family: 'Sora', sans-serif;
-    font-size: clamp(28px, 6vw, 48px);
-    font-weight: 700;
-    color: #111827;
-    line-height: 1.2;
-    margin-bottom: 16px;
-  }
-  .section-heading {
-    font-family: 'Sora', sans-serif;
-    font-size: clamp(22px, 5vw, 36px);
-    font-weight: 700;
-    color: #111827;
-  }
-  .cta-heading {
-    font-family: 'Sora', sans-serif;
-    font-size: clamp(20px, 4.5vw, 34px);
-    font-weight: 700;
-    color: #111827;
-  }
-
-  @media (max-width: 480px) {
-    .nav-home  { display: none; }
-    .hero-mascot { max-width: 240px !important; }
-    .hero-pad { padding: 24px 16px !important; }
-    .features-section { padding-top: 40px !important; padding-bottom: 40px !important; }
-    .cta-pad { padding: 32px 16px !important; }
-    .testimonials-pad { padding: 32px 16px !important; }
-  }
-
-  @media (max-width: 640px) {
-    .hero-mascot { max-width: 280px; }
-  }
-`;
-
 const FEATURES = [
   {
     title: 'AI Summaries',
@@ -120,8 +53,6 @@ const TESTIMONIALS = [
 const LandingPage = () => {
   return (
     <div className="land-root land-bg min-h-screen">
-      <style>{PAD_STYLE}</style>
-
       {/* ── Navbar ── */}
       <nav className="land-nav shadow-sm sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">

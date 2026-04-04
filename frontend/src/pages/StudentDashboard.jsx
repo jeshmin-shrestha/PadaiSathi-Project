@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { driver } from 'driver.js';
+import 'driver.js/dist/driver.css';
 import {
   BookOpen,
   Flame,
@@ -27,7 +29,6 @@ import {
   Activity,
   UserPlus,
 } from 'lucide-react';
-import Navbar from '../components/Navbar';
 import ChickenImage from '../assets/images/chickenicon.png';
 import { API } from '../constants';
 
@@ -176,6 +177,59 @@ const StudentDashboard = () => {
     if (!myEmail || initialLoad) return;
     fetchWeeklyReport(myEmail, monthOffset);
   }, [monthOffset, myEmail, fetchWeeklyReport, initialLoad]);
+
+  // ── Onboarding Tour ────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (initialLoad) return;
+    if (localStorage.getItem('tour_done')) return;
+    const driverObj = driver({
+      showProgress: true,
+      animate: true,
+      overlayColor: 'rgba(15, 30, 60, 0.55)',
+      popoverClass: 'padai-tour-popover',
+      nextBtnText: 'Next',
+      prevBtnText: 'Back',
+      doneBtnText: 'Get Started',
+      steps: [
+        {
+          element: '#tour-welcome',
+          popover: { title: 'Welcome to PadaiSathi', description: 'Your AI-powered study companion. Track your progress, points, and daily streak right from this dashboard.' },
+        },
+        {
+          element: '#tour-streak',
+          popover: { title: 'Daily Streak', description: 'Log in and study every day to keep your streak alive. Consistency is the key to better learning.' },
+        },
+        {
+          element: '#tour-stats',
+          popover: { title: 'Your Progress', description: 'A quick overview of everything you have created — documents, summaries, flashcards, quizzes, and more.' },
+        },
+        {
+          element: '#tour-summary',
+          popover: { title: 'AI Summary', description: 'Upload a PDF, PPTX, or TXT file and instantly get a clean AI-generated summary. Switch between formal and fun reading styles.' },
+        },
+        {
+          element: '#tour-flashcard',
+          popover: { title: 'Flashcards', description: 'Automatically generate flashcards from your documents to reinforce key concepts through active recall.' },
+        },
+        {
+          element: '#tour-quiz',
+          popover: { title: 'Quiz', description: 'Challenge yourself with AI-generated multiple choice questions based on your uploaded study material.' },
+        },
+        {
+          element: '#tour-video',
+          popover: { title: 'Video Lessons', description: 'Convert your summaries into short narrated explainer videos — a great way to review on the go.' },
+        },
+        {
+          popover: { title: 'You are all set', description: 'Begin by heading to the Summary page and uploading your first document. Happy studying!' },
+        },
+      ],
+      onDestroyStarted: () => {
+        localStorage.setItem('tour_done', '1');
+        driverObj.destroy();
+      },
+    });
+    setTimeout(() => driverObj.drive(), 800);
+  }, [initialLoad]);
 
   // ── Helpers (unchanged) ────────────────────────────────────────────────────
   const resolveAvatar = useCallback((entry) => {
@@ -543,21 +597,72 @@ const StudentDashboard = () => {
           .std-welcome { padding: 20px; }
           .std-card-body { padding: 18px 16px; }
         }
+
+        /* ── Tour Popover ── */
+        .padai-tour-popover {
+          background: rgba(255,255,255,0.96) !important;
+          border: 1px solid rgba(175,215,255,0.5) !important;
+          border-radius: 18px !important;
+          box-shadow: 0 12px 40px rgba(90,120,180,0.18) !important;
+          padding: 24px 26px 20px !important;
+          font-family: 'Nunito', sans-serif !important;
+          max-width: 320px !important;
+        }
+        .padai-tour-popover .driver-popover-title {
+          font-family: 'Sora', sans-serif !important;
+          font-size: 16px !important;
+          font-weight: 700 !important;
+          color: #1e3a5f !important;
+          margin-bottom: 8px !important;
+        }
+        .padai-tour-popover .driver-popover-description {
+          font-size: 13.5px !important;
+          color: #4a6d8e !important;
+          line-height: 1.6 !important;
+          font-weight: 600 !important;
+        }
+        .padai-tour-popover .driver-popover-progress-text {
+          font-size: 11px !important;
+          font-weight: 700 !important;
+          color: #8aafd4 !important;
+        }
+        .padai-tour-popover .driver-popover-navigation-btns button {
+          background: rgba(90,120,180,0.88) !important;
+          border: none !important;
+          border-radius: 10px !important;
+          color: white !important;
+          font-family: 'Nunito', sans-serif !important;
+          font-size: 12.5px !important;
+          font-weight: 700 !important;
+          padding: 7px 18px !important;
+          cursor: pointer !important;
+          transition: opacity 0.15s !important;
+        }
+        .padai-tour-popover .driver-popover-navigation-btns button:hover {
+          opacity: 0.85 !important;
+        }
+        .padai-tour-popover .driver-popover-navigation-btns button.driver-popover-prev-btn {
+          background: rgba(175,215,255,0.4) !important;
+          color: #4a6d8e !important;
+        }
+        .padai-tour-popover .driver-popover-close-btn {
+          color: #aac6df !important;
+          font-size: 18px !important;
+        }
+        .padai-tour-popover .driver-popover-close-btn:hover {
+          color: #4a6d8e !important;
+        }
       `}</style>
 
       <div className="std-root">
         <div className="std-bg" />
 
         <div className="std-body">
-          {/* Navbar */}
-          <div style={{ position: 'relative', zIndex: 20 }}>
-            <Navbar />
-          </div>
 
           <div className="std-container">
 
             {/* ── Welcome Banner ───────────────────────────────────────────── */}
-            <div className="std-welcome">
+            <div id="tour-welcome" className="std-welcome">
               <img
                 src={ChickenImage}
                 alt="Chicken mascot"
@@ -592,7 +697,7 @@ const StudentDashboard = () => {
               <div className="std-left">
 
                 {/* Streak */}
-                <div className="std-card">
+                <div id="tour-streak" className="std-card">
                   <div className="std-card-body">
                     <div className="std-streak-wrap">
                       <Flame size={40} color="#f97316" strokeWidth={1.5} />
@@ -610,7 +715,7 @@ const StudentDashboard = () => {
                 </div>
 
                 {/* Quick Statistics */}
-                <div className="std-card">
+                <div id="tour-stats" className="std-card">
                   <div className="std-card-body">
                     <div className="std-section-title">
                       <BarChart3 size={16} /> Quick Statistics

@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Check, Trophy, CheckCircle } from 'lucide-react';
-import Navbar from '../components/Navbar';
 import ChickenImage from '../assets/images/chickenicon.png';
 import BadgeToast from '../components/BadgeToast';
 import { API } from '../constants';
@@ -195,7 +194,6 @@ const QuizPage = () => {
   return (
     <div className="min-h-screen pad-bg">
       <style>{PAD_STYLE}</style>
-      <Navbar />
 
       <div className="max-w-7xl mx-auto px-6 py-6 lg:px-8">
 

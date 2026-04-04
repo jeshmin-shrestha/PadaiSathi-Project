@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, RotateCcw, Layers, CheckCircle, Check } from 'lucide-react';
-import Navbar from '../components/Navbar';
 import BadgeToast from '../components/BadgeToast';
 import { API } from '../constants';
 
@@ -186,7 +185,6 @@ const FlashcardPage = () => {
   return (
     <div className="min-h-screen pad-bg">
       <style>{PAD_STYLE}</style>
-      <Navbar />
 
       <div className="max-w-7xl mx-auto px-6 py-6 lg:px-8">
 

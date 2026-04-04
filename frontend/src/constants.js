@@ -33,13 +33,13 @@ export const PALETTE = {
 export const PIE_COLORS = Object.values(PALETTE);
 
 export const STUDENT_NAV_LINKS = [
-  { label: 'Dashboard', path: '/dashboard' },
-  { label: 'Notebooks', path: '/notebook'  },
-  { label: 'Summary',   path: '/summary'   },
-  { label: 'Video',     path: '/video'      },
-  { label: 'Flashcard', path: '/flashcards' },
-  { label: 'Quiz',      path: '/quiz'       },
-  { label: 'Friends',   path: '/friends'    },
+  { label: 'Dashboard', path: '/dashboard', id: ''               },
+  { label: 'Notebooks', path: '/notebook',  id: ''               },
+  { label: 'Summary',   path: '/summary',   id: 'tour-summary'   },
+  { label: 'Video',     path: '/video',     id: 'tour-video'     },
+  { label: 'Flashcard', path: '/flashcards',id: 'tour-flashcard' },
+  { label: 'Quiz',      path: '/quiz',      id: 'tour-quiz'      },
+  { label: 'Friends',   path: '/friends',   id: ''               },
 ];
 
 export const ADMIN_NAV_LINKS = [

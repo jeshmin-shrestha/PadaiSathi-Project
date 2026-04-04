@@ -165,10 +165,14 @@ const Register = ({ setIsAuthenticated, setUser }) => {
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 32px;
+          padding: 16px;
           font-family: 'DM Sans', sans-serif;
           position: relative;
           overflow: hidden;
+        }
+
+        @media (min-width: 480px) {
+          .reg-root { padding: 32px; }
         }
 
         .reg-root::before {
@@ -198,10 +202,17 @@ const Register = ({ setIsAuthenticated, setUser }) => {
           backdrop-filter: blur(40px);
           -webkit-backdrop-filter: blur(40px);
           border: 1px solid rgba(255, 255, 255, 0.25);
-          border-radius: 32px;
-          padding: 48px 56px 44px;
+          border-radius: 24px;
+          padding: 32px 20px 28px;
           box-shadow: 0 8px 40px rgba(0, 0, 0, 0.35), 0 1px 0 rgba(255,255,255,0.18) inset;
           animation: cardIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+
+        @media (min-width: 480px) {
+          .reg-card {
+            border-radius: 32px;
+            padding: 48px 56px 44px;
+          }
         }
 
         @keyframes cardIn {
@@ -221,14 +232,18 @@ const Register = ({ setIsAuthenticated, setUser }) => {
 
         .card-heading {
           font-family: 'DM Serif Display', serif;
-          font-size: 38px; font-weight: 400; color: #ffffff;
+          font-size: clamp(26px, 7vw, 38px); font-weight: 400; color: #ffffff;
           letter-spacing: -0.5px; line-height: 1.15; margin-bottom: 6px;
           text-align: center; text-shadow: 0 1px 8px rgba(0,0,0,0.55), 0 3px 20px rgba(0,0,0,0.35);
         }
 
         .card-sub {
-          font-size: 20px; color: #ffffff; font-weight: 400; margin-bottom: 26px;
+          font-size: clamp(14px, 3.5vw, 20px); color: #ffffff; font-weight: 400; margin-bottom: 20px;
           text-align: center; text-shadow: 0 1px 8px rgba(0,0,0,0.5);
+        }
+
+        @media (min-width: 480px) {
+          .card-sub { margin-bottom: 26px; }
         }
 
         .error-msg {

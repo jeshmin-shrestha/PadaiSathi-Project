@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Star, BookOpen, List, Trash2 } from 'lucide-react';
-import Navbar from '../components/Navbar';
 import Icon2Image from '../assets/images/icon2.png';
 import Icon3Image from '../assets/images/icon3.png';
 import { API } from '../constants';
@@ -118,7 +117,6 @@ const NotebooksPage = () => {
   return (
     <div className="min-h-screen pad-bg">
       <style>{PAD_STYLE}</style>
-      <Navbar />
 
       <div className="max-w-7xl mx-auto px-6 py-6 lg:px-8">
 
