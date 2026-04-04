@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { LogOut, Camera, Lock, X, Check, Eye, EyeOff, ChevronRight, Upload, Trophy, Flame } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import Navbar from '../components/Navbar';
 import { API } from '../constants';
 
 const AVATARS = [
@@ -195,7 +194,6 @@ const ProfilePage = () => {
   return (
     <div className="min-h-screen pad-bg">
       <style>{PAD_STYLE}</style>
-      <Navbar />
 
       <div className="max-w-2xl mx-auto px-6 py-16">
         <div className="pad-card p-10">

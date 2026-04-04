@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Upload, Download, CheckCircle, Clock, Settings } from 'lucide-react';
-import Navbar from '../components/Navbar';
 import Icon1Image from '../assets/images/icon1.png';
 import Icon4Image from '../assets/images/subwaysurfericon.png';
 import Icon5Image from '../assets/images/minecrafticon.png';
@@ -315,7 +314,6 @@ const VideoPage = () => {
   return (
     <div className="min-h-screen pad-bg">
       <style>{PAD_STYLE}</style>
-      <Navbar />
 
       <div className="max-w-7xl mx-auto px-6 py-6 lg:px-8">
 

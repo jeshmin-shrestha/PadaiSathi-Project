@@ -5,7 +5,6 @@ import {
   Users, FileText, ShieldCheck, Activity,
   Zap, BookOpen, TrendingUp,
 } from 'lucide-react';
-import AdminNavbar  from '../components/AdminNavbar';
 import OverviewTab, { getTrend, TrendBadge } from '../components/admin/tabs/OverviewTab';
 import AnalyticsTab from '../components/admin/tabs/AnalyticsTab';
 import StudentsTab  from '../components/admin/tabs/StudentsTab';
@@ -186,9 +185,6 @@ const AdminDashboard = ({ user, setIsAuthenticated }) => {
       <div className="adm-bg" />
 
       <div className="adm-root">
-        <div style={{ position: 'relative', zIndex: 20 }}>
-          <AdminNavbar user={user} setIsAuthenticated={setIsAuthenticated} />
-        </div>
 
         <div className="adm-layout">
 

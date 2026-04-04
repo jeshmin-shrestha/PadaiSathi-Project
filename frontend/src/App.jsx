@@ -11,12 +11,16 @@ import VideoPage from './pages/VideoPage';
 import QuizPage from './pages/QuizPage';
 import FlashcardsPage from './pages/FlashcardsPage';
 import NotebookPage from './pages/NotebookPage';
-import NotebookDetailPage from './pages/NotebookDetailPage'; // ← ADD THIS
+import NotebookDetailPage from './pages/NotebookDetailPage';
+import Navbar from './components/Navbar';
+import AdminNavbar from './components/AdminNavbar';
 import './App.css';
 import AuthCallback from './pages/AuthCallback';
 import FriendsPage from './pages/FriendsPage';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import TermsPage from './pages/TermsPage';
+import PrivacyPage from './pages/PrivacyPage';
 function isTokenValid() {
   const token = localStorage.getItem('token');
   if (!token) return false;
@@ -48,9 +52,13 @@ function App() {
   return (
     <Router>
       <div className="min-h-screen">
+        {isAuthenticated && user?.role === 'admin' && (
+          <AdminNavbar user={user} setIsAuthenticated={setIsAuthenticated} />
+        )}
+        {isAuthenticated && user?.role !== 'admin' && <Navbar />}
         <Routes>
           {/* Public Routes */}
-          <Route path="/" element={<LandingPage />} />
+          <Route path="/" element={isAuthenticated ? <Navigate to="/dashboard" /> : <LandingPage />} />
           <Route path="/login" element={
             isAuthenticated ? 
               <Navigate to="/dashboard" /> : 
@@ -107,6 +115,8 @@ function App() {
           <Route path="/friends" element={isAuthenticated ? <FriendsPage /> : <Navigate to="/login" />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
           {/* 404 Page */}
           <Route path="*" element={
             <div className="flex items-center justify-center min-h-screen">

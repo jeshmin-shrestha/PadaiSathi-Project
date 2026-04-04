@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, BookOpen, FileText, Layers, HelpCircle, Film, CheckCircle, ArrowRight } from 'lucide-react';
-import Navbar from '../components/Navbar';
 import { API } from '../constants';
 import ReactMarkdown from 'react-markdown';
 
@@ -77,7 +76,7 @@ const NotebookDetailPage = () => {
   if (isLoading) return (
     <div className="min-h-screen pad-bg">
       <style>{PAD_STYLE}</style>
-      <Navbar />
+
       <div className="flex justify-center py-32">
         <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-blue-400" />
       </div>
@@ -87,7 +86,7 @@ const NotebookDetailPage = () => {
   return (
     <div className="min-h-screen pad-bg">
       <style>{PAD_STYLE}</style>
-      <Navbar />
+
 
       <div className="max-w-7xl mx-auto px-6 py-6 lg:px-8">
 

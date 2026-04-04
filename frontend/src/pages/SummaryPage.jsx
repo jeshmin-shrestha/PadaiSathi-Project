@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, BookOpen, Star } from 'lucide-react';
-import Navbar from '../components/Navbar';
 import Icon1Image from '../assets/images/icon1.png';
 import BadgeToast from '../components/BadgeToast';
 import { API } from '../constants';
@@ -183,7 +182,6 @@ const SummaryPage = () => {
           .prose h1, .prose h2, .prose h3 { font-weight: 700; margin: 1rem 0 0.5rem; color: #1e293b; }
       `}</style>
 
-      <Navbar />
 
       <div className="max-w-7xl mx-auto px-6 py-6 lg:px-8">
 
