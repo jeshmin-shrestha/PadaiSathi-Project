@@ -103,10 +103,11 @@ const ForgotPassword = () => {
           {sent ? (
             <div className="success-box">
               <div className="success-icon">📬</div>
-              <div className="success-title">Check your inbox!</div>
+              <div className="success-title">Reset link sent!</div>
               <div className="success-msg">
-                We've sent a reset link to <strong style={{color:'#fff'}}>{email}</strong>.
-                It expires in <strong style={{color:'#fff'}}>30 minutes</strong>.
+                If <strong style={{color:'#fff'}}>{email}</strong> is registered,
+                a reset link has been sent. Please check your inbox and spam folder.
+                The link expires in <strong style={{color:'#fff'}}>30 minutes</strong>.
               </div>
             </div>
           ) : (
