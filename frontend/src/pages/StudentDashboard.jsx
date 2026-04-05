@@ -28,6 +28,7 @@ import {
   Target,
   Activity,
   UserPlus,
+  Hand,
 } from 'lucide-react';
 import ChickenImage from '../assets/images/chickenicon.png';
 import { API } from '../constants';
@@ -378,7 +379,7 @@ const StudentDashboard = () => {
         }
         .std-progress-pts {
           font-family: 'Sora', sans-serif;
-          font-size: 15px; font-weight: 700; color: #173a5c; white-space: nowrap;
+          font-size: 15px; font-weight: 800; color: #0d2540; white-space: nowrap;
         }
 
         /* ── Grid ── */
@@ -670,7 +671,7 @@ const StudentDashboard = () => {
                 style={{ animationDuration: '2s' }}
               />
 
-              <h1 className="std-welcome-title">Hello, {username}! 👋</h1>
+              <h1 className="std-welcome-title">Hello, {username}! <Hand size={28} style={{ display: 'inline', verticalAlign: 'middle', color: '#e8a800' }} /></h1>
               <p className="std-welcome-sub">Ready to continue your learning journey?</p>
 
               <div className="std-progress-wrap">
@@ -682,10 +683,25 @@ const StudentDashboard = () => {
                   <div className="std-progress-bar-bg" style={{ flex: 1 }}>
                     <div
                       className="std-progress-bar-fill"
-                      style={{ width: `${Math.min((userStats.points / 500) * 100, 100)}%` }}
+                      style={{ width: `${Math.min((userStats.points / (Math.ceil((userStats.points + 1) / 100) * 100)) * 100, 100)}%` }}
                     />
                   </div>
-                  <span className="std-progress-pts">{userStats.points} pts</span>
+                  <span className="std-progress-pts">{userStats.points} / {Math.ceil((userStats.points + 1) / 100) * 100} pts</span>
+                  <button
+                    onClick={() => navigate('/summary')}
+                    style={{
+                      padding: '5px 16px',
+                      background: 'rgba(90,120,180,0.85)', color: '#fff',
+                      border: 'none', borderRadius: 20,
+                      fontFamily: 'Sora', fontWeight: 700, fontSize: 12,
+                      cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
+                      transition: 'background 0.18s', whiteSpace: 'nowrap',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(90,120,180,1)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'rgba(90,120,180,0.85)'}
+                  >
+                    Continue <ChevronRight size={12} />
+                  </button>
                 </div>
               </div>
             </div>
