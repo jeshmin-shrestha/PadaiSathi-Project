@@ -327,21 +327,23 @@ const StudentDashboard = () => {
           -webkit-backdrop-filter: blur(22px);
           border: 1px solid rgba(175,215,255,0.45);
           border-radius: 24px;
-          padding: 32px 36px 32px 220px;
+          padding: 32px 36px 32px 280px;
           margin-bottom: 28px;
           box-shadow: 0 4px 24px rgba(100,155,215,0.10), 0 1px 0 rgba(255,255,255,0.85) inset;
           overflow: visible;
           animation: std-rise 0.4s cubic-bezier(0.22,1,0.36,1) both;
         }
-        @media (max-width: 768px) { .std-welcome { padding: 24px 24px 24px 24px; } }
+        @media (max-width: 768px) { .std-welcome { padding: 24px 16px 24px 116px; } }
+        @media (max-width: 640px) { .std-welcome { padding: 24px 16px 24px 20px; } }
 
         .std-chicken {
           position: absolute;
-          bottom: -24px; left: -8px;
+          bottom: -24px; left: 16px;
           width: 210px; height: 210px;
           object-fit: contain;
         }
-        @media (max-width: 768px) { .std-chicken { display: none; } }
+        @media (max-width: 768px) { .std-chicken { width: 100px; height: 100px; left: 4px; bottom: -8px; } }
+        @media (max-width: 640px) { .std-chicken { display: none; } }
 
         .std-welcome-title {
           font-family: 'Sora', sans-serif;
