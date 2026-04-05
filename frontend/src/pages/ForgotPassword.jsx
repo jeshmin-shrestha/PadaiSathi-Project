@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { API } from '../constants';
-import catIllustration from '../assets/images/LoginImage5.png';
+import catIllustration from '../assets/images/LoginImage6.png';
 import logoImage from '../assets/images/logo1.png';
 
 const ForgotPassword = () => {
