@@ -593,6 +593,9 @@ def _run_video_pipeline(summary_id: int, genz_text: str, theme: str, user_id: in
                 generated_at=datetime.utcnow(),
             )
             db.add(video_record)
+            user = db.query(models.User).filter(models.User.id == user_id).first()
+            if user:
+                user.points = (user.points or 0) + 15
             db.commit()
             update_streak(user_id, db)
             _check_and_award_badges(user_id, db)
