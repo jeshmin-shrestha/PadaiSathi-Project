@@ -222,10 +222,10 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Password must contain at least one special character (!@#$%^&*)")
     # ── Check duplicate ───────────────────────────────────────────────────────
     existing = db.query(models.User).filter(
-        (models.User.email == email) | (models.User.username == name)
+        models.User.email == email
     ).first()
     if existing:
-        raise HTTPException(status_code=400, detail="Email or username already registered")
+        raise HTTPException(status_code=400, detail="An account with this email already exists")
 
     new_user = models.User(
         username=name,
