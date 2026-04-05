@@ -250,7 +250,7 @@ const Register = ({ setIsAuthenticated, setUser }) => {
           background: rgba(239, 68, 68, 0.2);
           border: 1px solid rgba(248, 113, 113, 0.45);
           border-radius: 12px; padding: 11px 15px; font-size: 13.5px;
-          color: #fecaca; font-weight: 500; margin-bottom: 18px;
+          color: #f87171; font-weight: 500; margin-bottom: 18px;
           text-shadow: 0 1px 4px rgba(0,0,0,0.3);
         }
 
@@ -272,7 +272,7 @@ const Register = ({ setIsAuthenticated, setUser }) => {
         .field-input:focus { border-bottom-color: rgba(255, 255, 255, 0.95); box-shadow: 0 1px 0 rgba(255,255,255,0.95); }
 
         .field-error {
-          font-size: 12px; color: #fca5a5; font-weight: 500;
+          font-size: 12px; color: #f87171; font-weight: 500;
           margin-top: 5px; display: block;
         }
 
