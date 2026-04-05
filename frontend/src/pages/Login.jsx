@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import catIllustration from '../assets/images/LoginImage5.png';
+import catIllustration from '../assets/images/LoginImage6.png';
 import logoImage from '../assets/images/logo1.png';
 import { useNavigate, Link } from 'react-router-dom';
 import { API } from '../constants';
@@ -56,7 +56,7 @@ const Login = ({ setIsAuthenticated, setUser }) => {
           padding: 16px;
           font-family: 'DM Sans', sans-serif;
           position: relative;
-          overflow: hidden;
+          overflow-y: auto;
         }
 
         @media (min-width: 480px) {
@@ -102,7 +102,7 @@ const Login = ({ setIsAuthenticated, setUser }) => {
         @media (min-width: 480px) {
           .login-card {
             border-radius: 32px;
-            padding: 60px 56px 52px;
+            padding: 44px 52px 40px;
           }
         }
 
@@ -121,38 +121,38 @@ const Login = ({ setIsAuthenticated, setUser }) => {
         .card-logo {
           display: flex;
           justify-content: center;
-          margin-bottom: 30px;
+          margin-bottom: 20px;
         }
 
         .card-logo img {
-          height: 52px;
+          height: 44px;
           width: auto;
           filter: drop-shadow(0 2px 10px rgba(0,0,0,0.35));
         }
 
         .card-heading {
           font-family: 'DM Serif Display', serif;
-          font-size: clamp(28px, 7vw, 42px);
+          font-size: clamp(24px, 6vw, 36px);
           font-weight: 400;
           color: #ffffff;
           letter-spacing: -0.5px;
           line-height: 1.15;
-          margin-bottom: 8px;
+          margin-bottom: 6px;
           text-align: center;
           text-shadow: 0 1px 8px rgba(0,0,0,0.55), 0 3px 20px rgba(0,0,0,0.35);
         }
 
         .card-sub {
-          font-size: clamp(14px, 3.5vw, 17px);
+          font-size: clamp(13px, 3vw, 15px);
           color: #ffffff;
           font-weight: 400;
-          margin-bottom: 28px;
+          margin-bottom: 20px;
           text-align: center;
           text-shadow: 0 1px 8px rgba(0,0,0,0.5);
         }
 
         @media (min-width: 480px) {
-          .card-sub { margin-bottom: 38px; }
+          .card-sub { margin-bottom: 28px; }
         }
 
         .error-msg {
@@ -167,27 +167,27 @@ const Login = ({ setIsAuthenticated, setUser }) => {
           text-shadow: 0 1px 4px rgba(0,0,0,0.3);
         }
 
-        .field { margin-bottom: 22px; }
+        .field { margin-bottom: 16px; }
 
         .field-label {
           display: block;
-          font-size: 17px;
+          font-size: 14px;
           font-weight: 700;
           color: #000000;
           letter-spacing: 1px;
           text-transform: uppercase;
-          margin-bottom: 10px;
+          margin-bottom: 8px;
         }
 
         .field-input {
           width: 100%;
-          padding: 14px 4px;
+          padding: 11px 4px;
           background: transparent;
           border: none;
           border-bottom: 1.5px solid rgba(255, 255, 255, 0.45);
           border-radius: 0;
           font-family: 'DM Sans', sans-serif;
-          font-size: 16px;
+          font-size: 14px;
           font-weight: 400;
           color: #ffffff;
           outline: none;
@@ -206,7 +206,7 @@ const Login = ({ setIsAuthenticated, setUser }) => {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          margin: 12px 0 28px;
+          margin: 8px 0 20px;
         }
 
         .stay-label {
@@ -241,13 +241,13 @@ const Login = ({ setIsAuthenticated, setUser }) => {
 
         .submit-btn {
           width: 100%;
-          padding: 16px;
+          padding: 13px;
           background: rgba(255, 255, 255, 0.95);
           color: #0d0820;
           border: none;
           border-radius: 16px;
           font-family: 'DM Sans', sans-serif;
-          font-size: 17px;
+          font-size: 15px;
           font-weight: 700;
           letter-spacing: 0.2px;
           cursor: pointer;
@@ -266,8 +266,8 @@ const Login = ({ setIsAuthenticated, setUser }) => {
 
         .register-line {
           text-align: center;
-          margin-top: 18px;
-          font-size: 15px;
+          margin-top: 12px;
+          font-size: 13px;
           color: rgba(255, 255, 255, 0.9);
           font-weight: 500;
         }
@@ -286,7 +286,7 @@ const Login = ({ setIsAuthenticated, setUser }) => {
           display: flex;
           align-items: center;
           gap: 14px;
-          margin: 24px 0 20px;
+          margin: 16px 0 14px;
         }
 
         .divider-line {
@@ -352,7 +352,7 @@ const Login = ({ setIsAuthenticated, setUser }) => {
           text-align: center;
           font-size: 12px;
           color: rgba(255, 255, 255, 0.35);
-          margin-top: 26px;
+          margin-top: 16px;
           font-weight: 400;
         }
 

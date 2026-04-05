@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { API } from '../constants';
-import catIllustration from '../assets/images/LoginImage5.png';
+import catIllustration from '../assets/images/LoginImage6.png';
 import logoImage from '../assets/images/logo1.png';
 
 const Register = ({ setIsAuthenticated, setUser }) => {
@@ -168,7 +168,7 @@ const Register = ({ setIsAuthenticated, setUser }) => {
           padding: 16px;
           font-family: 'DM Sans', sans-serif;
           position: relative;
-          overflow: hidden;
+          overflow-y: auto;
         }
 
         @media (min-width: 480px) {
@@ -211,7 +211,7 @@ const Register = ({ setIsAuthenticated, setUser }) => {
         @media (min-width: 480px) {
           .reg-card {
             border-radius: 32px;
-            padding: 48px 56px 44px;
+            padding: 36px 52px 32px;
           }
         }
 
@@ -227,23 +227,23 @@ const Register = ({ setIsAuthenticated, setUser }) => {
           background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6) 40%, rgba(200,180,255,0.7) 60%, transparent);
         }
 
-        .card-logo { display: flex; justify-content: center; margin-bottom: 20px; }
-        .card-logo img { height: 48px; width: auto; filter: drop-shadow(0 2px 10px rgba(0,0,0,0.35)); }
+        .card-logo { display: flex; justify-content: center; margin-bottom: 14px; }
+        .card-logo img { height: 40px; width: auto; filter: drop-shadow(0 2px 10px rgba(0,0,0,0.35)); }
 
         .card-heading {
           font-family: 'DM Serif Display', serif;
-          font-size: clamp(26px, 7vw, 38px); font-weight: 400; color: #ffffff;
-          letter-spacing: -0.5px; line-height: 1.15; margin-bottom: 6px;
+          font-size: clamp(22px, 5.5vw, 32px); font-weight: 400; color: #ffffff;
+          letter-spacing: -0.5px; line-height: 1.15; margin-bottom: 5px;
           text-align: center; text-shadow: 0 1px 8px rgba(0,0,0,0.55), 0 3px 20px rgba(0,0,0,0.35);
         }
 
         .card-sub {
-          font-size: clamp(14px, 3.5vw, 20px); color: #ffffff; font-weight: 400; margin-bottom: 20px;
+          font-size: clamp(13px, 3vw, 15px); color: #ffffff; font-weight: 400; margin-bottom: 14px;
           text-align: center; text-shadow: 0 1px 8px rgba(0,0,0,0.5);
         }
 
         @media (min-width: 480px) {
-          .card-sub { margin-bottom: 26px; }
+          .card-sub { margin-bottom: 18px; }
         }
 
         .error-msg {
@@ -254,17 +254,17 @@ const Register = ({ setIsAuthenticated, setUser }) => {
           text-shadow: 0 1px 4px rgba(0,0,0,0.3);
         }
 
-        .field { margin-bottom: 16px; }
+        .field { margin-bottom: 12px; }
 
         .field-label {
-          display: block; font-size: 17px; font-weight: 700; color: #000000;
-          letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px;
+          display: block; font-size: 14px; font-weight: 700; color: #000000;
+          letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px;
         }
 
         .field-input {
-          width: 100%; padding: 11px 4px; background: transparent; border: none;
+          width: 100%; padding: 9px 4px; background: transparent; border: none;
           border-bottom: 1.5px solid rgba(255, 255, 255, 0.45); border-radius: 0;
-          font-family: 'DM Sans', sans-serif; font-size: 17px; font-weight: 400;
+          font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 400;
           color: #000000; outline: none; transition: border-color 0.2s;
         }
         .field-input.has-error { border-bottom-color: rgba(248, 113, 113, 0.8); }
@@ -289,20 +289,20 @@ const Register = ({ setIsAuthenticated, setUser }) => {
         }
 
         .terms-row {
-          display: flex; align-items: flex-start; gap: 10px; margin: 8px 0 20px;
+          display: flex; align-items: flex-start; gap: 10px; margin: 6px 0 14px;
         }
         .terms-row input[type="checkbox"] {
-          width: 20px; height: 20px; accent-color: #a78bfa;
+          width: 16px; height: 16px; accent-color: #a78bfa;
           margin-top: 3px; flex-shrink: 0; cursor: pointer;
         }
-        .terms-text { font-size: 16px; color: rgba(255, 255, 255, 0.9); font-weight: 500; line-height: 1.55; }
+        .terms-text { font-size: 13px; color: rgba(255, 255, 255, 0.9); font-weight: 500; line-height: 1.55; }
         .terms-text a { color: #4c406e; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; transition: opacity 0.15s; }
         .terms-text a:hover { opacity: 0.72; }
 
         .submit-btn {
-          width: 100%; padding: 15px; background: rgba(255, 255, 255, 0.95);
+          width: 100%; padding: 12px; background: rgba(255, 255, 255, 0.95);
           color: #0d0820; border: none; border-radius: 16px;
-          font-family: 'DM Sans', sans-serif; font-size: 16px; font-weight: 700;
+          font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 700;
           letter-spacing: 0.2px; cursor: pointer;
           transition: background 0.18s, transform 0.14s, box-shadow 0.18s;
           box-shadow: 0 4px 20px rgba(0, 0, 0, 0.22);
@@ -312,17 +312,17 @@ const Register = ({ setIsAuthenticated, setUser }) => {
         .submit-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
 
         .login-line {
-          text-align: center; margin-top: 16px; font-size: 15px;
+          text-align: center; margin-top: 10px; font-size: 13px;
           color: rgba(255, 255, 255, 0.9); font-weight: 500; text-shadow: 0 1px 6px rgba(0,0,0,0.45);
         }
         .login-line a { color: #4c406e; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
         .login-line a:hover { opacity: 0.67; }
 
-        .divider { display: flex; align-items: center; gap: 14px; margin: 20px 0 16px; }
+        .divider { display: flex; align-items: center; gap: 14px; margin: 14px 0 10px; }
         .divider-line { flex: 1; height: 1px; background: rgba(255, 255, 255, 0.2); }
         .divider-label { font-size: 12px; font-weight: 700; color: rgba(255, 255, 255, 0.55); letter-spacing: 1.2px; }
 
-        .footer { text-align: center; font-size: 12px; color: rgba(255, 255, 255, 0.35); margin-top: 20px; }
+        .footer { text-align: center; font-size: 12px; color: rgba(255, 255, 255, 0.35); margin-top: 12px; }
 
         @keyframes spin { to { transform: rotate(360deg); } }
         .spinner {
