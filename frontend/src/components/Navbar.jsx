@@ -1,7 +1,7 @@
 // ─── components/Navbar.jsx ───────────────────────────────────────────────────
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Bell, BellOff } from 'lucide-react';
+import { Bell, BellOff, Menu, X } from 'lucide-react';
 import logoImage from '../assets/images/reading-cat.png';
 import { API, AVATARS, CUSTOM_AVATAR_KEY, STUDENT_NAV_LINKS } from '../constants';
 
@@ -59,6 +59,7 @@ const Navbar = () => {
   const [requests,     setRequests]     = useState([]);
   const [showDrop,     setShowDrop]     = useState(false);
   const [respondingId, setRespondingId] = useState(null);
+  const [mobileOpen,   setMobileOpen]   = useState(false);
 
   const refreshAvatar = () => {
     const stored   = JSON.parse(localStorage.getItem('user'));
@@ -139,6 +140,21 @@ const Navbar = () => {
           -webkit-backdrop-filter: blur(14px);
           border-bottom: 1px solid rgba(175,215,255,0.45);
         }
+        .pad-nav-links { display: flex; align-items: center; gap: 8px; }
+        .pad-hamburger { display: none; }
+        @media (max-width: 768px) {
+          .pad-nav-links { display: none; }
+          .pad-hamburger { display: flex; }
+          .pad-mobile-menu {
+            position: absolute; top: 100%; left: 0; right: 0;
+            background: rgba(255,255,255,0.97);
+            backdrop-filter: blur(14px);
+            border-bottom: 1px solid rgba(175,215,255,0.45);
+            padding: 12px 16px;
+            display: flex; flex-direction: column; gap: 4px;
+            z-index: 50;
+          }
+        }
         .pad-drop {
           background: rgba(255,255,255,0.92);
           backdrop-filter: blur(18px);
@@ -149,18 +165,29 @@ const Navbar = () => {
         }
       `}</style>
 
-      <nav className="pad-nav shadow-sm sticky top-0 z-40">
+      <nav className="pad-nav shadow-sm sticky top-0 z-40" style={{ position: 'relative' }}>
         <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
 
           <NavBrand onLogoClick={() => navigate('/dashboard')} />
 
           <div className="flex items-center gap-2">
 
-            {STUDENT_NAV_LINKS.map(({ label, path, id }) => (
-              <NavButton key={path} onClick={() => navigate(path)} active={isActive(path)} id={id || undefined}>
-                {label}
-              </NavButton>
-            ))}
+            <div className="pad-nav-links">
+              {STUDENT_NAV_LINKS.map(({ label, path, id }) => (
+                <NavButton key={path} onClick={() => navigate(path)} active={isActive(path)} id={id || undefined}>
+                  {label}
+                </NavButton>
+              ))}
+            </div>
+
+            {/* Hamburger — mobile only */}
+            <button
+              className="pad-hamburger items-center justify-center w-10 h-10 rounded-2xl hover:bg-blue-50 transition"
+              onClick={() => setMobileOpen(prev => !prev)}
+              aria-label="Toggle menu"
+            >
+              {mobileOpen ? <X className="w-5 h-5 text-gray-600" /> : <Menu className="w-5 h-5 text-gray-600" />}
+            </button>
 
             {/* Notification Bell */}
             <div className="relative ml-1" ref={dropRef}>
@@ -258,6 +285,22 @@ const Navbar = () => {
 
           </div>
         </div>
+
+        {/* Mobile dropdown menu */}
+        {mobileOpen && (
+          <div className="pad-mobile-menu">
+            {STUDENT_NAV_LINKS.map(({ label, path, id }) => (
+              <NavButton
+                key={path}
+                onClick={() => { navigate(path); setMobileOpen(false); }}
+                active={isActive(path)}
+                id={id || undefined}
+              >
+                {label}
+              </NavButton>
+            ))}
+          </div>
+        )}
       </nav>
     </>
   );
