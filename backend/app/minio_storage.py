@@ -1,36 +1,40 @@
-# backend/app/minio_storage.py
-import boto3
-from botocore.client import Config
+# backend/app/storage.py
+import os
+from datetime import datetime, timezone, timedelta
+from azure.storage.blob import BlobServiceClient, generate_blob_sas, BlobSasPermissions
+from dotenv import load_dotenv
 
-MINIO_ENDPOINT = "http://127.0.0.1:9000"
-MINIO_ACCESS_KEY = "minioadmin"
-MINIO_SECRET_KEY = "minioadmin"
-BUCKET_NAME = "padaisathi-videos"
+load_dotenv()
 
-s3_client = boto3.client(
-    "s3",
-    endpoint_url=MINIO_ENDPOINT,
-    aws_access_key_id=MINIO_ACCESS_KEY,
-    aws_secret_access_key=MINIO_SECRET_KEY,
-    config=Config(signature_version="s3v4"),
-    region_name="us-east-1"
-)
+CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
+CONTAINER_NAME = os.getenv("AZURE_CONTAINER_NAME", "padaisathi-videos")
 
-def upload_video_to_minio(video_path: str, filename: str) -> str:
-    """Upload video to MinIO and return the URL."""
-    s3_client.upload_file(
-        Filename=video_path,
-        Bucket=BUCKET_NAME,
-        Key=filename
+blob_service_client = BlobServiceClient.from_connection_string(CONNECTION_STRING)
+
+def upload_video(video_path: str, filename: str) -> str:
+    """Upload video to Azure Blob Storage and return the URL."""
+    blob_client = blob_service_client.get_blob_client(
+        container=CONTAINER_NAME, blob=filename
     )
-    video_url = f"{MINIO_ENDPOINT}/{BUCKET_NAME}/{filename}"
-    return video_url
+    with open(video_path, "rb") as f:
+        blob_client.upload_blob(f, overwrite=True)
+    return blob_client.url
 
 def get_video_url(filename: str) -> str:
     """Get a signed URL valid for 1 hour."""
-    url = s3_client.generate_presigned_url(
-        "get_object",
-        Params={"Bucket": BUCKET_NAME, "Key": filename},
-        ExpiresIn=3600
+    account_name = blob_service_client.account_name
+    account_key = blob_service_client.credential.account_key
+    sas_token = generate_blob_sas(
+        account_name=account_name,
+        container_name=CONTAINER_NAME,
+        blob_name=filename,
+        account_key=account_key,
+        permission=BlobSasPermissions(read=True),
+        expiry=datetime.now(timezone.utc) + timedelta(hours=1)
     )
-    return url
+    return f"https://{account_name}.blob.core.windows.net/{CONTAINER_NAME}/{filename}?{sas_token}"
+
+def get_signed_url_from_path(s3_path: str) -> str:
+    """Extract filename from stored Azure URL and return a fresh signed URL."""
+    filename = s3_path.split('/')[-1].split('?')[0]
+    return get_video_url(filename)
