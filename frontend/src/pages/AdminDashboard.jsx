@@ -35,8 +35,8 @@ const AdminDashboard = ({ user, setIsAuthenticated }) => {
       const [healthRes, usersRes, statsRes, weeklyRes] = await Promise.all([
         fetch(`${API}/api/health`),
         fetch(`${API}/api/users`),
-        fetch(`${API}/api/admin/stats`),
-        fetch(`${API}/api/admin/weekly-activity`),
+        fetch(`${API}/api/admin/stats?email=${encodeURIComponent(user.email)}`),
+        fetch(`${API}/api/admin/weekly-activity?email=${encodeURIComponent(user.email)}`),
       ]);
       setHealth(await healthRes.json());
       const ud = await usersRes.json();

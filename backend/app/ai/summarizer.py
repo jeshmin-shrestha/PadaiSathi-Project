@@ -1,8 +1,7 @@
 """
-PadaiSathi — summarizer.py (v3 — Local Mistral + Gemini fallback)
+PadaiSathi — summarizer.py (v3 — AI Summarization Engine)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Primary  : Local fine-tuned Mistral 7B (fast settings for CPU)
-Fallback : Gemini API
+Primary  : PadaiSathi fine-tuned model (GPU accelerated)
 """
 import re
 import os
@@ -18,8 +17,17 @@ from transformers import (
 # ── Config ────────────────────────────────────────────────────────────────────
 HF_TOKEN       = os.getenv("HF_TOKEN", "")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-GROQ_API_KEY   = os.getenv("GROQ_API_KEY", "")
 KAGGLE_API_URL = os.getenv("KAGGLE_API_URL", "")
+
+# PadaiSathi AI Engine keys — automatically rotates if one hits rate limit
+_PADAISATHI_AI_KEYS = [
+    os.getenv("PADAISATHI_AI_ENGINE_1", ""),
+    os.getenv("PADAISATHI_AI_ENGINE_2", ""),
+    os.getenv("PADAISATHI_AI_ENGINE_3", ""),
+    os.getenv("PADAISATHI_AI_ENGINE_4", ""),
+    os.getenv("PADAISATHI_AI_ENGINE_5", ""),
+]
+_PADAISATHI_AI_KEYS = [k for k in _PADAISATHI_AI_KEYS if k]  # remove empty ones
 MISTRAL_REPO   = "jeshmin/padaisathi-mistral-7b"
 FLAN_REPO      = "jeshmin/padaisathi-flan-t5"
 BASE_MODEL     = "mistralai/Mistral-7B-Instruct-v0.2"
@@ -73,7 +81,7 @@ def _mistral_kaggle_api(lecture_text: str) -> dict | None:
             text_to_send = " ".join(selected)
             print(f"[Summarizer] Long PDF — extracted {len(selected)} sentences ({len(text_to_send)} chars)")
 
-        print("[Summarizer] Calling Kaggle GPU API...")
+        print("[Summarizer] Calling Primary AI Engine...")
         response = requests.post(
             KAGGLE_API_URL,
             json={"text": text_to_send, "max_tokens": 800},
@@ -85,18 +93,18 @@ def _mistral_kaggle_api(lecture_text: str) -> dict | None:
             creative = data.get("genz_summary", "")
             video    = data.get("video_script", "")
             if formal or creative:
-                print(f"[Summarizer] Kaggle ✅ formal={len(formal)} creative={len(creative)}")
+                print(f"[Summarizer] Primary AI Engine ✅ formal={len(formal)} creative={len(creative)}")
                 return {
                     "formal_summary": formal,
                     "genz_summary":   creative,
                     "video_script":   video,
                 }
-            print(f"[Summarizer] Kaggle empty: {str(data)[:200]}")
+            print(f"[Summarizer] Primary AI Engine empty response: {str(data)[:200]}")
             return None
-        print(f"[Summarizer] Kaggle error: {response.status_code}")
+        print(f"[Summarizer] Primary AI Engine error: {response.status_code}")
         return None
     except Exception as e:
-        print(f"[Summarizer] Kaggle API exception: {e}")
+        print(f"[Summarizer] Primary AI Engine exception: {e}")
         return None
     
 def _load_mistral_local() -> bool:
@@ -260,17 +268,17 @@ def _parse_output(raw: str) -> dict:
         "video_script":   video_script,
     }
 
-# ── Groq fallback ─────────────────────────────────────────────────────────────
-def _groq_summarize(text: str) -> dict | None:
-    if not GROQ_API_KEY:
-        print("[Summarizer] No GROQ_API_KEY — skipping Groq")
+# ── PadaiSathi AI Engine fallback ─────────────────────────────────────────────
+def _cloud_ai_summarize(text: str) -> dict | None:
+    if not _PADAISATHI_AI_KEYS:
+        print("[Summarizer] No PadaiSathi AI Engine keys found — skipping")
         return None
-    try:
-        print("[Summarizer] Trying Groq API...")
-        from groq import Groq
-
-        client = Groq(api_key=GROQ_API_KEY)
-        prompt = f"""You are PadaiSathi, a fun and smart AI study assistant.
+    from groq import Groq
+    for i, key in enumerate(_PADAISATHI_AI_KEYS):
+        try:
+            print(f"[Summarizer] Trying PadaiSathi AI Engine {i+1}/{len(_PADAISATHI_AI_KEYS)}...")
+            client = Groq(api_key=key)
+            prompt = f"""You are PadaiSathi, a fun and smart AI study assistant.
 Summarize the following lecture notes in EXACTLY this format with these EXACT headers:
 
 PART 1 — FORMAL SUMMARY
@@ -297,30 +305,31 @@ Video Script:
 Lecture Notes:
 {text[:6000]}"""
 
-        response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=1000,
-            temperature=0.7,
-        )
-        raw = response.choices[0].message.content
-        print(f"[Summarizer] Groq response: {len(raw)} chars")
+            response = client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=1000,
+                temperature=0.7,
+            )
+            raw = response.choices[0].message.content
+            print(f"[Summarizer] PadaiSathi AI Engine response: {len(raw)} chars")
 
-        # Groq outputs "PART 1 — FORMAL SUMMARY" with em dash — parse separately
-        # so we don't disturb _parse_output which works correctly for Mistral
-        formal_m   = re.search(r"PART\s*1[^:\n]*[:\-—][^\n]*\n(.*?)(?=PART\s*2|$)", raw, re.DOTALL | re.IGNORECASE)
-        creative_m = re.search(r"PART\s*2[^:\n]*[:\-—][^\n]*\n(.*?)(?=Video Script:|$)", raw, re.DOTALL | re.IGNORECASE)
-        video_m    = re.search(r"Video Script:\s*(.*?)$", raw, re.DOTALL | re.IGNORECASE)
+            formal_m   = re.search(r"PART\s*1[^:\n]*[:\-—][^\n]*\n(.*?)(?=PART\s*2|$)", raw, re.DOTALL | re.IGNORECASE)
+            creative_m = re.search(r"PART\s*2[^:\n]*[:\-—][^\n]*\n(.*?)(?=Video Script:|$)", raw, re.DOTALL | re.IGNORECASE)
+            video_m    = re.search(r"Video Script:\s*(.*?)$", raw, re.DOTALL | re.IGNORECASE)
 
-        formal   = formal_m.group(1).strip()   if formal_m   else raw[:600]
-        creative = creative_m.group(1).strip() if creative_m else raw
-        video    = video_m.group(1).strip()    if video_m    else creative[:250]
+            formal   = formal_m.group(1).strip()   if formal_m   else raw[:600]
+            creative = creative_m.group(1).strip() if creative_m else raw
+            video    = video_m.group(1).strip()    if video_m    else creative[:250]
 
-        return {"formal_summary": formal, "genz_summary": creative, "video_script": video}
+            return {"formal_summary": formal, "genz_summary": creative, "video_script": video}
 
-    except Exception as e:
-        print(f"[Summarizer] Groq error: {e}")
-        return None
+        except Exception as e:
+            print(f"[Summarizer] PadaiSathi AI Engine {i+1} failed: {e}")
+            continue
+
+    print("[Summarizer] PadaiSathi AI Engine unavailable")
+    return None
 
 
 # ── Simple fallback ───────────────────────────────────────────────────────────
@@ -335,13 +344,13 @@ def summarize(text: str, genz_style: bool = True,
     text = text[:15000]
     print(f"[Summarizer] Input: {len(text)} chars")
 
-    # 1. Kaggle GPU API (your fine-tuned Mistral — FAST!)
+    # 1. Primary AI Engine (fine-tuned PadaiSathi model — FAST!)
     result = _mistral_kaggle_api(text)
 
-    # 2. Groq fallback
+    # 2. PadaiSathi AI Engine fallback
     if not result:
-        print("[Summarizer] Kaggle API failed — trying Groq...")
-        result = _groq_summarize(text)
+        print("[Summarizer] Primary AI failed — trying PadaiSathi AI Engine...")
+        result = _cloud_ai_summarize(text)
 
     # 3. Last resort
     if not result:

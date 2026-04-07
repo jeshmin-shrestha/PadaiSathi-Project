@@ -3,11 +3,14 @@ PadaiSathi API v2.0
 Replaces backend/app/main.py
 Keeps all your working auth + adds summarize + video generation.
 """
-from fastapi import FastAPI, HTTPException, Form, UploadFile, File, Depends, BackgroundTasks
+from fastapi import FastAPI, HTTPException, Form, UploadFile, File, Depends, BackgroundTasks, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import os, shutil, hashlib, bcrypt
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+import os, shutil, hashlib, bcrypt, uuid
 from datetime import datetime, timezone, timedelta as _timedelta
 
 # Nepal Time = UTC+5:45
@@ -52,7 +55,10 @@ from .ai.video_generator import generate_video
 # ── DB ────────────────────────────────────────────────────────────────────────
 Base.metadata.create_all(bind=engine)
 
+limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(title="PadaiSathi API", version="2.0")
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # Add SessionMiddleware 
 from starlette.middleware.sessions import SessionMiddleware
 import secrets
@@ -237,7 +243,8 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     db.add(new_user); db.commit(); db.refresh(new_user)
     return {"success": True, "message": f"Welcome {name}!", "user": new_user.to_dict()}
 @app.post("/api/login")
-def login(user: UserLogin, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def login(request: Request, user: UserLogin, db: Session = Depends(get_db)):
     if user.email == "demo@padai.com" and user.password == "demo123":
         demo = db.query(models.User).filter(models.User.email == "demo@padai.com").first()
         if not demo:
@@ -318,7 +325,8 @@ async def upload_pdf(
     if _ext not in _allowed_exts:
         raise HTTPException(status_code=400, detail="Only PDF, PPTX, and TXT files are allowed")
 
-    file_path = str(UPLOAD_DIR / file.filename)
+    safe_filename = str(uuid.uuid4()) + Path(file.filename).suffix.lower()
+    file_path = str(UPLOAD_DIR / safe_filename)
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
@@ -561,7 +569,7 @@ def generate_video_endpoint(
     }
 
 
-from .minio_storage import upload_video_to_minio
+from .minio_storage import upload_video, get_video_url, get_signed_url_from_path
 
 def _run_video_pipeline(summary_id: int, genz_text: str, theme: str, user_id: int):
     from .database import SessionLocal
@@ -577,9 +585,9 @@ def _run_video_pipeline(summary_id: int, genz_text: str, theme: str, user_id: in
             theme=theme,
         )
 
-        # Upload to MinIO
-        video_url = upload_video_to_minio(video_path, filename)
-        print(f"[MinIO] ✅ Uploaded: {video_url}")
+        # Upload to Azure
+        video_url = upload_video(video_path, filename)
+        print(f"[Azure] ✅ Uploaded: {video_url}")
 
         # ── Open a FRESH DB connection here, after all the slow work is done ──
         # The old connection would have timed out during Whisper + video render.
@@ -603,7 +611,7 @@ def _run_video_pipeline(summary_id: int, genz_text: str, theme: str, user_id: in
             db.close()
 
         _video_jobs[summary_id]["status"] = "done"
-        _video_jobs[summary_id]["video_url"] = video_url
+        _video_jobs[summary_id]["video_url"] = get_video_url(filename)  # signed URL for playback
         print(f"[VideoGen] ✅ Done: {filename}")
 
     except Exception as e:
@@ -680,7 +688,7 @@ def get_notebook_detail(notebook_id: int, email: str, db: Session = Depends(get_
         "summary":    summary.to_dict() if summary else None,
         "flashcards": [f.to_dict() for f in flashcards],
         "quizzes":    [q.to_dict() for q in quizzes],
-        "videos":     [v.to_dict() for v in videos],
+        "videos":     [{**v.to_dict(), "s3_path": get_signed_url_from_path(v.s3_path)} for v in videos],
     }
 # ═══════════════════════════════════════════════════════════════════════════
 # ADD THESE TWO ROUTES to main.py  (paste anywhere after the existing routes)
@@ -1371,8 +1379,11 @@ def get_leaderboard(email: str, friends_only: bool = False, db: Session = Depend
         "friends_only": friends_only,
     }
 @app.get("/api/admin/stats")
-def admin_stats(db: Session = Depends(get_db)):
+def admin_stats(email: str, db: Session = Depends(get_db)):
     """Rich analytics for the admin dashboard."""
+    requester = db.query(models.User).filter(models.User.email == email).first()
+    if not requester or requester.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
     students = db.query(models.User).filter(models.User.role != "admin").all()
 
     total_points = sum(u.points or 0 for u in students)
@@ -1427,11 +1438,14 @@ def admin_stats(db: Session = Depends(get_db)):
         },
     }
 @app.get("/api/admin/weekly-activity")
-def admin_weekly_activity(db: Session = Depends(get_db)):
+def admin_weekly_activity(email: str, db: Session = Depends(get_db)):
     """
     Returns daily activity counts for the past 7 days.
     Counts: documents uploaded, summaries generated, flashcards, quizzes, videos per day.
     """
+    requester = db.query(models.User).filter(models.User.email == email).first()
+    if not requester or requester.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
     from datetime import timedelta
 
     today = datetime.utcnow().date()
