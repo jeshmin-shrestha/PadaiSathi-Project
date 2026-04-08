@@ -139,8 +139,8 @@ const Register = ({ setIsAuthenticated, setUser }) => {
   const getPasswordStrength = (pwd) => {
     if (!pwd) return null;
     let score = 0;
-    if (pwd.length >= 6) score++;
-    if (pwd.length >= 10) score++;
+    if (pwd.length >= 8) score++;
+    if (pwd.length >= 12) score++;
     if (/[A-Z]/.test(pwd)) score++;
     if (/\d/.test(pwd)) score++;
     if (/[^a-zA-Z0-9]/.test(pwd)) score++;
