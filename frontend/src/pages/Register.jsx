@@ -52,8 +52,8 @@ const Register = ({ setIsAuthenticated, setUser }) => {
     // Password strength
     if (!formData.password) {
       errors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      errors.password = 'Password must be at least 6 characters';
+    } else if (formData.password.length < 8) {
+      errors.password = 'Password must be at least 8 characters';
     } else if (!/(?=.*[A-Z])/.test(formData.password)) {
       errors.password = 'Password must contain at least one uppercase letter';
     } else if (!/(?=.*\d)/.test(formData.password)) {
@@ -387,7 +387,7 @@ const Register = ({ setIsAuthenticated, setUser }) => {
                 className={`field-input${fieldErrors.password ? ' has-error' : ''}`}
                 value={formData.password}
                 onChange={handleChange}
-                placeholder="Min 6 chars, uppercase, number, symbol"
+                placeholder="Min 8 chars, uppercase, number, symbol"
               />
               {/* Password strength bar */}
               {formData.password && strength && (
