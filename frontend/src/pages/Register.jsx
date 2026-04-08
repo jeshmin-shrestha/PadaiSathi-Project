@@ -138,6 +138,7 @@ const Register = ({ setIsAuthenticated, setUser }) => {
   // ── Password strength indicator ───────────────────────────────────────────
   const getPasswordStrength = (pwd) => {
     if (!pwd) return null;
+    if (pwd.length < 8) return { label: 'Weak', color: '#ef4444', width: '33%' };
     let score = 0;
     if (pwd.length >= 8) score++;
     if (pwd.length >= 12) score++;
