@@ -145,7 +145,7 @@ const Register = ({ setIsAuthenticated, setUser }) => {
     if (/\d/.test(pwd)) score++;
     if (/[^a-zA-Z0-9]/.test(pwd)) score++;
     if (score <= 2) return { label: 'Weak', color: '#ef4444', width: '33%' };
-    if (score <= 3) return { label: 'Fair', color: '#f59e0b', width: '60%' };
+    if (score <= 4) return { label: 'Fair', color: '#f59e0b', width: '60%' };
     return { label: 'Strong', color: '#22c55e', width: '100%' };
   };
 
