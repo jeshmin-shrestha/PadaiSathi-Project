@@ -218,8 +218,8 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Please enter a valid email address")
 
     # ── Password validation ───────────────────────────────────────────────────
-    if len(user.password) < 6:
-        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    if len(user.password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
     if not re.search(r'[A-Z]', user.password):
         raise HTTPException(status_code=400, detail="Password must contain at least one uppercase letter")
     if not re.search(r'\d', user.password):
@@ -733,8 +733,8 @@ def change_password(req: ChangePasswordRequest, db: Session = Depends(get_db)):
     if not simple_verify_password(req.current_password, user.password_hash):
         raise HTTPException(status_code=400, detail="Current password is incorrect")
 
-    if len(req.new_password) < 6:
-        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    if len(req.new_password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
     if not re.search(r'[A-Z]', req.new_password):
         raise HTTPException(status_code=400, detail="Password must contain at least one uppercase letter")
     if not re.search(r'\d', req.new_password):
@@ -1792,8 +1792,8 @@ def reset_password(req: ResetPasswordRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Reset link has expired. Please request a new one.")
 
     # Validate new password (reuse your existing rules)
-    if len(req.new_password) < 6:
-        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    if len(req.new_password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
     if not re.search(r'[A-Z]', req.new_password):
         raise HTTPException(status_code=400, detail="Password must contain at least one uppercase letter")
     if not re.search(r'\d', req.new_password):
