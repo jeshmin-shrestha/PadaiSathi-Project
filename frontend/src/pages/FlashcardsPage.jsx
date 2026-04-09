@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, RotateCcw, Layers, CheckCircle, Check } from 'lucide-react';
 import BadgeToast from '../components/BadgeToast';
 import { API } from '../constants';
+import ChickenImage from '../assets/images/chickenicon.png';
 
 const PAD_STYLE = `
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Sora:wght@400;600;700;800&display=swap');
@@ -382,6 +383,7 @@ const FlashcardPage = () => {
             {/* Completion banner */}
             {knownCount === flashcards.length && flashcards.length > 0 && (
               <div className="mt-6 p-5 bg-green-50 border border-green-200 rounded-3xl text-center">
+                <img src={ChickenImage} alt="Chicken" className="w-24 h-24 object-contain mx-auto mb-2" />
                 <p className="text-lg font-bold text-green-700">YAYY!!!</p>
                 <p className="text-lg font-bold text-green-700">
                   You've mastered all {flashcards.length} cards!

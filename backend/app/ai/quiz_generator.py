@@ -63,9 +63,16 @@ def _ai_engine_quiz(text: str, n: int = 8) -> list:
         for key in _PADAISATHI_AI_KEYS:
             try:
                 client = Groq(api_key=key)
-                prompt = f"""Generate {n} multiple choice questions from the following text.
-For each question use exactly this format:
-Question: [question]
+                prompt = f"""You are a professional exam question writer. Generate {n} high-quality multiple choice questions from the following text.
+
+Rules:
+- Each question must be a proper exam-style question (e.g. "Which of the following...", "What is the primary purpose of...", "How does X work?")
+- Do NOT phrase questions as "What does the text say about..." or "mentioned in the text"
+- Each question must have exactly 4 options, only one correct
+- Options should be plausible and related to the topic
+- Use exactly this format:
+
+Question: [exam-style question]
 A) [option]
 B) [option]
 C) [option]
