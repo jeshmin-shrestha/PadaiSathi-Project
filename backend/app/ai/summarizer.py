@@ -231,11 +231,11 @@ def _parse_output(raw: str) -> dict:
         raw, re.DOTALL | re.IGNORECASE
     )
     creative_match = re.search(
-        r"#\s*(?:🎨|✨)?\s*(?:PadaiSathi Breakdown|PadaiSathi|Creative|Fun|Breakdown)[^\n]*\n(.*?)(?=#\s*(?:🎬|📘|🎨|Video Script)|Video Script[:\s]|$)",
+        r"#\s*(?:🎨|✨)?\s*(?:PadaiSathi Breakdown|PadaiSathi|Creative|Fun|Breakdown)[^\n]*\n(.*?)(?=#\s*(?:🎬|📘|🎨|Video Script)|\*\*Video Script\*\*|Video Script[:\s]|$)",
         raw, re.DOTALL | re.IGNORECASE
     )
     video_match = re.search(
-        r"(?:#\s*(?:🎬)?\s*)?Video Script[:\s]\s*(.*?)$",
+        r"(?:#\s*(?:🎬)?\s*|\*\*)?Video Script\*?\*?[:\s]\s*(.*?)$",
         raw, re.DOTALL | re.IGNORECASE
     )
 

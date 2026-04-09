@@ -108,8 +108,8 @@ BADGE_DEFINITIONS = [
     { "id": "summary_sensei",     "name": "Summary Sensei",     "icon": "🧠", "description": "Generate 10 summaries" },
     { "id": "card_sharp",         "name": "Card Sharp",         "icon": "📇", "description": "Generate 25 flashcards" },
     { "id": "deck_destroyer",     "name": "Deck Destroyer",     "icon": "⚡", "description": "Generate 100 flashcards" },
-    { "id": "quiz_challenger",    "name": "Quiz Challenger",    "icon": "❓", "description": "Complete 10 quiz questions" },
-    { "id": "trivia_titan",       "name": "Trivia Titan",       "icon": "🏆", "description": "Complete 50 quiz questions" },
+    { "id": "quiz_challenger",    "name": "Quiz Challenger",    "icon": "❓", "description": "Generate 10 quizzes" },
+    { "id": "trivia_titan",       "name": "Trivia Titan",       "icon": "🏆", "description": "Generate 50 quizzes" },
     { "id": "video_visionary",    "name": "Video Visionary",    "icon": "🎬", "description": "Generate 3 videos" },
     { "id": "knowledge_keeper",   "name": "Knowledge Keeper",   "icon": "📓", "description": "Create 5 notebooks" },
     { "id": "the_archivist",      "name": "The Archivist",      "icon": "🗂️", "description": "Create 15 notebooks" },
@@ -977,7 +977,7 @@ def my_stats(email: str, db: Session = Depends(get_db)):
     summaries  = db.query(models.Summary).filter(models.Summary.user_id == user.id).count()
     notebooks  = db.query(models.Notebook).filter(models.Notebook.user_id == user.id).count()
     flashcards = db.query(models.Flashcard).filter(models.Flashcard.user_id == user.id).count()
-    quizzes    = db.query(models.Quiz).filter(models.Quiz.user_id == user.id).count()
+    quizzes    = db.query(models.Quiz.summary_id).filter(models.Quiz.user_id == user.id).distinct().count()
     videos     = db.query(models.Video).filter(models.Video.user_id == user.id).count()
 
     return {
@@ -1008,7 +1008,7 @@ def _check_and_award_badges(user_id: int, db: Session):
     documents  = db.query(models.Document).filter(models.Document.user_id == user_id).count()
     summaries  = db.query(models.Summary).filter(models.Summary.user_id == user_id).count()
     flashcards = db.query(models.Flashcard).filter(models.Flashcard.user_id == user_id).count()
-    quizzes    = db.query(models.Quiz).filter(models.Quiz.user_id == user_id).count()
+    quizzes    = db.query(models.Quiz.summary_id).filter(models.Quiz.user_id == user_id).distinct().count()
     videos     = db.query(models.Video).filter(models.Video.user_id == user_id).count()
     notebooks  = db.query(models.Notebook).filter(models.Notebook.user_id == user_id).count()
     points     = user.points or 0
