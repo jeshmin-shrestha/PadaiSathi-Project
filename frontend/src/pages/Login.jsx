@@ -407,6 +407,7 @@ const Login = ({ setIsAuthenticated, setUser }) => {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
                   required
+                  autoComplete="current-password"
                   style={{ paddingRight: '36px' }}
                 />
                 <button
