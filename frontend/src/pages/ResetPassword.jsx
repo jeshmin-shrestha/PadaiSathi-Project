@@ -73,7 +73,7 @@ const ResetPassword = () => {
         setError(data.detail || 'Reset failed. The link may have expired.');
       } else {
         setSuccess(true);
-        setTimeout(() => navigate('/login'), 3000);
+        setTimeout(() => navigate('/login'), 6000);
       }
     } catch {
       setError('Cannot connect to server. Please try again.');
