@@ -12,7 +12,90 @@ from typing import List
 
 # Import the model's generate function and chunker from summarizer
 # _generate() runs your Flan-T5 with whatever prefix you pass
-from .summarizer import _generate, _chunk_text
+from .summarizer import _generate, _chunk_text, _PADAISATHI_AI_KEYS
+
+
+def _ai_engine_flashcards(text: str, n: int = 8) -> list:
+    """Fallback: generate flashcards using PadaiSathi AI Engine if Flan-T5 fails."""
+    if not _PADAISATHI_AI_KEYS:
+        return []
+    try:
+        from groq import Groq
+        for key in _PADAISATHI_AI_KEYS:
+            try:
+                client = Groq(api_key=key)
+                prompt = f"""Generate {n} flashcards from the following text.
+For each flashcard use exactly this format:
+Q: [question]
+A: [answer]
+
+Text:
+{text[:3000]}"""
+                response = client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=[{"role": "user", "content": prompt}],
+                    max_tokens=1000,
+                    temperature=0.7,
+                )
+                raw = response.choices[0].message.content
+                print(f"[QuizGen] PadaiSathi AI Engine flashcard response: {len(raw)} chars")
+                cards = []
+                for block in re.split(r'\n(?=Q:)', raw.strip()):
+                    m = re.search(r'Q:\s*(.+?)\s*A:\s*(.+)', block, re.DOTALL)
+                    if m:
+                        cards.append({"question": m.group(1).strip(), "answer": m.group(2).strip()})
+                if cards:
+                    return cards[:n]
+            except Exception as e:
+                print(f"[QuizGen] PadaiSathi AI Engine flashcard attempt failed: {e}")
+                continue
+    except Exception as e:
+        print(f"[QuizGen] PadaiSathi AI Engine flashcard fallback failed: {e}")
+    return []
+
+
+def _ai_engine_quiz(text: str, n: int = 8) -> list:
+    """Fallback: generate MCQ quiz using PadaiSathi AI Engine if Flan-T5 fails."""
+    if not _PADAISATHI_AI_KEYS:
+        return []
+    try:
+        from groq import Groq
+        for key in _PADAISATHI_AI_KEYS:
+            try:
+                client = Groq(api_key=key)
+                prompt = f"""Generate {n} multiple choice questions from the following text.
+For each question use exactly this format:
+Question: [question]
+A) [option]
+B) [option]
+C) [option]
+D) [option]
+Answer: [A/B/C/D]
+
+Text:
+{text[:3000]}"""
+                response = client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=[{"role": "user", "content": prompt}],
+                    max_tokens=1000,
+                    temperature=0.7,
+                )
+                raw = response.choices[0].message.content
+                print(f"[QuizGen] PadaiSathi AI Engine quiz response: {len(raw)} chars")
+                questions = []
+                all_keywords = _extract_keywords(text, top_n=30)
+                for block in re.split(r'\n(?=Question:)', raw.strip()):
+                    q = _parse_mcq(block, text[:200], all_keywords)
+                    if q:
+                        questions.append(q)
+                if questions:
+                    return questions[:n]
+            except Exception as e:
+                print(f"[QuizGen] PadaiSathi AI Engine quiz attempt failed: {e}")
+                continue
+    except Exception as e:
+        print(f"[QuizGen] PadaiSathi AI Engine quiz fallback failed: {e}")
+    return []
 
 
 # ─── Parse flashcard output ───────────────────────────────────────────────────
@@ -154,8 +237,18 @@ def _generate_distractors(correct: str, pool: List[str], num: int = 3) -> List[s
 # ─── Flashcards-only pipeline ─────────────────────────────────────────────────
 
 def generate_only_flashcards(text: str, n: int = 8) -> list:
-    """Runs ONLY flashcard generation — no wasted MCQ calls."""
+    """Runs ONLY flashcard generation — tries AI Engine first, then Flan-T5 fallback."""
     print("[QuizGen] Flashcard-only pipeline starting...")
+
+    # Try AI Engine first
+    print("[QuizGen] Trying PadaiSathi AI Engine for flashcards...")
+    ai_cards = _ai_engine_flashcards(text, n)
+    if ai_cards:
+        print(f"[QuizGen] PadaiSathi AI Engine returned {len(ai_cards)} flashcards")
+        return ai_cards[:n]
+
+    # Fallback to Flan-T5
+    print("[QuizGen] Falling back to Flan-T5...")
     chunks = _chunk_text(text, chunk_size=400)
     if not chunks:
         chunks = [text[:400]]
@@ -173,14 +266,6 @@ def generate_only_flashcards(text: str, n: int = 8) -> list:
             flashcards.append(_parse_flashcard(raw, chunk))
         except Exception as e:
             print(f"[QuizGen] FC error: {e}")
-            sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', chunk) if len(s.strip()) > 40]
-            if sentences:
-                kws = _extract_keywords(chunk, top_n=3)
-                topic = kws[0].capitalize() if kws else "this"
-                flashcards.append({
-                    "question": f"What does the text say about '{topic}'?",
-                    "answer":   sentences[0]
-                })
 
     print(f"[QuizGen] Done: {len(flashcards)} flashcards")
     return flashcards[:n]
@@ -189,8 +274,18 @@ def generate_only_flashcards(text: str, n: int = 8) -> list:
 # ─── Quiz-only pipeline ────────────────────────────────────────────────────────
 
 def generate_only_quiz(text: str, n: int = 8) -> list:
-    """Runs ONLY MCQ generation — no wasted flashcard calls."""
+    """Runs ONLY MCQ generation — tries AI Engine first, then Flan-T5 fallback."""
     print("[QuizGen] Quiz-only pipeline starting...")
+
+    # Try AI Engine first
+    print("[QuizGen] Trying PadaiSathi AI Engine for quiz...")
+    ai_quiz = _ai_engine_quiz(text, n)
+    if ai_quiz:
+        print(f"[QuizGen] PadaiSathi AI Engine returned {len(ai_quiz)} questions")
+        return ai_quiz[:n]
+
+    # Fallback to Flan-T5
+    print("[QuizGen] Falling back to Flan-T5...")
     chunks = _chunk_text(text, chunk_size=400)
     if not chunks:
         chunks = [text[:400]]
@@ -209,7 +304,16 @@ def generate_only_quiz(text: str, n: int = 8) -> list:
             quiz.append(_parse_mcq(raw, chunk, all_keywords))
         except Exception as e:
             print(f"[QuizGen] MCQ error: {e}")
-            quiz.append(_keyword_mcq_fallback(chunk, all_keywords))
+
+    if len(quiz) < n:
+        print("[QuizGen] Flan-T5 insufficient, trying PadaiSathi AI Engine...")
+        ai_quiz = _ai_engine_quiz(text, n - len(quiz))
+        quiz.extend(ai_quiz)
+
+    if len(quiz) < n:
+        print("[QuizGen] Using keyword fallback for remaining questions...")
+        while len(quiz) < n:
+            quiz.append(_keyword_mcq_fallback(text, all_keywords))
 
     print(f"[QuizGen] Done: {len(quiz)} quiz questions")
     return quiz[:n]
