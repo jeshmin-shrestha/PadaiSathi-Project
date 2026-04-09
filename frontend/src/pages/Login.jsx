@@ -29,6 +29,8 @@ const Login = ({ setIsAuthenticated, setUser }) => {
         setUser(data.user);
         setIsAuthenticated(true);
         navigate('/dashboard');
+      } else if (response.status === 429) {
+        setError('Too many login attempts. Please wait a minute and try again.');
       } else {
         setError(data.detail || 'Invalid email or password');
       }
