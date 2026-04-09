@@ -4,6 +4,7 @@ import Icon1Image from '../assets/images/icon1.png';
 import Icon4Image from '../assets/images/subwaysurfericon.png';
 import Icon5Image from '../assets/images/minecrafticon.png';
 import Icon6Image from '../assets/images/slimeicon.png';
+import RobloxIcon from '../assets/images/robloxicon.png';
 import { API } from '../constants';
 
 const JOB_KEY   = 'padai_video_job';
@@ -120,6 +121,7 @@ const VideoPage = () => {
     { id: 'subway',    name: 'Subway Surfer', color: 'from-yellow-300 to-yellow-400', icon: Icon4Image },
     { id: 'slime',     name: 'Slime Videos',  color: 'from-pink-300 to-pink-400',     icon: Icon6Image },
     { id: 'minecraft', name: 'Minecraft',     color: 'from-green-300 to-green-400',   icon: Icon5Image },
+    { id: 'roblox',    name: 'Roblox',        color: 'from-red-300 to-red-400',       icon: RobloxIcon },
   ];
 
   const handleDrag = (e) => {

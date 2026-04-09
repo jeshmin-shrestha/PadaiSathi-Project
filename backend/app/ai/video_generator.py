@@ -60,6 +60,7 @@ THEME_VOICES = {
     "subway":    "en-US-GuyNeural",
     "minecraft": "en-US-ChristopherNeural",
     "slime":     "en-US-AnaNeural",
+    "roblox":    "en-US-AnaNeural",
 }
 DEFAULT_VOICE = "en-US-GuyNeural"
 
@@ -431,6 +432,7 @@ def generate_video(
         print(f"[VideoGen] Rendering → {out_path}")
         final.write_videofile(
             out_path, fps=24, codec="libx264", audio_codec="aac",
+            preset="ultrafast", threads=4,
             temp_audiofile=temp_m4a, remove_temp=True, verbose=False, logger=None,
         )
         print(f"[VideoGen] ✅ Done: {out_path}")
