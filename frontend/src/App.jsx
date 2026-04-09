@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import StudentDashboard from './pages/StudentDashboard';
@@ -49,13 +49,31 @@ function App() {
     return JSON.parse(localStorage.getItem('user')) || null;
   });
 
+  const noNavbarRoutes = ['/reset-password', '/forgot-password', '/login', '/register'];
+
   return (
     <Router>
+      <AppContent
+        isAuthenticated={isAuthenticated}
+        setIsAuthenticated={setIsAuthenticated}
+        user={user}
+        setUser={setUser}
+        noNavbarRoutes={noNavbarRoutes}
+      />
+    </Router>
+  );
+}
+
+function AppContent({ isAuthenticated, setIsAuthenticated, user, setUser, noNavbarRoutes }) {
+  const location = useLocation();
+  const hideNavbar = noNavbarRoutes.includes(location.pathname);
+
+  return (
       <div className="min-h-screen">
-        {isAuthenticated && user?.role === 'admin' && (
+        {!hideNavbar && isAuthenticated && user?.role === 'admin' && (
           <AdminNavbar user={user} setIsAuthenticated={setIsAuthenticated} />
         )}
-        {isAuthenticated && user?.role !== 'admin' && <Navbar />}
+        {!hideNavbar && isAuthenticated && user?.role !== 'admin' && <Navbar />}
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={isAuthenticated ? <Navigate to="/dashboard" /> : <LandingPage />} />
@@ -131,7 +149,6 @@ function App() {
           } />
         </Routes>
       </div>
-    </Router>
   );
 }
 
