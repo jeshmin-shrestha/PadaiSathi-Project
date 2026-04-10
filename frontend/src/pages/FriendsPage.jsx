@@ -137,10 +137,12 @@ export default function FriendsPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail);
-      const msg = action === 'accept' && fromUsername
-        ? `You are now friends with ${fromUsername}!`
+      const msg = fromUsername
+        ? action === 'accept'
+          ? `You are now friends with ${fromUsername}!`
+          : `You declined ${fromUsername}'s friend request.`
         : data.message;
-      showToast(msg, 'success');
+      showToast(msg, action === 'accept' ? 'success' : 'error');
       fetchRequests();
       fetchFriends();
     } catch (e) {
@@ -296,7 +298,7 @@ export default function FriendsPage() {
                       <Check className="w-3.5 h-3.5" /> Accept
                     </button>
                     <button
-                      onClick={() => respond(r.friendship_id, 'decline')}
+                      onClick={() => respond(r.friendship_id, 'decline', r.from_username)}
                       className="flex items-center gap-1 text-xs bg-gray-100 text-gray-600 px-4 py-1.5 rounded-full font-bold hover:bg-gray-200 transition"
                     >
                       <X className="w-3.5 h-3.5" /> Decline
