@@ -44,7 +44,7 @@ const RankBadge = ({ rank }) => {
   return <span style={{ fontFamily: "'Sora',sans-serif", fontSize: 13, fontWeight: 700, color: '#84a8c6' }}>#{rank + 1}</span>;
 };
 
-const ReportsTab = ({ stats, weekly: currentWeekly, students }) => {
+const ReportsTab = ({ stats, weekly: currentWeekly, students, email }) => {
   // Start at -1 (Last Week) so "This Week" lives in Overview instead
   const [weekOffset, setWeekOffset] = useState(-1);
   const [weeklyData, setWeeklyData] = useState(null);
@@ -54,7 +54,7 @@ const ReportsTab = ({ stats, weekly: currentWeekly, students }) => {
     const fetchWeek = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`${API}/api/admin/weekly-activity?week_offset=${weekOffset}`);
+        const res = await fetch(`${API}/api/admin/weekly-activity?email=${encodeURIComponent(email)}&week_offset=${weekOffset}`);
         setWeeklyData(res.ok ? await res.json() : null);
       } catch { setWeeklyData(null); }
       finally  { setLoading(false); }

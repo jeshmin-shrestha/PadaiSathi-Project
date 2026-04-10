@@ -286,7 +286,7 @@ const AdminDashboard = ({ user, setIsAuthenticated }) => {
                   {activeTab === 'overview'  && <OverviewTab  stats={stats} health={health} students={students} weekly={weekly} onTabChange={setActiveTab} />}
                   {activeTab === 'analytics' && <AnalyticsTab stats={stats} weekly={weekly} />}
                   {activeTab === 'users'     && <StudentsTab  students={students} adminCount={adminCount} onDelete={handleDelete} deletingId={deletingId} />}
-                  {activeTab === 'reports'   && <ReportsTab   stats={stats} weekly={weekly} students={students} />}
+                  {activeTab === 'reports'   && <ReportsTab   stats={stats} weekly={weekly} students={students} email={user?.email} />}
                 </div>
               )}
             </div>
