@@ -1,7 +1,7 @@
 // ─── components/Navbar.jsx ───────────────────────────────────────────────────
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Bell, BellOff, Menu, X } from 'lucide-react';
+import { UserPlus, BellOff, Menu, X } from 'lucide-react';
 import logoImage from '../assets/images/reading-cat.png';
 import { API, AVATARS, CUSTOM_AVATAR_KEY, STUDENT_NAV_LINKS } from '../constants';
 
@@ -196,7 +196,7 @@ const Navbar = () => {
                 className="relative w-10 h-10 flex items-center justify-center rounded-2xl hover:bg-blue-50 transition"
                 aria-label="Notifications"
               >
-                <Bell className="w-5 h-5 text-gray-600" />
+                <UserPlus className="w-5 h-5 text-gray-600" />
                 {pendingCount > 0 && (
                   <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-extrabold rounded-full flex items-center justify-center leading-none shadow">
                     {pendingCount > 9 ? '9+' : pendingCount}
@@ -209,7 +209,7 @@ const Navbar = () => {
                   <div className="flex items-center justify-between px-4 py-3 border-b border-blue-100"
                     style={{ background: 'rgba(235,245,255,0.7)' }}>
                     <span className="font-bold text-gray-800 text-sm flex items-center gap-2">
-                      <Bell className="w-4 h-4 text-blue-400" /> Friend Requests
+                      <UserPlus className="w-4 h-4 text-blue-400" /> Friend Requests
                     </span>
                     {pendingCount > 0 && (
                       <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
