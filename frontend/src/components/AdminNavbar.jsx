@@ -49,29 +49,8 @@ const AdminNavbar = ({ user, setIsAuthenticated }) => {
           </div>
         </div>
 
-        {/* Right: user chip + logout */}
+        {/* Right: logout */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-
-          {/* User pill */}
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            padding: '5px 14px 5px 5px', borderRadius: 30,
-            background: 'rgba(186,220,255,0.3)',
-            border: '1px solid rgba(170,205,240,0.5)',
-          }}>
-            <div style={{
-              width: 30, height: 30, borderRadius: '50%',
-              background: 'linear-gradient(135deg,#90c8f0,#6aaee0)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#fff', fontSize: 12, fontWeight: 800,
-              textShadow: '0 1px 3px rgba(0,0,0,0.2)',
-            }}>
-              {user?.username?.charAt(0).toUpperCase() || 'A'}
-            </div>
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#173a5c' }}>
-              {user?.username || 'Admin'}
-            </span>
-          </div>
 
           {/* Logout button */}
           <button
