@@ -651,6 +651,25 @@ def my_notebooks(email: str, db: Session = Depends(get_db)):
         models.Notebook.user_id == user.id
     ).order_by(models.Notebook.created_at.desc()).all()
     return {"notebooks": [n.to_dict() for n in notebooks]}
+class RenameNotebookRequest(BaseModel):
+    email: str
+    title: str
+
+@app.patch("/api/notebook/{notebook_id}/rename")
+def rename_notebook(notebook_id: int, body: RenameNotebookRequest, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == body.email).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+    notebook = db.query(models.Notebook).filter(
+        models.Notebook.id == notebook_id,
+        models.Notebook.user_id == user.id
+    ).first()
+    if not notebook:
+        raise HTTPException(status_code=404, detail="Notebook not found")
+    notebook.title = body.title.strip() or notebook.title
+    db.commit()
+    return {"success": True, "title": notebook.title}
+
 @app.get("/api/notebook/{notebook_id}")
 def get_notebook_detail(notebook_id: int, email: str, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.email == email).first()
