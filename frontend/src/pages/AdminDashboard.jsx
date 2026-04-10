@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   RefreshCw, LayoutDashboard, BarChart2,
-  Users, FileText, ShieldCheck, Activity,
+  Users, FileText, Activity,
   Zap, BookOpen, TrendingUp,
 } from 'lucide-react';
 import OverviewTab, { getTrend, TrendBadge } from '../components/admin/tabs/OverviewTab';
@@ -205,9 +205,6 @@ const AdminDashboard = ({ user, setIsAuthenticated }) => {
               </button>
             ))}
 
-            <div className="adm-section-label">System</div>
-            <button className="adm-nav-item muted"><ShieldCheck size={17} /> Security</button>
-            <button className="adm-nav-item muted"><Activity    size={17} /> System Logs</button>
 
             <div className="adm-sidebar-footer">
               <div className="adm-avatar-chip">{(user?.username?.[0] || 'A').toUpperCase()}</div>
