@@ -184,9 +184,16 @@ def root():
 
 @app.get("/api/health")
 def health(db: Session = Depends(get_db)):
+    try:
+        from .minio_storage import blob_service_client, CONTAINER_NAME
+        blob_service_client.get_container_client(CONTAINER_NAME).get_container_properties()
+        storage_status = "available"
+    except Exception:
+        storage_status = "unavailable"
     return {
         "status": "healthy",
         "database": "connected",
+        "storage": storage_status,
         "users":     db.query(models.User).count(),
         "documents": db.query(models.Document).count(),
         "summaries": db.query(models.Summary).count(),

@@ -138,7 +138,7 @@ const OverviewTab = ({ stats, health, students, weekly, onTabChange }) => {
   const healthItems = [
     { label: 'API Status', Icon: health ? CheckCircle : XCircle, text: health ? 'Online'    : 'Down',   ok: !!health },
     { label: 'Database',   Icon: health ? CheckCircle : XCircle, text: health ? 'Connected' : 'Error',  ok: !!health },
-    { label: 'Storage',    Icon: HardDrive,                       text: 'Available',                     ok: true     },
+    { label: 'Storage',    Icon: HardDrive,                       text: health?.storage === 'unavailable' ? 'Unavailable' : 'Available', ok: health?.storage !== 'unavailable' },
     { label: 'Last Sync',  Icon: Clock,                           text: new Date().toLocaleTimeString(), ok: true     },
   ];
 
