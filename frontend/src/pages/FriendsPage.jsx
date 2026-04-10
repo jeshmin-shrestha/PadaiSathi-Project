@@ -29,7 +29,8 @@ const Toast = ({ msg, type, onClose }) => {
   const colors = { success: 'bg-green-500', error: 'bg-red-500', info: 'bg-blue-500' };
 
   return (
-    <div className={`fixed bottom-6 right-6 z-50 ${colors[type] || 'bg-gray-700'} text-white px-5 py-3 rounded-2xl shadow-xl font-semibold text-sm animate-bounce`}>
+    <div className={`fixed bottom-6 right-6 z-50 ${colors[type] || 'bg-gray-700'} text-white px-5 py-3 rounded-2xl shadow-xl font-semibold text-sm animate-bounce flex items-center gap-2`}>
+      {type === 'success' && <UserCheck className="w-4 h-4 flex-shrink-0" />}
       {msg}
     </div>
   );
@@ -127,7 +128,7 @@ export default function FriendsPage() {
     }
   };
 
-  const respond = async (friendship_id, action) => {
+  const respond = async (friendship_id, action, fromUsername = null) => {
     try {
       const res = await fetch(`${API}/api/friend-respond`, {
         method: 'POST',
@@ -136,7 +137,10 @@ export default function FriendsPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail);
-      showToast(data.message, 'success');
+      const msg = action === 'accept' && fromUsername
+        ? `You are now friends with ${fromUsername}!`
+        : data.message;
+      showToast(msg, 'success');
       fetchRequests();
       fetchFriends();
     } catch (e) {
@@ -286,7 +290,7 @@ export default function FriendsPage() {
                   </div>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => respond(r.friendship_id, 'accept')}
+                      onClick={() => respond(r.friendship_id, 'accept', r.from_username)}
                       className="flex items-center gap-1 text-xs bg-green-500 text-white px-4 py-1.5 rounded-full font-bold hover:bg-green-600 transition"
                     >
                       <Check className="w-3.5 h-3.5" /> Accept
