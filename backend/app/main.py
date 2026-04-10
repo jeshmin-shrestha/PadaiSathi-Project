@@ -1464,17 +1464,18 @@ def admin_stats(email: str, db: Session = Depends(get_db)):
         },
     }
 @app.get("/api/admin/weekly-activity")
-def admin_weekly_activity(email: str, db: Session = Depends(get_db)):
+def admin_weekly_activity(email: str, week_offset: int = 0, db: Session = Depends(get_db)):
     """
     Returns daily activity counts for the past 7 days.
     Counts: documents uploaded, summaries generated, flashcards, quizzes, videos per day.
+    week_offset: 0 = this week, -1 = last week, -2 = 2 weeks ago, etc.
     """
     requester = db.query(models.User).filter(models.User.email == email).first()
     if not requester or requester.role != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     from datetime import timedelta
 
-    today = datetime.utcnow().date()
+    today = datetime.utcnow().date() + timedelta(weeks=week_offset)
     days  = [today - timedelta(days=i) for i in range(6, -1, -1)]  # Mon→Sun order
 
     def count_by_day(model, date_col):
