@@ -148,13 +148,13 @@ export default function FriendsPage() {
     }
   };
 
-  const removeFriend = async (friendEmail) => {
+  const removeFriend = async (friendEmail, friendUsername) => {
     if (!window.confirm('Remove this friend?')) return;
     try {
       const res = await fetch(`${API}/api/remove-friend?email=${myEmail}&friend_email=${friendEmail}`, { method: 'DELETE' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail);
-      showToast('Friend removed.', 'info');
+      showToast(`${friendUsername} removed from friends.`, 'info');
       fetchFriends();
     } catch (e) {
       showToast(e.message, 'error');
@@ -260,7 +260,7 @@ export default function FriendsPage() {
                     </div>
                   </div>
                   <button
-                    onClick={() => removeFriend(f.email)}
+                    onClick={() => removeFriend(f.email, f.username)}
                     className="flex items-center gap-1 text-xs text-red-500 border border-red-200 px-3 py-1.5 rounded-full hover:bg-red-50 transition font-semibold"
                   >
                     <Trash2 className="w-3.5 h-3.5" /> Remove
