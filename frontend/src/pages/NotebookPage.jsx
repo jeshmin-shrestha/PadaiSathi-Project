@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Star, BookOpen, List, Trash2 } from 'lucide-react';
+import { Search, Star, BookOpen, List, Trash2, Pencil, Check, X } from 'lucide-react';
 import Icon2Image from '../assets/images/icon2.png';
 import Icon3Image from '../assets/images/icon3.png';
 import { API } from '../constants';
@@ -109,6 +109,22 @@ const NotebooksPage = () => {
     }
   };
 
+  const renameNotebook = async (id, newTitle) => {
+    try {
+      const res = await fetch(`${API}/api/notebook/${id}/rename`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: userEmail, title: newTitle }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setNotebooks(prev => prev.map(n => n.id === id ? { ...n, title: data.title } : n));
+      }
+    } catch (error) {
+      console.error('Error renaming notebook:', error);
+    }
+  };
+
   const filteredNotebooks = notebooks.filter(n =>
     n.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -182,6 +198,7 @@ const NotebooksPage = () => {
                   isFavorite={favorites.has(notebook.id)}
                   onToggleFavorite={toggleFavorite}
                   onDelete={deleteNotebook}
+                  onRename={renameNotebook}
                   onOpen={() => navigate(`/notebook/${notebook.id}`)}
                 />
               ))}
@@ -204,6 +221,7 @@ const NotebooksPage = () => {
                   isFavorite={favorites.has(notebook.id)}
                   onToggleFavorite={toggleFavorite}
                   onDelete={deleteNotebook}
+                  onRename={renameNotebook}
                   onOpen={() => navigate(`/notebook/${notebook.id}`)}
                 />
               ))}
@@ -219,15 +237,43 @@ const NotebooksPage = () => {
   );
 };
 
-const NotebookCard = ({ notebook, isFavorite, onToggleFavorite, onOpen, onDelete }) => {
+const NotebookCard = ({ notebook, isFavorite, onToggleFavorite, onOpen, onDelete, onRename }) => {
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState(notebook.title);
+
+  const saveRename = () => {
+    const trimmed = editTitle.trim();
+    if (trimmed && trimmed !== notebook.title) onRename(notebook.id, trimmed);
+    else setEditTitle(notebook.title);
+    setEditing(false);
+  };
 
   return (
     <div className="pad-card p-6">
       <div className="flex flex-col items-center text-center space-y-4">
         <img src={Icon3Image} alt="Folder Icon" className="w-20 h-20 object-contain" />
-        <div className="flex-1">
-          <h4 className="text-lg font-bold text-gray-800">{notebook.title}</h4>
+        <div className="flex-1 w-full">
+          {editing ? (
+            <div className="flex items-center justify-center gap-2">
+              <input
+                autoFocus
+                value={editTitle}
+                onChange={e => setEditTitle(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') saveRename(); if (e.key === 'Escape') { setEditTitle(notebook.title); setEditing(false); } }}
+                className="text-center text-sm font-bold text-gray-800 border-b border-blue-400 bg-transparent outline-none w-full"
+              />
+              <button onClick={saveRename} className="text-green-500 hover:text-green-600"><Check className="w-4 h-4" /></button>
+              <button onClick={() => { setEditTitle(notebook.title); setEditing(false); }} className="text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center gap-2 group">
+              <h4 className="text-lg font-bold text-gray-800">{notebook.title}</h4>
+              <button onClick={() => setEditing(true)} className="opacity-0 group-hover:opacity-100 transition text-gray-300 hover:text-blue-400">
+                <Pencil className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
           <p className="text-sm text-gray-400">
             {new Date(notebook.created_at).toLocaleDateString()}
           </p>
