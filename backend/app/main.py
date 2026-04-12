@@ -177,8 +177,8 @@ def root():
         "app": "PadaiSathi",
         "version": "2.0",
         "status": "active",
-        "message": "🚀 API running with AI summarization + video!",
-        "database": "SQLite (padaisathi.db)",
+        "message": "API running with AI summarization + video!",
+        "database": "PostgreSQL (Supabase)",
         "time": datetime.now().isoformat()
     }
 
@@ -856,14 +856,14 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
                 role="student",
                 points=100,
                 streak=0,
-                avatar="avatar1",  # Default avatar
+                avatar="avatar1",
                 created_at=datetime.utcnow()
             )
             db.add(new_user)
             db.commit()
             db.refresh(new_user)
             user = new_user
-            
+
             # Give bonus points for Google signup
             user.points = (user.points or 0) + 50
             db.commit()
@@ -1835,6 +1835,44 @@ def reset_password(req: ResetPasswordRequest, db: Session = Depends(get_db)):
 
     return {"success": True, "message": "Password reset successfully! You can now log in."}
 
+
+# ── Quiz Attempts ─────────────────────────────────────────────────────────────
+
+class QuizScoreRequest(BaseModel):
+    user_email:      str
+    summary_id:      int
+    score:           int
+    total_questions: int
+
+@app.post("/api/submit-quiz-score")
+def submit_quiz_score(req: QuizScoreRequest, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == req.user_email).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+    attempt = models.QuizAttempt(
+        user_id=user.id,
+        summary_id=req.summary_id,
+        score=req.score,
+        total_questions=req.total_questions,
+    )
+    db.add(attempt)
+    db.commit()
+    db.refresh(attempt)
+    return {"success": True, "attempt": attempt.to_dict()}
+
+@app.get("/api/quiz-attempts")
+def get_quiz_attempts(email: str, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+    attempts = (
+        db.query(models.QuizAttempt)
+        .filter(models.QuizAttempt.user_id == user.id)
+        .order_by(models.QuizAttempt.attempted_at.desc())
+        .limit(20)
+        .all()
+    )
+    return {"attempts": [a.to_dict() for a in attempts]}
 
 # ── Run ───────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":

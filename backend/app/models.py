@@ -24,7 +24,8 @@ class User(Base):
     notebooks  = relationship("Notebook",  back_populates="user")
     flashcards = relationship("Flashcard", back_populates="user")
     quizzes    = relationship("Quiz",      back_populates="user")
-    last_activity_date = Column(Date, nullable=True) 
+    last_activity_date = Column(Date, nullable=True)
+
     def to_dict(self):
         return {
             "id":       self.id,
@@ -33,7 +34,7 @@ class User(Base):
             "role":     self.role,
             "points":   self.points,
             "streak":   self.streak,
-            "avatar": self.avatar or "student",
+            "avatar":   self.avatar or "student",
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 
@@ -239,6 +240,29 @@ class UserBadge(Base):
             "badge_id":  self.badge_id,
             "earned_at": self.earned_at.isoformat(),
         }
+class QuizAttempt(Base):
+    __tablename__ = "quiz_attempts"
+
+    id              = Column(Integer, primary_key=True, index=True)
+    user_id         = Column(Integer, ForeignKey("users.id"), nullable=False)
+    summary_id      = Column(Integer, ForeignKey("summaries.id"), nullable=False)
+    score           = Column(Integer, nullable=False)
+    total_questions = Column(Integer, nullable=False)
+    attempted_at    = Column(DateTime, default=datetime.utcnow)
+
+    user    = relationship("User",    backref="quiz_attempts")
+    summary = relationship("Summary", backref="quiz_attempts")
+
+    def to_dict(self):
+        return {
+            "id":              self.id,
+            "summary_id":      self.summary_id,
+            "score":           self.score,
+            "total_questions": self.total_questions,
+            "attempted_at":    self.attempted_at.isoformat(),
+        }
+
+
 class PasswordResetToken(Base):
     __tablename__ = "password_reset_tokens"
 

@@ -51,6 +51,7 @@ const ProfilePage = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [modal, setModal] = useState(null);
+  const [quizHistory, setQuizHistory] = useState([]);
 
   const [selectedAvatar, setSelectedAvatar] = useState('avatar1');
   const [avatarSaving, setAvatarSaving] = useState(false);
@@ -72,6 +73,10 @@ const ProfilePage = () => {
     setSelectedAvatar(stored.avatar || 'avatar1');
     const savedCustom = localStorage.getItem(CUSTOM_AVATAR_KEY);
     if (savedCustom) setCustomImageBase64(savedCustom);
+    fetch(`${API}/api/quiz-attempts?email=${stored.email}`)
+      .then(r => r.json())
+      .then(d => { if (d.attempts) setQuizHistory(d.attempts); })
+      .catch(() => {});
   }, []);
 
   const resolveAvatarImg = (avatarId) => {
@@ -268,6 +273,30 @@ const ProfilePage = () => {
               <LogOut className="w-5 h-5" /><span>Log Out</span>
             </button>
           </div>
+
+          {/* Quiz History */}
+          {quizHistory.length > 0 && (
+            <div className="mt-8">
+              <h2 className="text-lg font-bold text-gray-700 mb-3 flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-yellow-500" /> Quiz History
+              </h2>
+              <div className="rounded-2xl border border-blue-100 overflow-hidden">
+                {quizHistory.map((a, i) => {
+                  const pct = Math.round((a.score / a.total_questions) * 100);
+                  return (
+                    <div key={a.id} className={`flex items-center justify-between px-5 py-4 ${i % 2 === 0 ? 'bg-white/60' : 'bg-blue-50/40'}`}>
+                      <span className="text-sm text-gray-500">
+                        {new Date(a.attempted_at).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      <span className={`font-bold text-sm ${pct >= 80 ? 'text-green-600' : pct >= 50 ? 'text-yellow-600' : 'text-red-500'}`}>
+                        {a.score}/{a.total_questions} ({pct}%)
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
