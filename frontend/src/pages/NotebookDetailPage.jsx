@@ -33,6 +33,7 @@ const NotebookDetailPage = () => {
   const [videos, setVideos] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [userEmail, setUserEmail] = useState('');
+  const [quizAttempts, setQuizAttempts] = useState([]);
 
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem('user'));
@@ -42,6 +43,10 @@ const NotebookDetailPage = () => {
     }
     setUserEmail(storedUser.email);
     fetchNotebookDetails(storedUser.email);
+    fetch(`${API}/api/quiz-attempts?email=${storedUser.email}`)
+      .then(r => r.json())
+      .then(d => { if (d.attempts) setQuizAttempts(d.attempts); })
+      .catch(() => {});
   }, [id]);
 
   const fetchNotebookDetails = async (email) => {
@@ -168,9 +173,22 @@ const NotebookDetailPage = () => {
         {/* Quiz Section */}
         <div className="pad-card p-8 mb-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-              <HelpCircle className="w-5 h-5 text-purple-400" /> Quiz Questions ({quizzes.length})
-            </h2>
+            <div className="flex items-center gap-3">
+              <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                <HelpCircle className="w-5 h-5 text-purple-400" /> Quiz Questions ({quizzes.length})
+              </h2>
+              {(() => {
+                const attempts = quizAttempts.filter(a => a.summary_id === summary?.id);
+                if (attempts.length === 0) return null;
+                const best = attempts.reduce((b, a) => a.score > b.score ? a : b, attempts[0]);
+                const pct = Math.round((best.score / best.total_questions) * 100);
+                return (
+                  <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${pct >= 80 ? 'bg-green-100 text-green-700' : pct >= 50 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-600'}`}>
+                    Best: {best.score}/{best.total_questions}
+                  </span>
+                );
+              })()}
+            </div>
             <button
               onClick={() => goToPageWithHint('/quiz')}
               className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white rounded-xl hover:opacity-90 transition"
@@ -181,20 +199,65 @@ const NotebookDetailPage = () => {
           </div>
           {quizzes.length > 0 ? (
             <div className="space-y-3">
-              {quizzes.map((q, i) => (
-                <div key={i} className="border border-blue-100 rounded-xl p-4 bg-white/40">
-                  <p className="font-semibold text-gray-700">{i + 1}. {q.question}</p>
-                  <p className="text-green-600 text-sm mt-1 flex items-center gap-1">
-                    <CheckCircle className="w-4 h-4" /> Answer: {q.correct_answer}
-                  </p>
-                </div>
-              ))}
+              {(() => {
+                const lastAttempt = quizAttempts.filter(a => a.summary_id === summary?.id)[0];
+                const userAnswers = lastAttempt?.user_answers || [];
+                return quizzes.map((q, i) => {
+                  const correctIdx = parseInt(q.correct_answer);
+                  const correctText = q.options?.[correctIdx] ?? q.correct_answer;
+                  const userIdx = userAnswers[i];
+                  const answered = userIdx !== undefined && userIdx !== null;
+                  const gotRight = answered && userIdx === correctIdx;
+                  return (
+                    <div key={i} className={`border rounded-xl p-4 ${answered ? (gotRight ? 'border-green-200 bg-green-50/40' : 'border-red-200 bg-red-50/30') : 'border-blue-100 bg-white/40'}`}>
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="font-semibold text-gray-700">{i + 1}. {q.question}</p>
+                        {answered && (
+                          <span className={`text-lg flex-shrink-0 ${gotRight ? 'text-green-500' : 'text-red-400'}`}>
+                            {gotRight ? '✓' : '✗'}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-green-600 text-sm mt-1 flex items-center gap-1">
+                        <CheckCircle className="w-4 h-4" /> {correctText}
+                      </p>
+                      {answered && !gotRight && (
+                        <p className="text-red-400 text-sm mt-0.5">Your answer: {q.options?.[userIdx] ?? `Option ${userIdx + 1}`}</p>
+                      )}
+                    </div>
+                  );
+                });
+              })()}
             </div>
           ) : (
             <p className="text-gray-400 italic">
               No quiz yet — click the button above to generate one!
             </p>
           )}
+
+          {/* Past attempts for this notebook's summary */}
+          {(() => {
+            const attempts = quizAttempts.filter(a => a.summary_id === summary?.id);
+            if (attempts.length === 0) return null;
+            return (
+              <div className="mt-4 pt-4 border-t border-blue-100">
+                <p className="text-sm font-semibold text-gray-500 mb-2">Your attempts</p>
+                <div className="space-y-1.5">
+                  {attempts.slice(0, 5).map((a) => {
+                    const pct = Math.round((a.score / a.total_questions) * 100);
+                    return (
+                      <div key={a.id} className="flex justify-between text-sm px-3 py-2 rounded-xl bg-white/50 border border-blue-50">
+                        <span className="text-gray-400">{new Date(a.attempted_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                        <span className={`font-bold ${pct >= 80 ? 'text-green-600' : pct >= 50 ? 'text-yellow-600' : 'text-red-500'}`}>
+                          {a.score}/{a.total_questions} ({pct}%)
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
         </div>
 
         {/* Videos Section */}

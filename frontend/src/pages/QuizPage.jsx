@@ -41,6 +41,7 @@ const QuizPage = () => {
 
   const selectedSummaryIdRef = useRef(null);
   const scoreSubmittedRef = useRef(false);
+  const userAnswersRef = useRef([]);
 
   useEffect(() => {
     const saved = localStorage.getItem('padai_quiz');
@@ -84,8 +85,18 @@ const QuizPage = () => {
     selectedSummaryIdRef.current = selectedSummaryId;
   }, [selectedSummaryId]);
 
-  // Reset submission flag when a new quiz is generated
-  useEffect(() => { scoreSubmittedRef.current = false; }, [questions]);
+  // Reset submission flag and answers when a new quiz is generated
+  useEffect(() => {
+    scoreSubmittedRef.current = false;
+    userAnswersRef.current = [];
+  }, [questions]);
+
+  // Record the user's answer each time they answer a question
+  useEffect(() => {
+    if (showFeedback && selectedAnswer !== null) {
+      userAnswersRef.current[currentQuestion] = selectedAnswer;
+    }
+  }, [showFeedback]);
 
   // Auto-submit score when last question is answered
   useEffect(() => {
@@ -104,6 +115,7 @@ const QuizPage = () => {
           summary_id: selectedSummaryIdRef.current,
           score,
           total_questions: questions.length,
+          user_answers: userAnswersRef.current,
         }),
       })
         .then(() => fetchPastAttempts(userEmail))
@@ -415,8 +427,8 @@ const QuizPage = () => {
           </>
         )}
 
-        {/* Past Attempts */}
-        {pastAttempts.length > 0 && (
+        {/* Past Attempts — only when quiz is not actively in progress */}
+        {pastAttempts.length > 0 && !quizStarted && (
           <div className="pad-card p-6 mt-6">
             <h3 className="text-lg font-bold text-gray-800 mb-4">Past Attempts</h3>
             <div className="space-y-2">
