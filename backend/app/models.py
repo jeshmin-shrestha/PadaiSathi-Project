@@ -248,6 +248,7 @@ class QuizAttempt(Base):
     summary_id      = Column(Integer, ForeignKey("summaries.id"), nullable=False)
     score           = Column(Integer, nullable=False)
     total_questions = Column(Integer, nullable=False)
+    user_answers    = Column(JSON, nullable=True)
     attempted_at    = Column(DateTime, default=datetime.utcnow)
 
     user    = relationship("User",    backref="quiz_attempts")
@@ -259,6 +260,7 @@ class QuizAttempt(Base):
             "summary_id":      self.summary_id,
             "score":           self.score,
             "total_questions": self.total_questions,
+            "user_answers":    self.user_answers,
             "attempted_at":    self.attempted_at.isoformat(),
         }
 

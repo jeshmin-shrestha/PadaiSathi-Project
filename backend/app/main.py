@@ -1843,6 +1843,7 @@ class QuizScoreRequest(BaseModel):
     summary_id:      int
     score:           int
     total_questions: int
+    user_answers:    list = None
 
 @app.post("/api/submit-quiz-score")
 def submit_quiz_score(req: QuizScoreRequest, db: Session = Depends(get_db)):
@@ -1854,6 +1855,7 @@ def submit_quiz_score(req: QuizScoreRequest, db: Session = Depends(get_db)):
         summary_id=req.summary_id,
         score=req.score,
         total_questions=req.total_questions,
+        user_answers=req.user_answers,
     )
     db.add(attempt)
     db.commit()
