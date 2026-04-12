@@ -37,8 +37,10 @@ const QuizPage = () => {
   const [userEmail, setUserEmail] = useState('');
   const [error, setError] = useState('');
   const [quizStarted, setQuizStarted] = useState(false);
+  const [pastAttempts, setPastAttempts] = useState([]);
 
   const selectedSummaryIdRef = useRef(null);
+  const scoreSubmittedRef = useRef(false);
 
   useEffect(() => {
     const saved = localStorage.getItem('padai_quiz');
@@ -82,6 +84,33 @@ const QuizPage = () => {
     selectedSummaryIdRef.current = selectedSummaryId;
   }, [selectedSummaryId]);
 
+  // Reset submission flag when a new quiz is generated
+  useEffect(() => { scoreSubmittedRef.current = false; }, [questions]);
+
+  // Auto-submit score when last question is answered
+  useEffect(() => {
+    if (
+      questions.length > 0 &&
+      currentQuestion === questions.length - 1 &&
+      showFeedback &&
+      !scoreSubmittedRef.current
+    ) {
+      scoreSubmittedRef.current = true;
+      fetch(`${API}/api/submit-quiz-score`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_email: userEmail,
+          summary_id: selectedSummaryIdRef.current,
+          score,
+          total_questions: questions.length,
+        }),
+      })
+        .then(() => fetchPastAttempts(userEmail))
+        .catch(() => {});
+    }
+  }, [currentQuestion, showFeedback]);
+
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem('user'));
     if (!storedUser) {
@@ -90,7 +119,18 @@ const QuizPage = () => {
     }
     setUserEmail(storedUser.email);
     fetchSummaries(storedUser.email);
+    fetchPastAttempts(storedUser.email);
   }, []);
+
+  const fetchPastAttempts = async (email) => {
+    try {
+      const res = await fetch(`${API}/api/quiz-attempts?email=${email}`);
+      const data = await res.json();
+      if (data.attempts) setPastAttempts(data.attempts);
+    } catch {
+      // silently ignore
+    }
+  };
 
   const fetchSummaries = async (email) => {
     try {
@@ -373,6 +413,28 @@ const QuizPage = () => {
               </div>
             )}
           </>
+        )}
+
+        {/* Past Attempts */}
+        {pastAttempts.length > 0 && (
+          <div className="pad-card p-6 mt-6">
+            <h3 className="text-lg font-bold text-gray-800 mb-4">Past Attempts</h3>
+            <div className="space-y-2">
+              {pastAttempts.map((a) => {
+                const pct = Math.round((a.score / a.total_questions) * 100);
+                return (
+                  <div key={a.id} className="flex items-center justify-between px-4 py-3 rounded-xl bg-white/60 border border-blue-100">
+                    <span className="text-sm text-gray-500">
+                      {new Date(a.attempted_at).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                    <span className={`font-bold text-sm ${pct >= 80 ? 'text-green-600' : pct >= 50 ? 'text-yellow-600' : 'text-red-500'}`}>
+                      {a.score}/{a.total_questions} ({pct}%)
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         )}
       </div>
 
