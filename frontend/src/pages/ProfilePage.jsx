@@ -51,8 +51,6 @@ const ProfilePage = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [modal, setModal] = useState(null);
-  const [quizHistory, setQuizHistory] = useState([]);
-
   const [selectedAvatar, setSelectedAvatar] = useState('avatar1');
   const [avatarSaving, setAvatarSaving] = useState(false);
   const [customImageBase64, setCustomImageBase64] = useState(null);
@@ -60,11 +58,13 @@ const ProfilePage = () => {
   const [customUploadFile, setCustomUploadFile] = useState(null);
   const fileInputRef = useRef(null);
 
-  const [pwForm, setPwForm] = useState({ current: '', newPw: '', confirm: '' });
+  const [pwForm, setPwForm] = useState({ current: '', otp: '', newPw: '', confirm: '' });
   const [showPw, setShowPw] = useState({ current: false, newPw: false, confirm: false });
   const [pwLoading, setPwLoading] = useState(false);
   const [pwError, setPwError] = useState('');
   const [pwSuccess, setPwSuccess] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
 
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem('user'));
@@ -73,10 +73,6 @@ const ProfilePage = () => {
     setSelectedAvatar(stored.avatar || 'avatar1');
     const savedCustom = localStorage.getItem(CUSTOM_AVATAR_KEY);
     if (savedCustom) setCustomImageBase64(savedCustom);
-    fetch(`${API}/api/quiz-attempts?email=${stored.email}`)
-      .then(r => r.json())
-      .then(d => { if (d.attempts) setQuizHistory(d.attempts); })
-      .catch(() => {});
   }, []);
 
   const resolveAvatarImg = (avatarId) => {
@@ -168,9 +164,36 @@ const ProfilePage = () => {
     setModal('avatar');
   };
 
+  const isGoogleUser = user?.auth_provider === 'google';
+
+  const handleSendOtp = async () => {
+    setPwError('');
+    setOtpSent(false);
+    setOtpLoading(true);
+    try {
+      const res = await fetch(`${API}/api/send-password-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: user.email }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Failed to send code');
+      setOtpSent(true);
+    } catch (e) {
+      setPwError(e.message || 'Something went wrong.');
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
   const handleChangePassword = async () => {
     setPwError('');
-    if (!pwForm.current || !pwForm.newPw || !pwForm.confirm) { setPwError('All fields are required.'); return; }
+    if (isGoogleUser) {
+      if (!pwForm.otp) { setPwError('Please enter the verification code sent to your email.'); return; }
+    } else {
+      if (!pwForm.current) { setPwError('Current password is required.'); return; }
+    }
+    if (!pwForm.newPw || !pwForm.confirm) { setPwError('All fields are required.'); return; }
     if (pwForm.newPw.length < 6) { setPwError('New password must be at least 6 characters.'); return; }
     if (!/(?=.*[A-Z])/.test(pwForm.newPw)) { setPwError('Password must contain at least one uppercase letter.'); return; }
     if (!/(?=.*\d)/.test(pwForm.newPw)) { setPwError('Password must contain at least one number.'); return; }
@@ -178,15 +201,18 @@ const ProfilePage = () => {
     if (pwForm.newPw !== pwForm.confirm) { setPwError('Passwords do not match.'); return; }
     setPwLoading(true);
     try {
+      const body = isGoogleUser
+        ? { email: user.email, otp: pwForm.otp, new_password: pwForm.newPw }
+        : { email: user.email, current_password: pwForm.current, new_password: pwForm.newPw };
       const res = await fetch(`${API}/api/change-password`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: user.email, current_password: pwForm.current, new_password: pwForm.newPw }),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || 'Failed');
       setPwSuccess(true);
-      setTimeout(() => { setModal(null); setPwSuccess(false); setPwForm({ current: '', newPw: '', confirm: '' }); }, 1500);
+      setTimeout(() => { setModal(null); setPwSuccess(false); setPwForm({ current: '', otp: '', newPw: '', confirm: '' }); setOtpSent(false); }, 1500);
     } catch (e) {
       setPwError(e.message || 'Something went wrong.');
     } finally {
@@ -274,29 +300,6 @@ const ProfilePage = () => {
             </button>
           </div>
 
-          {/* Quiz History */}
-          {quizHistory.length > 0 && (
-            <div className="mt-8">
-              <h2 className="text-lg font-bold text-gray-700 mb-3 flex items-center gap-2">
-                <Trophy className="w-5 h-5 text-yellow-500" /> Quiz History
-              </h2>
-              <div className="rounded-2xl border border-blue-100 overflow-hidden">
-                {quizHistory.map((a, i) => {
-                  const pct = Math.round((a.score / a.total_questions) * 100);
-                  return (
-                    <div key={a.id} className={`flex items-center justify-between px-5 py-4 ${i % 2 === 0 ? 'bg-white/60' : 'bg-blue-50/40'}`}>
-                      <span className="text-sm text-gray-500">
-                        {new Date(a.attempted_at).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                      <span className={`font-bold text-sm ${pct >= 80 ? 'text-green-600' : pct >= 50 ? 'text-yellow-600' : 'text-red-500'}`}>
-                        {a.score}/{a.total_questions} ({pct}%)
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
@@ -424,23 +427,49 @@ const ProfilePage = () => {
                   </div>
                 ) : (
                   <>
-                    {[{ key: 'current', label: 'Current Password', placeholder: 'Enter current password' }].map(({ key, label, placeholder }) => (
-                      <div key={key} className="mb-4">
-                        <label className="block text-sm font-semibold text-gray-600 mb-1.5">{label}</label>
+                    {isGoogleUser ? (
+                      /* Google users: send OTP to email then enter it */
+                      <div className="mb-4">
+                        <label className="block text-sm font-semibold text-gray-600 mb-1.5">Verification Code</label>
+                        <p className="text-xs text-gray-400 mb-2">Since you signed in with Google, we'll send a 6-digit code to <strong>{user.email}</strong> to verify it's you.</p>
+                        <button
+                          type="button"
+                          onClick={handleSendOtp}
+                          disabled={otpLoading}
+                          className="mb-3 px-4 py-2 rounded-xl text-sm font-bold text-white transition"
+                          style={{ background: otpSent ? '#22c55e' : 'rgba(90,120,180,0.9)' }}
+                        >
+                          {otpLoading ? 'Sending…' : otpSent ? 'Code Sent! Resend' : 'Send Code to My Email'}
+                        </button>
+                        {otpSent && (
+                          <input
+                            type="text"
+                            maxLength={6}
+                            value={pwForm.otp}
+                            onChange={e => setPwForm(p => ({ ...p, otp: e.target.value }))}
+                            placeholder="Enter 6-digit code"
+                            className="w-full border border-blue-100 rounded-xl px-4 py-3 focus:border-blue-300 focus:outline-none transition bg-white/60 tracking-widest text-center text-lg font-bold"
+                          />
+                        )}
+                      </div>
+                    ) : (
+                      /* Email users: existing current password field — untouched */
+                      <div className="mb-4">
+                        <label className="block text-sm font-semibold text-gray-600 mb-1.5">Current Password</label>
                         <div className="relative">
                           <input
-                            type={showPw[key] ? 'text' : 'password'}
-                            value={pwForm[key]}
-                            onChange={e => setPwForm(p => ({ ...p, [key]: e.target.value }))}
-                            placeholder={placeholder}
+                            type={showPw.current ? 'text' : 'password'}
+                            value={pwForm.current}
+                            onChange={e => setPwForm(p => ({ ...p, current: e.target.value }))}
+                            placeholder="Enter current password"
                             className="w-full border border-blue-100 rounded-xl px-4 py-3 pr-11 text-base focus:border-blue-300 focus:outline-none transition bg-white/60"
                           />
-                          <button type="button" onClick={() => setShowPw(s => ({ ...s, [key]: !s[key] }))} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-600">
-                            {showPw[key] ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                          <button type="button" onClick={() => setShowPw(s => ({ ...s, current: !s.current }))} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-600">
+                            {showPw.current ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                           </button>
                         </div>
                       </div>
-                    ))}
+                    )}
 
                     <div className="mb-4">
                       <label className="block text-sm font-semibold text-gray-600 mb-1.5">New Password</label>
