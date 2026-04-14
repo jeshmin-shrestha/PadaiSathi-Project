@@ -1,6 +1,8 @@
 # PadaiSathi Root .gitignore
+.claude/
 node_modules/
 venv/
+venv_mac/
 env/
 .venv/
 __pycache__/
@@ -66,3 +68,12 @@ backend/app/ai/model/*.safetensors
 backend/app/ai/model/*.bin
 backend/app/ai/model/*.pt
 padaisathi-final-runner-gpu.ipynb
+
+# Temp/test files
+temp_video/
+test_output.txt
+myfile.txt
+padaisathi-frontend/
+
+# Uploaded files (generated at runtime)
+uploads/
