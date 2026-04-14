@@ -728,7 +728,8 @@ class UpdateProfileRequest(BaseModel):
 
 class ChangePasswordRequest(BaseModel):
     email: str
-    current_password: str
+    current_password: str | None = None  # not needed for Google users
+    otp: str | None = None               # used by Google users instead
     new_password: str
 
 
@@ -751,13 +752,31 @@ def update_profile(req: UpdateProfileRequest, db: Session = Depends(get_db)):
 
 @app.put("/api/change-password")
 def change_password(req: ChangePasswordRequest, db: Session = Depends(get_db)):
-    """Verify current password then set new one."""
+    """Verify current password (email users) or OTP (Google users) then set new one."""
     user = db.query(models.User).filter(models.User.email == req.email).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    if not simple_verify_password(req.current_password, user.password_hash):
-        raise HTTPException(status_code=400, detail="Current password is incorrect")
+    if (user.auth_provider or "email") == "google":
+        # Google users verify via OTP sent to their email
+        if not req.otp:
+            raise HTTPException(status_code=400, detail="Verification code is required")
+        record = db.query(models.PasswordResetToken).filter(
+            models.PasswordResetToken.user_id == user.id,
+            models.PasswordResetToken.used == 0
+        ).first()
+        if not record or record.token != req.otp:
+            raise HTTPException(status_code=400, detail="Invalid or expired verification code")
+        if record.expires_at < datetime.utcnow():
+            raise HTTPException(status_code=400, detail="Verification code has expired. Please request a new one.")
+        record.used = 1
+        db.commit()
+    else:
+        # Email users verify via current password — existing logic untouched
+        if not req.current_password:
+            raise HTTPException(status_code=400, detail="Current password is required")
+        if not simple_verify_password(req.current_password, user.password_hash):
+            raise HTTPException(status_code=400, detail="Current password is incorrect")
 
     if len(req.new_password) < 8:
         raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
@@ -773,6 +792,68 @@ def change_password(req: ChangePasswordRequest, db: Session = Depends(get_db)):
     return {"success": True, "message": "Password updated successfully"}
 
 
+
+
+# ============================================================================
+# Send OTP for Google users changing password
+# ============================================================================
+
+class SendPasswordOtpRequest(BaseModel):
+    email: str
+
+@app.post("/api/send-password-otp")
+def send_password_otp(req: SendPasswordOtpRequest, db: Session = Depends(get_db)):
+    """Send a 6-digit OTP to a Google user's email so they can change their password."""
+    user = db.query(models.User).filter(models.User.email == req.email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if (user.auth_provider or "email") != "google":
+        raise HTTPException(status_code=400, detail="This endpoint is only for Google accounts")
+
+    # Generate a 6-digit OTP and store it in the PasswordResetToken table (valid 10 min)
+    otp = str(secrets.randbelow(900000) + 100000)  # 100000–999999
+    expires_at = datetime.utcnow() + timedelta(minutes=10)
+
+    # Invalidate any previous unused OTPs for this user
+    db.query(models.PasswordResetToken).filter(
+        models.PasswordResetToken.user_id == user.id,
+        models.PasswordResetToken.used == 0
+    ).delete()
+
+    db.add(models.PasswordResetToken(user_id=user.id, token=otp, expires_at=expires_at))
+    db.commit()
+
+    print(f"[PasswordOTP] OTP for {req.email}: {otp}")
+
+    if SMTP_USER and SMTP_PASSWORD:
+        try:
+            msg = MIMEMultipart("alternative")
+            msg["Subject"] = "PadaiSathi — Your Password Change Code"
+            msg["From"]    = SMTP_USER
+            msg["To"]      = req.email
+
+            html = f"""
+            <div style="font-family:sans-serif;max-width:480px;margin:auto">
+              <h2 style="color:#6d28d9">PadaiSathi Password Change</h2>
+              <p>Use the code below to set your new password. It expires in <strong>10 minutes</strong>.</p>
+              <div style="font-size:36px;font-weight:bold;letter-spacing:8px;color:#1e293b;
+                          background:#f1f5f9;padding:20px;border-radius:12px;text-align:center">
+                {otp}
+              </div>
+              <p style="color:#64748b;margin-top:16px">If you didn't request this, you can safely ignore this email.</p>
+            </div>
+            """
+            msg.attach(MIMEText(html, "html"))
+
+            with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
+                server.starttls()
+                server.login(SMTP_USER, SMTP_PASSWORD)
+                server.sendmail(SMTP_USER, req.email, msg.as_string())
+            print(f"[PasswordOTP] Email sent to {req.email} ✅")
+        except Exception as e:
+            print(f"[PasswordOTP] Email send failed: {e}")
+
+    return {"success": True, "message": "Verification code sent to your email"}
 
 
 # ============================================================================
@@ -824,7 +905,12 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
         
         # Check if user exists
         user = db.query(models.User).filter(models.User.email == email).first()
-        
+
+        if user:
+            # Tag existing users as Google on every login so they're identified correctly
+            user.auth_provider = "google"
+            db.commit()
+
         if not user:
             # Create new user using the name from Google
             # Use the full name from Google if available, otherwise fall back to email
@@ -835,20 +921,17 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
             else:
                 # Fallback to email prefix if no name provided
                 username = email.split('@')[0]
-            
+
             # Make sure username is unique (add number if needed)
             counter = 1
             original_username = username
             while db.query(models.User).filter(models.User.username == username).first():
                 username = f"{original_username}{counter}"
                 counter += 1
-            
+
             # Create random password (user will use Google login, so password doesn't matter)
             random_password = secrets.token_urlsafe(16)
-                    
-            # Create random password (user will use Google login, so password doesn't matter)
-            random_password = secrets.token_urlsafe(16)
-            
+
             new_user = models.User(
                 username=username,
                 email=email,
@@ -857,6 +940,7 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
                 points=100,
                 streak=0,
                 avatar="avatar1",
+                auth_provider="google",
                 created_at=datetime.utcnow()
             )
             db.add(new_user)
@@ -867,15 +951,15 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
             # Give bonus points for Google signup
             user.points = (user.points or 0) + 50
             db.commit()
-        
+
         # Create JWT token for your app
         access_token = create_access_token(
             data={"sub": user.email, "user_id": user.id, "username": user.username}
         )
         decay_streak_if_inactive(user.id, db)
         db.refresh(user)
-        # Redirect to frontend with token
-        frontend_url = f"{FRONTEND_URL}/auth/callback?token={access_token}&email={user.email}&username={user.username}&avatar={user.avatar}"
+        # Redirect to frontend with token (include auth_provider so frontend knows)
+        frontend_url = f"{FRONTEND_URL}/auth/callback?token={access_token}&email={user.email}&username={user.username}&avatar={user.avatar}&auth_provider={user.auth_provider or 'google'}"
         return RedirectResponse(url=frontend_url)
         
     except Exception as e:

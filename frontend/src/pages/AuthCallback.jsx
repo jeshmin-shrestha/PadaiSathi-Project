@@ -11,6 +11,7 @@ const AuthCallback = ({ setIsAuthenticated, setUser }) => {
     const email = searchParams.get('email');
     const username = searchParams.get('username');
     const avatar = searchParams.get('avatar');
+    const auth_provider = searchParams.get('auth_provider') || 'google';
     const error = searchParams.get('error');
 
     if (error) {
@@ -27,7 +28,8 @@ const AuthCallback = ({ setIsAuthenticated, setUser }) => {
         avatar: avatar || 'avatar1',
         points: 100,
         streak: 1,
-        role: 'student'
+        role: 'student',
+        auth_provider,
       };
 
       // Store in localStorage

@@ -15,7 +15,8 @@ class User(Base):
     role          = Column(String(20), default="student")
     points        = Column(Integer, default=100)
     streak        = Column(Integer, default=1)
-    avatar = Column(String(500), nullable=True, default="student")
+    avatar        = Column(String(500), nullable=True, default="student")
+    auth_provider = Column(String(20), default="email")  # "email" or "google"
     created_at    = Column(DateTime, default=datetime.utcnow)
 
     documents  = relationship("Document",  back_populates="user")
@@ -28,14 +29,15 @@ class User(Base):
 
     def to_dict(self):
         return {
-            "id":       self.id,
-            "username": self.username,
-            "email":    self.email,
-            "role":     self.role,
-            "points":   self.points,
-            "streak":   self.streak,
-            "avatar":   self.avatar or "student",
-            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "id":            self.id,
+            "username":      self.username,
+            "email":         self.email,
+            "role":          self.role,
+            "points":        self.points,
+            "streak":        self.streak,
+            "avatar":        self.avatar or "student",
+            "auth_provider": self.auth_provider or "email",
+            "created_at":    self.created_at.isoformat() if self.created_at else None,
         }
 
 
