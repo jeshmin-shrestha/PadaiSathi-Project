@@ -28,10 +28,14 @@ from pathlib import Path
 
 os.environ['IMAGEMAGICK_BINARY'] = r"C:\Program Files\ImageMagick-7.1.2-Q16-HDRI\magick.exe"
 
-from moviepy.editor import *
-import PIL.Image
-if not hasattr(PIL.Image, 'ANTIALIAS'):
-    PIL.Image.ANTIALIAS = PIL.Image.Resampling.LANCZOS
+try:
+    from moviepy.editor import *
+    import PIL.Image
+    if not hasattr(PIL.Image, 'ANTIALIAS'):
+        PIL.Image.ANTIALIAS = PIL.Image.Resampling.LANCZOS
+    MOVIEPY_AVAILABLE = True
+except ImportError:
+    MOVIEPY_AVAILABLE = False
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 # Use absolute paths so these work regardless of which directory uvicorn is started from
