@@ -75,7 +75,7 @@ openai-whisper==20250625
 packaging==26.0
 passlib==1.7.4
 peft==0.18.1
-Pillow==9.5.0
+Pillow==10.4.0
 proglog==0.1.12
 propcache==0.4.1
 proto-plus==1.27.1
