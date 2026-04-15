@@ -220,7 +220,7 @@ const OverviewTab = ({ stats, health, students, weekly, onTabChange }) => {
 
       {/* Top Streakers + System Health side by side */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, alignItems: 'start' }}>
-        <SectionCard title="Top Streakers" subtitle="Students with the longest consecutive learning streaks">
+        <SectionCard title="Top 3 Streakers" subtitle="Students with the longest consecutive learning streaks">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {[...students]
               .sort((a, b) => (b.streak || 0) - (a.streak || 0))
