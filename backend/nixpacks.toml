@@ -1,5 +1,9 @@
 [phases.setup]
-nixPkgs = ["python311", "python311Packages.pip", "ffmpeg"]
+nixPkgs = ["python311"]
 
 [phases.install]
-cmds = ["python3.11 -m pip install -r requirements-deploy.txt"]
+cmds = [
+  "curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py",
+  "python3.11 get-pip.py",
+  "python3.11 -m pip install -r requirements-deploy.txt"
+]
