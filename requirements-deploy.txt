@@ -19,6 +19,6 @@ itsdangerous==2.2.0
 azure-storage-blob==12.28.0
 azure-core==1.39.0
 slowapi==0.1.9
-Pillow==9.5.0
+Pillow==10.4.0
 xlsxwriter==3.2.9
 python-dateutil==2.9.0.post0
