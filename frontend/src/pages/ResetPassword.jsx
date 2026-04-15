@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { API } from '../constants';
 import catIllustration from '../assets/images/LoginImage5.png';
-import logoImage from '../assets/images/logo1.png';
+import logoImage from '../assets/images/logo0111.png';
 import successImage from '../assets/images/SuccessImage.jpeg';
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
