@@ -120,7 +120,7 @@ const AdminDashboard = ({ user, setIsAuthenticated }) => {
         .adm-nav-item.active svg { opacity: 1; }
         .adm-nav-item.muted { opacity: 0.55; cursor: default; pointer-events: none; }
 
-        .adm-sidebar-footer { margin-top: 480px; margin-bottom: 0px; padding: 12px; background: rgba(255,255,255,0.58); border-radius: 15px; border: 1px solid rgba(170,210,250,0.38); display: flex; align-items: center; gap: 10px; }
+        .adm-sidebar-footer { margin-top: 560px; margin-bottom: 0px; padding: 12px; background: rgba(255,255,255,0.58); border-radius: 15px; border: 1px solid rgba(170,210,250,0.38); display: flex; align-items: center; gap: 10px; }
         .adm-avatar-chip { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, #90c8f0 0%, #6aaee0 100%); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; color: white; flex-shrink: 0; }
         .adm-avatar-name { font-size: 12.5px; font-weight: 800; color: #173a5c; }
         .adm-avatar-role { font-size: 9.5px; font-weight: 700; color: #6b9ec6; letter-spacing: 0.4px; text-transform: uppercase; }
@@ -190,14 +190,6 @@ const AdminDashboard = ({ user, setIsAuthenticated }) => {
 
           {/* SIDEBAR */}
           <aside className="adm-sidebar">
-            <div className="adm-brand">
-              <img src={AdminIcon} alt="Admin" />
-              <div>
-                <div className="adm-brand-name">PadaiSathi</div>
-                <div className="adm-brand-tag">Admin Panel</div>
-              </div>
-            </div>
-
             <div className="adm-section-label">Main Menu</div>
             {TABS.map(({ id, label, Icon }) => (
               <button key={id} onClick={() => setActiveTab(id)} className={`adm-nav-item${activeTab === id ? ' active' : ''}`}>
