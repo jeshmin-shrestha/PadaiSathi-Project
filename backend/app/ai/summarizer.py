@@ -6,13 +6,17 @@ Primary  : PadaiSathi fine-tuned model (GPU accelerated)
 import re
 import os
 import time
-import torch
 import requests
-from transformers import (
-    T5ForConditionalGeneration,
-    AutoModelForCausalLM,
-    AutoTokenizer,
-)
+try:
+    import torch
+    from transformers import (
+        T5ForConditionalGeneration,
+        AutoModelForCausalLM,
+        AutoTokenizer,
+    )
+    TORCH_AVAILABLE = True
+except ImportError:
+    TORCH_AVAILABLE = False
 
 # ── Config ────────────────────────────────────────────────────────────────────
 HF_TOKEN       = os.getenv("HF_TOKEN", "")
@@ -32,19 +36,25 @@ MISTRAL_REPO   = "jeshmin/padaisathi-mistral-7b"
 FLAN_REPO      = "jeshmin/padaisathi-flan-t5"
 BASE_MODEL     = "mistralai/Mistral-7B-Instruct-v0.2"
 
-_device = "cuda" if torch.cuda.is_available() else "cpu"
+_device = "cuda" if (TORCH_AVAILABLE and torch.cuda.is_available()) else "cpu"
 
 # ── Load Flan-T5 (quiz + flashcards only) ─────────────────────────────────────
-print("[Summarizer] Loading Flan-T5 for quiz/flashcards...")
-_flan_tokenizer = AutoTokenizer.from_pretrained(FLAN_REPO, token=HF_TOKEN)
-_flan_model     = T5ForConditionalGeneration.from_pretrained(
-    FLAN_REPO, token=HF_TOKEN
-).to(_device)
-_flan_model.eval()
-# Keep backward compat — quiz_generator.py uses _tokenizer and _model
-_tokenizer = _flan_tokenizer
-_model     = _flan_model
-print(f"[Summarizer] Flan-T5 ready on {_device.upper()}")
+if TORCH_AVAILABLE:
+    print("[Summarizer] Loading Flan-T5 for quiz/flashcards...")
+    _flan_tokenizer = AutoTokenizer.from_pretrained(FLAN_REPO, token=HF_TOKEN)
+    _flan_model     = T5ForConditionalGeneration.from_pretrained(
+        FLAN_REPO, token=HF_TOKEN
+    ).to(_device)
+    _flan_model.eval()
+    _tokenizer = _flan_tokenizer
+    _model     = _flan_model
+    print(f"[Summarizer] Flan-T5 ready on {_device.upper()}")
+else:
+    print("[Summarizer] torch not available — skipping Flan-T5, using Groq fallback")
+    _flan_tokenizer = None
+    _flan_model     = None
+    _tokenizer      = None
+    _model          = None
 
 # ── Local Mistral globals ──────────────────────────────────────────────────────
 _mistral_model     = None
