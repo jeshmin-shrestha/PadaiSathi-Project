@@ -91,7 +91,7 @@ const AdminDashboard = ({ user, setIsAuthenticated }) => {
             linear-gradient(160deg, #d9eeff 0%, #e5f0fb 45%, #f0f5fd 100%);
         }
 
-        .adm-layout { position: relative; z-index: 1; display: flex; min-height: 100vh; }
+        .adm-layout { position: relative; z-index: 1; display: flex; align-items: stretch; }
 
         /* SIDEBAR */
         .adm-sidebar {
@@ -99,7 +99,7 @@ const AdminDashboard = ({ user, setIsAuthenticated }) => {
           padding: 20px 14px 20px; gap: 4px;
           background: rgba(255,255,255,0.52); backdrop-filter: blur(22px);
           border-right: 1px solid rgba(170,205,240,0.45);
-          min-height: 100vh; position: sticky; top: 0; height: 100vh; overflow-y: auto;
+          position: sticky; top: 0; height: fit-content; overflow-y: auto;
         }
 
         .adm-brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 18px; border-bottom: 1px solid rgba(160,200,240,0.28); margin-bottom: 10px; }
@@ -120,15 +120,15 @@ const AdminDashboard = ({ user, setIsAuthenticated }) => {
         .adm-nav-item.active svg { opacity: 1; }
         .adm-nav-item.muted { opacity: 0.55; cursor: default; pointer-events: none; }
 
-        .adm-sidebar-footer { margin-top: auto; padding: 12px; background: rgba(255,255,255,0.58); border-radius: 15px; border: 1px solid rgba(170,210,250,0.38); display: flex; align-items: center; gap: 10px; }
+        .adm-sidebar-footer { margin-top: 480px; margin-bottom: 0px; padding: 12px; background: rgba(255,255,255,0.58); border-radius: 15px; border: 1px solid rgba(170,210,250,0.38); display: flex; align-items: center; gap: 10px; }
         .adm-avatar-chip { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, #90c8f0 0%, #6aaee0 100%); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; color: white; flex-shrink: 0; }
         .adm-avatar-name { font-size: 12.5px; font-weight: 800; color: #173a5c; }
         .adm-avatar-role { font-size: 9.5px; font-weight: 700; color: #6b9ec6; letter-spacing: 0.4px; text-transform: uppercase; }
 
         /* MAIN */
-        .adm-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+        .adm-main { flex: 1; display: flex; flex-direction: column; min-width: 0; height: 100vh; overflow-y: auto; }
 
-        .adm-topbar { display: flex; align-items: center; justify-content: space-between; padding: 16px 28px; background: rgba(255,255,255,0.48); backdrop-filter: blur(16px); border-bottom: 1px solid rgba(170,205,240,0.38); gap: 12px; flex-wrap: wrap; }
+        .adm-topbar { display: flex; align-items: center; justify-content: space-between; padding: 10px 28px; background: rgba(255,255,255,0.48); backdrop-filter: blur(16px); border-bottom: 1px solid rgba(170,205,240,0.38); gap: 12px; flex-wrap: wrap; }
         .adm-page-title { font-family: 'Sora', sans-serif; font-size: 20px; font-weight: 700; color: #173a5c; letter-spacing: -0.3px; }
         .adm-page-date { font-size: 11.5px; color: #88aecb; font-weight: 600; margin-top: 2px; }
         .adm-topbar-actions { display: flex; align-items: center; gap: 10px; }
@@ -142,7 +142,7 @@ const AdminDashboard = ({ user, setIsAuthenticated }) => {
         .adm-refresh:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
 
         /* KPI row */
-        .adm-kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; padding: 20px 28px; border-bottom: 1px solid rgba(170,205,240,0.22); }
+        .adm-kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; padding: 10px 28px; border-bottom: 1px solid rgba(170,205,240,0.22); }
         @media (max-width: 1100px) { .adm-kpi-row { grid-template-columns: repeat(2, 1fr); } }
         @media (max-width: 700px)  { .adm-kpi-row { grid-template-columns: 1fr; } }
 
@@ -163,7 +163,7 @@ const AdminDashboard = ({ user, setIsAuthenticated }) => {
         .adm-kpi-val { font-family: 'Sora', sans-serif; font-size: 24px; font-weight: 700; color: #173a5c; line-height: 1; }
         .adm-kpi-lbl { font-size: 11px; font-weight: 700; color: #84a8c6; text-transform: uppercase; letter-spacing: 0.6px; margin-top: 3px; }
 
-        .adm-content-area { flex: 1; padding: 24px 28px 36px; }
+        .adm-content-area { flex: 0; padding: 12px 28px 16px; }
 
         .adm-panel { background: rgba(255,255,255,0.62); backdrop-filter: blur(18px); border: 1px solid rgba(175,215,255,0.38); border-radius: 22px; overflow: hidden; box-shadow: 0 4px 24px rgba(100,155,215,0.09), 0 1px 0 rgba(255,255,255,0.85) inset; animation: adm-rise 0.3s cubic-bezier(0.22,1,0.36,1) both; }
 
@@ -172,7 +172,7 @@ const AdminDashboard = ({ user, setIsAuthenticated }) => {
         .adm-loader-lbl { font-size: 12.5px; font-weight: 700; color: #80aacb; letter-spacing: 0.5px; }
         @keyframes adm-spin { to { transform: rotate(360deg); } }
 
-        .adm-footer { text-align: center; padding: 18px 28px; font-size: 11px; font-weight: 700; color: #aac6df; letter-spacing: 0.5px; border-top: 1px solid rgba(170,210,250,0.22); }
+        .adm-footer { text-align: center; padding: 8px 28px; font-size: 11px; font-weight: 700; color: #aac6df; letter-spacing: 0.5px; border-top: 1px solid rgba(170,210,250,0.22); }
 
         @media (max-width: 860px) {
           .adm-sidebar { display: none; }
