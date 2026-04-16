@@ -1168,15 +1168,15 @@ def _check_and_award_badges(user_id: int, db: Session):
             earned_ids.add(badge_id)
             newly_earned.append(badge_id)
 
-    # Check overachiever — all other badges earned
-    all_other_ids = {b["id"] for b in BADGE_DEFINITIONS if b["id"] != "overachiever"}
-    if all_other_ids.issubset(earned_ids) and "overachiever" not in earned_ids:
+    # Check the_completionist — all other badges earned
+    all_other_ids = {b["id"] for b in BADGE_DEFINITIONS if b["id"] != "the_completionist"}
+    if all_other_ids.issubset(earned_ids) and "the_completionist" not in earned_ids:
         db.add(models.UserBadge(
             user_id=user_id,
-            badge_id="overachiever",
+            badge_id="the_completionist",
             earned_at=datetime.utcnow()
         ))
-        newly_earned.append("overachiever")
+        newly_earned.append("the_completionist")
 
     if newly_earned:
         db.commit()
