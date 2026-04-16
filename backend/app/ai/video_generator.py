@@ -169,19 +169,19 @@ def _tts(text: str, mp3_path: str, theme: str = "subway") -> float:
 
 
     voice = THEME_VOICES.get(theme, DEFAULT_VOICE)
-    print(f"[TTS] 🎙️  {voice}")
+    print(f"[TTS]   {voice}")
 
     try:
         from pydub import AudioSegment
         _run_async(_tts_edge_async(clean, mp3_path, voice))
         duration = len(AudioSegment.from_mp3(mp3_path)) / 1000.0
-        print(f"[TTS] ✅ {duration:.3f}s")
+        print(f"[TTS]  {duration:.3f}s")
         return duration
     except ImportError:
-        print("[TTS] ⚠️  edge-tts not installed — falling back to gTTS")
+        print("[TTS]   edge-tts not installed, falling back to gTTS")
         return _tts_gtts(clean, mp3_path)
     except Exception as e:
-        print(f"[TTS] ❌ {e} — falling back to gTTS")
+        print(f"[TTS]  {e} : falling back to gTTS")
         return _tts_gtts(clean, mp3_path)
 
 
@@ -314,10 +314,10 @@ def _background(theme: str, duration: float):
             return _load_and_loop(f)
     candidates = list(ASSET_DIR.glob("*.mp4"))
     if candidates:
-        print(f"[VideoGen] ⚠️  Fallback → {candidates[0].name}")
+        print(f"[VideoGen]   Fallback → {candidates[0].name}")
         return _load_and_loop(candidates[0])
 
-    print("[VideoGen] ❌ No background — black screen")
+    print("[VideoGen]  No background  black screen")
     return ColorClip(size=(1920, 1080), color=(0, 0, 0)).set_duration(duration)
 
 

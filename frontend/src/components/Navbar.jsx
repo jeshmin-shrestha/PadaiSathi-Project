@@ -62,7 +62,7 @@ const Navbar = () => {
   const [mobileOpen,   setMobileOpen]   = useState(false);
 
   const refreshAvatar = () => {
-    const stored   = JSON.parse(localStorage.getItem('user'));
+    const stored   = JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user'));
     const avatarId = stored?.avatar || 'avatar1';
     if (avatarId && avatarId.startsWith('https://')) {
       setCustomImg(avatarId);
@@ -86,7 +86,7 @@ const Navbar = () => {
   }, []);
 
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem('user'));
+    const stored = JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user'));
     if (!stored?.email) return;
 
     const load = async () => {
@@ -112,7 +112,7 @@ const Navbar = () => {
   }, []);
 
   const respond = async (friendship_id, action) => {
-    const stored = JSON.parse(localStorage.getItem('user'));
+    const stored = JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user'));
     if (!stored?.email) return;
     setRespondingId(friendship_id);
     try {

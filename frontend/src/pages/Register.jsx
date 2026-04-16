@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { API } from '../constants';
 import catIllustration from '../assets/images/LoginImage6.png';
-import logoImage from '../assets/images/logo1.png';
+import logoImage from '../assets/images/logo0111.png';
 
 const Register = ({ setIsAuthenticated, setUser }) => {
   const [formData, setFormData] = useState({

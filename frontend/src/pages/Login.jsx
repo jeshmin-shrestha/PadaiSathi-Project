@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import catIllustration from '../assets/images/LoginImage6.png';
-import logoImage from '../assets/images/logo1.png';
+import logoImage from '../assets/images/logo0111.png';
 import { useNavigate, Link } from 'react-router-dom';
 import { API } from '../constants';
 const Login = ({ setIsAuthenticated, setUser }) => {
@@ -25,7 +25,13 @@ const Login = ({ setIsAuthenticated, setUser }) => {
       const data = await response.json();
       if (response.ok && data.success) {
         ['padai_flashcards', 'padai_quiz', 'padai_summaries', 'padai_video_job', 'padai_video'].forEach(k => localStorage.removeItem(k));
-        localStorage.setItem('user', JSON.stringify(data.user));
+        if (staySignedIn) {
+          localStorage.setItem('user', JSON.stringify(data.user));
+          sessionStorage.removeItem('user');
+        } else {
+          sessionStorage.setItem('user', JSON.stringify(data.user));
+          localStorage.removeItem('user');
+        }
         setUser(data.user);
         setIsAuthenticated(true);
         navigate('/dashboard');

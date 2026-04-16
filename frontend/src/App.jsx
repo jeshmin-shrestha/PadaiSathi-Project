@@ -35,18 +35,17 @@ function isTokenValid() {
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     const token = localStorage.getItem('token');
-    const user  = localStorage.getItem('user');
-    // If a token exists, validate it; if it's expired, clear everything
+    const user  = localStorage.getItem('user') || sessionStorage.getItem('user');
     if (token && !isTokenValid()) {
       localStorage.removeItem('user');
       localStorage.removeItem('token');
+      sessionStorage.removeItem('user');
       return false;
     }
-    // Regular login has no token — just trust the stored user
     return !!user;
   });
   const [user, setUser] = useState(() => {
-    return JSON.parse(localStorage.getItem('user')) || null;
+    return JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user')) || null;
   });
 
   const noNavbarRoutes = ['/reset-password', '/forgot-password', '/login', '/register'];
