@@ -32,6 +32,7 @@ const Login = ({ setIsAuthenticated, setUser }) => {
           sessionStorage.setItem('user', JSON.stringify(data.user));
           localStorage.removeItem('user');
         }
+        if (data.access_token) localStorage.setItem('token', data.access_token);
         setUser(data.user);
         setIsAuthenticated(true);
         navigate('/dashboard');

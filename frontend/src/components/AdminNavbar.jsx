@@ -10,6 +10,7 @@ const AdminNavbar = ({ user, setIsAuthenticated }) => {
 
   const confirmLogout = () => {
     localStorage.removeItem('user');
+    localStorage.removeItem('token');
     sessionStorage.removeItem('user');
     if (setIsAuthenticated) setIsAuthenticated(false);
     window.location.href = '/login';

@@ -120,6 +120,7 @@ const Register = ({ setIsAuthenticated, setUser }) => {
 
       if (loginResponse.ok && loginData.success) {
         localStorage.setItem('user', JSON.stringify(loginData.user));
+        if (loginData.access_token) localStorage.setItem('token', loginData.access_token);
         setUser(loginData.user);
         setIsAuthenticated(true);
         navigate('/dashboard');
