@@ -262,7 +262,11 @@ def login(request: Request, user: UserLogin, db: Session = Depends(get_db)):
                 created_at=datetime.utcnow()
             )
             db.add(demo); db.commit(); db.refresh(demo)
-        return {"success": True, "message": "Welcome back, DemoStudent!", "user": demo.to_dict()}
+        # Generate JWT for demo user
+        access_token = create_access_token(
+            data={"sub": demo.email, "user_id": demo.id, "username": demo.username, "role": demo.role}
+        )
+        return {"success": True, "message": "Welcome back, DemoStudent!", "user": demo.to_dict(),"access_token": access_token,"token_type": "bearer"}
 
     db_user = db.query(models.User).filter(models.User.email == user.email).first()
     if not db_user or not simple_verify_password(user.password, db_user.password_hash):
@@ -275,8 +279,17 @@ def login(request: Request, user: UserLogin, db: Session = Depends(get_db)):
         print(f"[Security] {db_user.email} upgraded to bcrypt ✅")
 
     decay_streak_if_inactive(db_user.id, db)
-    db.refresh(db_user)                    
-    return {"success": True, "message": f"Welcome back, {db_user.username}!", "user": db_user.to_dict()}
+    db.refresh(db_user)  
+    # Generate JWT token
+    access_token = create_access_token(
+        data={
+            "sub": db_user.email, 
+            "user_id": db_user.id, 
+            "username": db_user.username,
+            "role": db_user.role
+        }
+    )                 
+    return {"success": True, "message": f"Welcome back, {db_user.username}!", "user": db_user.to_dict(),"access_token": access_token,"token_type": "bearer"}
 
 @app.get("/api/users")
 def get_users(db: Session = Depends(get_db)):
