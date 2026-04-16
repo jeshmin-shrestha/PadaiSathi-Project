@@ -83,7 +83,7 @@ const FlashcardPage = () => {
   }, [selectedSummaryId]);
 
   useEffect(() => {
-    const storedUser = JSON.parse(localStorage.getItem('user'));
+    const storedUser = JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user'));
     if (!storedUser) {
       window.location.href = '/login';
       return;

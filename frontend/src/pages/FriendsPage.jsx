@@ -57,7 +57,7 @@ const PAD_STYLE = `
 
 export default function FriendsPage() {
   const navigate = useNavigate();
-  const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const storedUser = JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user') || '{}');
   const myEmail = storedUser.email;
 
   const [tab, setTab] = useState('friends');

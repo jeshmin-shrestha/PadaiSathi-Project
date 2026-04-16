@@ -67,7 +67,7 @@ const ProfilePage = () => {
   const [otpLoading, setOtpLoading] = useState(false);
 
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem('user'));
+    const stored = JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user'));
     if (!stored) { window.location.href = '/login'; return; }
     setUser(stored);
     setSelectedAvatar(stored.avatar || 'avatar1');
