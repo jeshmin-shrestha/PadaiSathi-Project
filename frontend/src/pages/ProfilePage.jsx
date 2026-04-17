@@ -68,7 +68,7 @@ const ProfilePage = () => {
 
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user'));
-    if (!stored) { window.location.href = '/login'; return; }
+    if (!stored) { window.location.replace('/login'); return; }
     setUser(stored);
     setSelectedAvatar(stored.avatar || 'avatar1');
     const savedCustom = localStorage.getItem(CUSTOM_AVATAR_KEY);
@@ -106,7 +106,7 @@ const ProfilePage = () => {
     localStorage.removeItem('user');
     localStorage.removeItem('token');
     sessionStorage.removeItem('user');
-    window.location.href = '/login';
+    window.location.replace('/login');
   };
 
   const handleFileChange = (e) => {

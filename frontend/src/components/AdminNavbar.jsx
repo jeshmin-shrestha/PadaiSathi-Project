@@ -13,7 +13,7 @@ const AdminNavbar = ({ user, setIsAuthenticated }) => {
     localStorage.removeItem('token');
     sessionStorage.removeItem('user');
     if (setIsAuthenticated) setIsAuthenticated(false);
-    window.location.href = '/login';
+    window.location.replace('/login');
   };
 
   return (
