@@ -516,6 +516,9 @@ const VideoPage = () => {
               </div>
             )}
           </div>
+          {videoGenerated && videoUrl && (
+            <p className="text-xs text-gray-400 text-right mt-4">This content is AI generated</p>
+          )}
         </div>
       </div>
 
