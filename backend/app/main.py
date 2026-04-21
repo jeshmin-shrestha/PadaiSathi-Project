@@ -328,7 +328,7 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-# Upload — now also extracts text and stores Document record
+# Upload  now also extracts text and stores Document record
 # ═════════════════════════════════════════════════════════════════════════════
 @app.post("/api/upload")
 async def upload_pdf(
@@ -366,8 +366,8 @@ async def upload_pdf(
         extracted_text=extracted_text,
     )
     db.add(doc)
-    db.commit()       # ← commit first
-    db.refresh(doc)   # ← now doc.id is available!
+    db.commit()       # commit first
+    db.refresh(doc)   #  doc.id 
 
     # Step 2: Now create notebook with the real doc.id
     notebook = models.Notebook(
@@ -416,7 +416,7 @@ def generate_flashcards(req: ContentRequest, db: Session = Depends(get_db)):
     if not summary:
         raise HTTPException(status_code=404, detail="Summary not found")
 
-    # ✅ FIX: use original PDF text, not the summary
+    #  use original PDF text, not the summary
     doc = db.query(models.Document).filter(
         models.Document.id == summary.document_id
     ).first()
@@ -464,7 +464,7 @@ def generate_quiz(req: ContentRequest, db: Session = Depends(get_db)):
     if not summary:
         raise HTTPException(status_code=404, detail="Summary not found")
 
-    # REPLACE with:
+    
     doc = db.query(models.Document).filter(
         models.Document.id == summary.document_id
     ).first()
@@ -568,7 +568,7 @@ def generate_video_endpoint(
         models.Summary.user_id == user.id
     ).first()
     if not summary:
-        raise HTTPException(status_code=404, detail="Summary not found — generate a summary first")
+        raise HTTPException(status_code=404, detail="Summary not found  generate a summary first")
 
     _video_jobs[req.summary_id] = {"status": "queued", "video_url": None, "error": None}
 
@@ -800,6 +800,7 @@ def change_password(req: ChangePasswordRequest, db: Session = Depends(get_db)):
     if not re.search(r'[^a-zA-Z0-9]', req.new_password):
         raise HTTPException(status_code=400, detail="Password must contain at least one special character (!@#$%^&*)")
     user.password_hash = simple_hash_password(req.new_password)
+    user.auth_provider = "email"  
     db.commit()
 
     return {"success": True, "message": "Password updated successfully"}
@@ -1168,7 +1169,7 @@ def _check_and_award_badges(user_id: int, db: Session):
             earned_ids.add(badge_id)
             newly_earned.append(badge_id)
 
-    # Check the_completionist — all other badges earned
+    # Check the_completionist all other badges earned
     all_other_ids = {b["id"] for b in BADGE_DEFINITIONS if b["id"] != "the_completionist"}
     if all_other_ids.issubset(earned_ids) and "the_completionist" not in earned_ids:
         db.add(models.UserBadge(
@@ -1593,7 +1594,7 @@ def admin_weekly_activity(email: str, week_offset: int = 0, db: Session = Depend
     flashcard_counts = count_by_day(models.Flashcard, models.Flashcard.created_at)
     quiz_counts      = count_by_day(models.Quiz,      models.Quiz.created_at)
     video_counts     = count_by_day(models.Video,     models.Video.generated_at)
-    notebook_counts  = count_by_day(models.Notebook,  models.Notebook.created_at)  # ← ADD THIS
+    notebook_counts  = count_by_day(models.Notebook,  models.Notebook.created_at)  
 
     # Also count unique active students per day (students who uploaded/summarized)
     active_students_by_day = {}
@@ -1955,9 +1956,19 @@ def submit_quiz_score(req: QuizScoreRequest, db: Session = Depends(get_db)):
         user_answers=req.user_answers,
     )
     db.add(attempt)
+    points_earned = 5 + req.score
+    user.points = (user.points or 0) + points_earned
     db.commit()
     db.refresh(attempt)
-    return {"success": True, "attempt": attempt.to_dict()}
+    update_streak(user.id, db)
+    new_badges = _check_and_award_badges(user.id, db)
+    return {
+        "success": True,
+        "attempt": attempt.to_dict(),
+        "points_earned": points_earned,
+        "total_points": user.points,
+        "newly_earned_badges": new_badges,
+    }
 
 @app.get("/api/quiz-attempts")
 def get_quiz_attempts(email: str, db: Session = Depends(get_db)):

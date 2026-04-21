@@ -230,7 +230,7 @@ def _transcribe_words(mp3_path: str) -> list:
                         "end":   round(word.end,   4),
                     })
 
-        print(f"[Whisper] ✅ {len(word_times)} words transcribed")
+        print(f"[Whisper]  {len(word_times)} words transcribed")
         if word_times:
             print(f"[Whisper] First: '{word_times[0]['word']}' @ {word_times[0]['start']:.3f}s")
             print(f"[Whisper] Last : '{word_times[-1]['word']}' ends @ {word_times[-1]['end']:.3f}s")
@@ -402,10 +402,10 @@ def generate_video(
         # 3. Build caption cards
         if word_times:
             timings = _build_timings_from_words(word_times, WORDS_PER_CARD)
-            print(f"[VideoGen] ✅ Whisper sync: {len(timings)} cards "
+            print(f"[VideoGen]  Whisper sync: {len(timings)} cards "
                   f"| first='{timings[0]['text']}' @ {timings[0]['start']:.3f}s")
         else:
-            print("[VideoGen] ⚠️  Whisper unavailable — proportional fallback")
+            print("[VideoGen]   Whisper unavailable — proportional fallback")
             timings = _build_timings_fallback(summary_text, audio_duration, WORDS_PER_CARD)
 
         for t in timings:
@@ -439,7 +439,7 @@ def generate_video(
             preset="ultrafast", threads=4,
             temp_audiofile=temp_m4a, remove_temp=True, verbose=False, logger=None,
         )
-        print(f"[VideoGen] ✅ Done: {out_path}")
+        print(f"[VideoGen]  Done: {out_path}")
 
     finally:
         time.sleep(0.3)
@@ -463,4 +463,4 @@ if __name__ == "__main__":
         "No cap mitosis is just cell cloning on repeat frfr."
     )
     path = generate_video(sample, "test_output.mp4", "subway")
-    print(f"✅ Saved: {path}")
+    print(f" Saved: {path}")

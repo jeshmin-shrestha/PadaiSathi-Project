@@ -19,6 +19,33 @@ print(f"Equals plaintext: {result == 'MySecret@123'}")
 print(f"Result         : PASS")
 print("=" * 55)
 
+# Test 45
+hashed_45 = simple_hash_password("TestPass@99")
+verify_result = __import__('app.main', fromlist=['simple_verify_password']).simple_verify_password("TestPass@99", hashed_45)
+print("=" * 55)
+print("TEST : simple_verify_password()  matching password")
+print("=" * 55)
+print(f"Plain password  : TestPass@99")
+print(f"Hash generated  : {hashed_45}")
+print(f"Verify result   : {verify_result}")
+print(f"Expected        : True")
+print(f"Result          : {'PASS' if verify_result == True else 'FAIL'}")
+print("=" * 55)
+
+# Test 46
+hashed_46 = simple_hash_password("TestPass@99")
+wrong_verify_result = __import__('app.main', fromlist=['simple_verify_password']).simple_verify_password("WrongPass@1", hashed_46)
+print("=" * 55)
+print("TEST: simple_verify_password() non-matching password")
+print("=" * 55)
+print(f"Original password : TestPass@99")
+print(f"Wrong password    : WrongPass@1")
+print(f"Hash generated    : {hashed_46}")
+print(f"Verify result     : {wrong_verify_result}")
+print(f"Expected          : False")
+print(f"Result            : {'PASS' if wrong_verify_result == False else 'FAIL'}")
+print("=" * 55)
+
 # Test 12
 token = create_access_token({"sub": "1", "role": "student"})
 segments = token.split(".")
@@ -288,3 +315,128 @@ print("=" * 55)
 print("=" * 55)
 print("  ALL TESTS COMPLETE")
 print("=" * 55)
+
+# ── Streak Unit Tests ─────────────────────────────────────────────────────────
+from datetime import date, timedelta
+from app.database import SessionLocal
+from app import models
+from app.main import update_streak
+
+def get_test_user(db):
+    user = db.query(models.User).filter(models.User.email == "streaktest@padai.com").first()
+    if not user:
+        user = models.User(
+            username="StreakTester",
+            email="streaktest@padai.com",
+            password_hash="dummyhash",
+            role="student",
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+    return user
+
+# Test 50
+db = SessionLocal()
+user = get_test_user(db)
+user.streak = 0
+user.last_activity_date = None
+db.commit()
+db.refresh(user)
+
+update_streak(user.id, db)
+db.refresh(user)
+
+streak_ok = user.streak == 1
+date_ok = user.last_activity_date == date.today()
+print("=" * 55)
+print("TEST : update_streak()  First ever activity")
+print("=" * 55)
+print(f"last_activity_date before : None")
+print(f"streak before             : 0")
+print(f"streak after              : {user.streak}")
+print(f"last_activity_date after  : {user.last_activity_date}")
+print(f"streak == 1               : {streak_ok}")
+print(f"date set to today         : {date_ok}")
+print(f"Result                    : {'PASS' if streak_ok and date_ok else 'FAIL'}")
+print("=" * 55)
+db.close()
+
+# Test 51
+db = SessionLocal()
+user = get_test_user(db)
+user.streak = 3
+user.last_activity_date = date.today() - timedelta(days=1)
+db.commit()
+db.refresh(user)
+
+update_streak(user.id, db)
+db.refresh(user)
+
+streak_ok_51 = user.streak == 4
+date_ok_51 = user.last_activity_date == date.today()
+print("=" * 55)
+print("TEST : update_streak()  Consecutive day increments streak")
+print("=" * 55)
+print(f"last_activity_date before : yesterday")
+print(f"streak before             : 3")
+print(f"streak after              : {user.streak}")
+print(f"last_activity_date after  : {user.last_activity_date}")
+print(f"streak == 4               : {streak_ok_51}")
+print(f"date set to today         : {date_ok_51}")
+print(f"Result                    : {'PASS' if streak_ok_51 and date_ok_51 else 'FAIL'}")
+print("=" * 55)
+db.close()
+
+# Test 52
+db = SessionLocal()
+user = get_test_user(db)
+user.streak = 10
+user.last_activity_date = date.today() - timedelta(days=3)
+db.commit()
+db.refresh(user)
+
+update_streak(user.id, db)
+db.refresh(user)
+
+streak_ok_52 = user.streak == 1
+date_ok_52 = user.last_activity_date == date.today()
+print("=" * 55)
+print("TEST : update_streak() Missed days resets streak to 1")
+print("=" * 55)
+print(f"last_activity_date before : 3 days ago")
+print(f"streak before             : 10")
+print(f"streak after              : {user.streak}")
+print(f"last_activity_date after  : {user.last_activity_date}")
+print(f"streak == 1               : {streak_ok_52}")
+print(f"date set to today         : {date_ok_52}")
+print(f"Result                    : {'PASS' if streak_ok_52 and date_ok_52 else 'FAIL'}")
+print("=" * 55)
+db.close()
+
+# Test 52b
+from app.main import decay_streak_if_inactive
+
+db = SessionLocal()
+user = get_test_user(db)
+user.streak = 10
+user.last_activity_date = date.today() - timedelta(days=3)
+db.commit()
+db.refresh(user)
+
+decay_streak_if_inactive(user.id, db)
+db.refresh(user)
+
+streak_ok_52b = user.streak == 0
+print("=" * 55)
+print("TEST : decay_streak_if_inactive()  Login after missed days resets streak to 0")
+print("=" * 55)
+print(f"last_activity_date before : 3 days ago")
+print(f"streak before             : 10")
+print(f"streak after              : {user.streak}")
+print(f"streak == 0               : {streak_ok_52b}")
+print(f"Result                    : {'PASS' if streak_ok_52b else 'FAIL'}")
+print("=" * 55)
+db.close()
+
+

@@ -1,5 +1,5 @@
 """
-PadaiSathi AI — Document Text Extractor
+PadaiSathi AI Document Text Extractor
 Place at:  backend/app/ai/pdf_extractor.py
 
 Supports PDF, PPTX, and TXT files.
@@ -12,7 +12,7 @@ import re
 
 def extract_text_from_pdf(filepath: str) -> str:
     """
-    Extract and clean text from a PDF, PPTX, or TXT file.
+    Extract and clean text from a PDF, PPTX or TXT file.
     Returns cleaned string ready for summarization.
     """
     if not os.path.exists(filepath):
