@@ -94,7 +94,7 @@ def _mistral_kaggle_api(lecture_text: str) -> dict | None:
         print("[Summarizer] Calling Primary AI Engine...")
         response = requests.post(
             KAGGLE_API_URL,
-            json={"text": text_to_send, "max_tokens": 800},
+            json={"text": text_to_send, "max_tokens": 1200},
             timeout=180,
         )
         if response.status_code == 200:
