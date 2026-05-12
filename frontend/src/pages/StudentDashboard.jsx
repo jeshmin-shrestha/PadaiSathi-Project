@@ -726,7 +726,7 @@ const StudentDashboard = () => {
                       <p style={{ fontSize: 11, color: '#84a8c6', marginTop: 6, fontWeight: 600 }}>
                         {userStats.streak === 0
                           ? 'Do something today to start your streak!'
-                          : `Keep it up — come back tomorrow!`}
+                          : `Keep it up, Come back tomorrow!`}
                       </p>
                     </div>
                   </div>
