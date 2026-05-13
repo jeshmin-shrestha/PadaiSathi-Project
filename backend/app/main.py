@@ -1876,7 +1876,7 @@ def forgot_password(req: ForgotPasswordRequest, db: Session = Depends(get_db)):
     if SMTP_USER and SMTP_PASSWORD:
         try:
             msg = MIMEMultipart("alternative")
-            msg["Subject"] = "PadaiSathi — Reset Your Password"
+            msg["Subject"] = "PadaiSathi - Reset Your Password"
             msg["From"]    = SMTP_USER
             msg["To"]      = email
 
