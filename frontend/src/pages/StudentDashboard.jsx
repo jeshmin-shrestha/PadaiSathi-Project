@@ -1043,6 +1043,7 @@ const StudentDashboard = () => {
                           >
                             <img src={`/badges/${badge.id}.png`} alt={badge.name} style={{ width: 52, height: 52, objectFit: 'contain', margin: '0 auto', display: 'block' }} />
                             <div className="std-badge-name">{badge.name}</div>
+                            <div className="std-badge-desc">{badge.description}</div>
                           </div>
                         ))}
                       </div>
