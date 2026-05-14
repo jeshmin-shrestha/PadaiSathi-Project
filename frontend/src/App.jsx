@@ -101,35 +101,43 @@ function AppContent({ isAuthenticated, setIsAuthenticated, user, setUser, noNavb
           } />
           
           <Route path="/summary" element={
-            isAuthenticated ? <SummaryPage /> : <Navigate to="/login" />
-          } />
-          
-          <Route path="/video" element={
-            isAuthenticated ? <VideoPage /> : <Navigate to="/login" />
-          } />
-          
-          <Route path="/quiz" element={
-            isAuthenticated ? <QuizPage /> : <Navigate to="/login" />
-          } />
-          
-          <Route path="/flashcards" element={
-            isAuthenticated ? <FlashcardsPage /> : <Navigate to="/login" />
-          } />
-          
-          <Route path="/notebook" element={
-            isAuthenticated ? <NotebookPage /> : <Navigate to="/login" />
+            !isAuthenticated ? <Navigate to="/login" /> :
+            user?.role !== 'admin' ? <SummaryPage /> : <Navigate to="/dashboard" />
           } />
 
-          <Route 
-            path="/auth/callback" 
-            element={<AuthCallback setIsAuthenticated={setIsAuthenticated} setUser={setUser} />} 
-          />
-          {/* ← ADD THIS new route for notebook detail */}
-          <Route path="/notebook/:id" element={
-            isAuthenticated ? <NotebookDetailPage /> : <Navigate to="/login" />
+          <Route path="/video" element={
+            !isAuthenticated ? <Navigate to="/login" /> :
+            user?.role !== 'admin' ? <VideoPage /> : <Navigate to="/dashboard" />
           } />
-          
-          <Route path="/friends" element={isAuthenticated ? <FriendsPage /> : <Navigate to="/login" />} />
+
+          <Route path="/quiz" element={
+            !isAuthenticated ? <Navigate to="/login" /> :
+            user?.role !== 'admin' ? <QuizPage /> : <Navigate to="/dashboard" />
+          } />
+
+          <Route path="/flashcards" element={
+            !isAuthenticated ? <Navigate to="/login" /> :
+            user?.role !== 'admin' ? <FlashcardsPage /> : <Navigate to="/dashboard" />
+          } />
+
+          <Route path="/notebook" element={
+            !isAuthenticated ? <Navigate to="/login" /> :
+            user?.role !== 'admin' ? <NotebookPage /> : <Navigate to="/dashboard" />
+          } />
+
+          <Route
+            path="/auth/callback"
+            element={<AuthCallback setIsAuthenticated={setIsAuthenticated} setUser={setUser} />}
+          />
+          <Route path="/notebook/:id" element={
+            !isAuthenticated ? <Navigate to="/login" /> :
+            user?.role !== 'admin' ? <NotebookDetailPage /> : <Navigate to="/dashboard" />
+          } />
+
+          <Route path="/friends" element={
+            !isAuthenticated ? <Navigate to="/login" /> :
+            user?.role !== 'admin' ? <FriendsPage /> : <Navigate to="/dashboard" />
+          } />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/terms" element={<TermsPage />} />
