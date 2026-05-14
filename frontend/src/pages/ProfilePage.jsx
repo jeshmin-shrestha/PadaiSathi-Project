@@ -135,8 +135,8 @@ const ProfilePage = () => {
           .from('avatars')
           .upload(fileName, customUploadFile, { upsert: true });
         if (!error) {
-          const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
-          avatarValue = urlData.publicUrl;
+          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+          avatarValue = `${supabaseUrl}/storage/v1/object/public/avatars/${fileName}`;
           setCustomImageBase64(avatarValue);
           localStorage.removeItem(CUSTOM_AVATAR_KEY);
         }
