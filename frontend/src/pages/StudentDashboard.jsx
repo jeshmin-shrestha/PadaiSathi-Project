@@ -236,6 +236,9 @@ const StudentDashboard = () => {
   const resolveAvatar = useCallback((entry) => {
     const avatarId = entry?.avatar || 'avatar1';
     const isMe     = entry?.is_you === true;
+    if (avatarId.startsWith('https://')) {
+      return { img: avatarId, bg: 'from-indigo-400 to-purple-500' };
+    }
     if (avatarId === 'custom') {
       return { img: isMe && customImg ? customImg : null, bg: 'from-indigo-400 to-purple-500' };
     }
