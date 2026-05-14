@@ -1,7 +1,7 @@
 // ─── constants.js ────────────────────────────────────────────────────────────
 // Single source of truth for shared values across the app.
 
-export const API = 'http://localhost:8000';
+export const API = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export const AVATARS = [
   { id: 'avatar1',  img: '/avatars/avatar1.jpeg',  bg: 'from-green-400 to-green-600' },
